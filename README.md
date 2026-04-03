@@ -8,18 +8,7 @@
 kubectl create namespace clickhouse
 ```
 
-Установите **ingress-nginx** из [чарта Yandex Cloud Marketplace](https://github.com/patsevanton/opencost-yandex-cloud/blob/main/k8s.tf) (OCI, те же версия и values, что в `helm_release` там):
-
-```bash
-helm upgrade --install ingress-nginx oci://cr.yandex/yc-marketplace/yandex-cloud/ingress-nginx/chart/ingress-nginx \
-  --version 4.13.0 \
-  --namespace ingress-nginx \
-  --create-namespace \
-  -f values-ingress-nginx.yaml \
-  --wait
-```
-
-При необходимости зафиксировать внешний IP раскомментируйте `controller.service.loadBalancerIP` в [values-ingress-nginx.yaml](values-ingress-nginx.yaml) и укажите зарезервированный адрес в Yandex Cloud.
+**ingress-nginx** ставится вместе с кластером: в Terraform это `helm_release` в [k8s.tf](k8s.tf) (чарт Yandex Cloud Marketplace OCI, версия как в манифесте). Внешний IP сервиса задаётся через зарезервированный адрес (`controller.service.loadBalancerIP` → [yandex_vpc_address](ip-dns.tf)); при необходимости правьте ресурсы в `ip-dns.tf` и значения в `k8s.tf`.
 
 ### 1. Elasticsearch (nodestore)
 
