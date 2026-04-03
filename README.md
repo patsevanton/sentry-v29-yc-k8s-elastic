@@ -1,5 +1,7 @@
 # Развёртывание Sentry v29.5.1 в Yandex Cloud на Kubernetes. 
 
+
+обновить до 33 и использовать приемтив ноды
 ### 0. Подготовка
 
 Создайте необходимые namespace и подключите необходимые helm репозитории
@@ -40,8 +42,10 @@ kubectl apply -n clickhouse-operator -f clickhouse-operator-config.yaml
 Подробнее в issue https://github.com/Altinity/clickhouse-operator/issues/1930.
 
 ```bash
-kubectl rollout restart deployment/clickhouse-operator -n clickhouse-operator
+kubectl rollout restart deployment/clickhouse-operator-altinity-clickhouse-operator -n clickhouse-operator
 ```
+
+Имя deployment задаёт Helm (release `clickhouse-operator` + chart `altinity-clickhouse-operator`). При другом `--name` релиза смотрите: `kubectl get deploy -n clickhouse-operator`.
 
 **2.2. Создание ClickHouse**:
 
