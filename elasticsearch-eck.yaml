@@ -1,0 +1,43 @@
+# Elasticsearch 9.x через ECK (Elastic Cloud on Kubernetes).
+# Перед применением установите оператор: см. elasticsearch.md.
+apiVersion: elasticsearch.k8s.elastic.co/v1
+kind: Elasticsearch
+metadata:
+  name: sentry-nodestore
+  namespace: elasticsearch
+spec:
+  version: 9.3.2
+  http:
+    tls:
+      selfSignedCertificate:
+        disabled: true
+  nodeSets:
+    - name: default
+      count: 1
+      config:
+        node.roles: ["master", "data", "ingest"]
+        xpack.security.enabled: false
+        xpack.security.enrollment.enabled: false
+      podTemplate:
+        spec:
+          containers:
+            - name: elasticsearch
+              resources:
+                requests:
+                  cpu: "500m"
+                  memory: 2Gi
+                limits:
+                  memory: 2Gi
+              env:
+                - name: ES_JAVA_OPTS
+                  value: "-Xms1g -Xmx1g"
+      volumeClaimTemplates:
+        - metadata:
+            name: elasticsearch-data
+          spec:
+            accessModes:
+              - ReadWriteOnce
+            storageClassName: yc-network-ssd
+            resources:
+              requests:
+                storage: 20Gi

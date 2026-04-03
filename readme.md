@@ -1,6 +1,8 @@
-# Развёртывание Sentry v29.3.0 в Yandex Cloud на Kubernetes. 
+# Развёртывание Sentry v29.5.1 в Yandex Cloud на Kubernetes. 
 
 ### 0. Подготовка
+
+Кластер **Yandex Managed Kubernetes** ориентируйте на **1.33** (в Terraform для ресурса кластера: в блоке `master` задайте `version = "1.33"`).
 
 Создайте необходимые namespace и подключите необходимые helm репозитории
 
@@ -21,7 +23,7 @@ kubectl create namespace clickhouse
 helm repo add altinity https://helm.altinity.com
 helm repo update
 helm upgrade --install clickhouse-operator altinity/altinity-clickhouse-operator \
-  --version 0.25.6 \
+  --version 0.26.2 \
   --namespace clickhouse-operator \
   --create-namespace \
   --wait
@@ -62,7 +64,7 @@ helm repo update
 Пример только с [values-sentry-minimal.yaml](values-sentry-minimal.yaml) (без nodestore в Elasticsearch):
 
 ```bash
-helm upgrade --install sentry sentry/sentry --version 29.3.0 -n sentry \
+helm upgrade --install sentry sentry/sentry --version 29.5.1 -n sentry \
   -f values-sentry-minimal.yaml --timeout=900s
 ```
 

@@ -1,7 +1,9 @@
-# Образ Sentry с пакетом sentry-nodestore-elastic для nodestore в Elasticsearch.
+# Образ Sentry с пакетом sentry-nodestore-elastic для nodestore в Elasticsearch 9.x.
 # Тег базового образа должен совпадать с Chart.AppVersion чарта sentry (helm show chart sentry/sentry --version <ver>).
-FROM getsentry/sentry:26.2.0
+# Пакет объявляет elasticsearch<9; для клиента 9.x, совместимого с ES 9, ставим nodestore без зависимостей, затем elasticsearch-py 9.
+FROM getsentry/sentry:26.2.1
 
 USER root
-RUN pip install --no-cache-dir "sentry-nodestore-elastic>=1.1.0,<2"
+RUN pip install --no-cache-dir --no-deps "sentry-nodestore-elastic>=1.1.0,<2" && \
+    pip install --no-cache-dir "elasticsearch>=9.0.0,<10.0.0"
 USER sentry
