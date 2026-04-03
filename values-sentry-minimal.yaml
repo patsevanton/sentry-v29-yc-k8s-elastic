@@ -20,6 +20,13 @@ ingress:
 system:
   url: "http://sentry.apatsev.org.ru"
 
+# Убрать warning sentry-web: «Empty model costs» (sentry.relay.config.ai_model_costs):
+# не тянуть цены LLM с внешних API. Если нужен расчёт AI cost — оставьте False и
+# обеспечьте egress к https://openrouter.ai и https://models.dev для celery-задачи fetch_ai_model_costs.
+config:
+  sentryConfPy: |
+    SENTRY_AIR_GAP = True
+
 # Внешний ClickHouse. Сервис CHI Altinity: chi-<CHI-name>-<cluster>-<shard>-<replica>
 externalClickhouse:
   host: "chi-sentry-clickhouse-single-node-0-0.clickhouse.svc"
