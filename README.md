@@ -8,6 +8,19 @@
 kubectl create namespace clickhouse
 ```
 
+Установите **ingress-nginx** из [чарта Yandex Cloud Marketplace](https://github.com/patsevanton/opencost-yandex-cloud/blob/main/k8s.tf) (OCI, те же версия и values, что в `helm_release` там):
+
+```bash
+helm upgrade --install ingress-nginx oci://cr.yandex/yc-marketplace/yandex-cloud/ingress-nginx/chart/ingress-nginx \
+  --version 4.13.0 \
+  --namespace ingress-nginx \
+  --create-namespace \
+  -f values-ingress-nginx.yaml \
+  --wait
+```
+
+При необходимости зафиксировать внешний IP раскомментируйте `controller.service.loadBalancerIP` в [values-ingress-nginx.yaml](values-ingress-nginx.yaml) и укажите зарезервированный адрес в Yandex Cloud.
+
 ### 1. Elasticsearch (nodestore)
 
 Для nodestore в **Elasticsearch** разверните кластер и соберите образ Sentry с пакетом `sentry-nodestore-elastic` — см. [elasticsearch.md](elasticsearch.md) и [Dockerfile.sentry-nodestore](Dockerfile.sentry-nodestore). В `helm upgrade ... sentry` передайте `images.sentry` и `config.sentryConfPy` (или сгенерируйте `values_sentry.yaml` из [values_sentry.yaml.tpl](values_sentry.yaml.tpl)).
@@ -87,10 +100,10 @@ kubectl -n sentry logs deployment/sentry-web --tail=20
 
 ### 6. Доступ к Sentry
 
-Sentry доступен по адресу **http://sentry.apatsev.org.ru** через Traefik (Gateway API HTTPRoute).
+Sentry доступен по адресу **http://sentry.apatsev.org.ru** через [ingress-nginx](https://kubernetes.github.io/ingress-nginx/) (стандартный `Ingress`).
 
-Убедитесь, что DNS-запись `sentry.apatsev.org.ru` указывает на внешний IP сервиса Traefik LoadBalancer:
+Убедитесь, что DNS-запись `sentry.apatsev.org.ru` указывает на внешний IP сервиса ingress-nginx (обычно `LoadBalancer` в namespace `ingress-nginx`):
 
 ```bash
-kubectl -n traefik get svc
+kubectl -n ingress-nginx get svc
 ```

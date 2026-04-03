@@ -5,16 +5,16 @@ user:
   email: admin@sentry.local
   password: admin
 
-# Доступ по sentry.apatsev.org.ru через Traefik (Gateway API).
-# Включить ровно один способ маршрутизации: route.main, ingress, traefikIngressRoute или nginx.
+# Доступ по sentry.apatsev.org.ru через ingress-nginx (стандартный Ingress).
+# Включить ровно один способ маршрутизации: route.main, ingress или nginx.
 route:
   main:
-    enabled: true
-    hostnames:
-      - sentry.apatsev.org.ru
-    parentRefs:
-      - name: traefik-gateway
-        namespace: traefik
+    enabled: false
+
+ingress:
+  enabled: true
+  ingressClassName: nginx
+  hostname: sentry.apatsev.org.ru
 
 # URL для CSRF и редиректов
 system:

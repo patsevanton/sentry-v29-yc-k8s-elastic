@@ -98,72 +98,34 @@ provider "helm" {
   }
 }
 
-# Установка CRD Gateway API (требуются kubectl и yc в PATH при terraform apply)
-resource "null_resource" "gateway_api_crds" {
-  triggers = {
-    gateway_api_version = "v1.4.1"
-  }
-  provisioner "local-exec" {
-    command = <<-EOT
-      yc managed-kubernetes cluster get-credentials --id ${yandex_kubernetes_cluster.sentry.id} --external --force
-      kubectl apply --server-side -f https://github.com/kubernetes-sigs/gateway-api/releases/download/v1.4.1/standard-install.yaml
-    EOT
-  }
+resource "helm_release" "ingress_nginx" {
+  name             = "ingress-nginx"
+  chart            = "oci://cr.yandex/yc-marketplace/yandex-cloud/ingress-nginx/chart/ingress-nginx"
+  version          = "4.13.0"
+  namespace        = "ingress-nginx"
+  create_namespace = true
+
   depends_on = [
     yandex_kubernetes_cluster.sentry,
     yandex_kubernetes_node_group.k8s_node_group
   ]
-}
-
-# Traefik как контроллер Gateway API
-resource "helm_release" "traefik_gateway" {
-  name             = "traefik"
-  repository       = "https://traefik.github.io/charts"
-  chart            = "traefik"
-  version          = "39.0.0"
-  namespace        = "traefik"
-  create_namespace = true
-
-  depends_on = [null_resource.gateway_api_crds]
 
   values = [
     yamlencode({
-      providers = {
-        kubernetesGateway = {
-          enabled = true
+      controller = {
+        podLabels = {
+          team = "ingress"
         }
-      }
-      gateway = {
-        enabled = true
-        listeners = {
-          # Порт листенера должен совпадать с ports.web.port (контейнер слушает на 8000 — не root)
-          web = {
-            port = 8000
-            # Разрешить HTTPRoute из других namespace (например sentry)
-            namespacePolicy = {
-              from = "All"
-            }
-          }
-        }
-      }
-      ports = {
-        # В контейнере слушаем 8000 (bind: permission denied на 80 без root)
-        # exposedPort 80 — Service/LoadBalancer снаружи отдают порт 80
-        web = {
-          port        = 8000
-          exposedPort = 80
-        }
-      }
-      service = {
-        enabled = true
-        type    = "LoadBalancer"
-        spec = {
+        service = {
           loadBalancerIP = yandex_vpc_address.addr.external_ipv4_address[0].address
         }
-      }
-      # Не создавать IngressClass по умолчанию — только Gateway API
-      ingressClass = {
-        enabled = false
+        config = {
+          "log-format-escape-json" = "true"
+          "log-format-upstream" = trimspace(<<-EOT
+            {"ts":"$time_iso8601","http":{"request_id":"$req_id","method":"$request_method","status_code":$status,"url":"$host$request_uri","host":"$host","uri":"$request_uri","request_time":$request_time,"user_agent":"$http_user_agent","protocol":"$server_protocol","trace_session_id":"$http_trace_session_id","server_protocol":"$server_protocol","content_type":"$sent_http_content_type","bytes_sent":"$bytes_sent"},"nginx":{"x-forward-for":"$proxy_add_x_forwarded_for","remote_addr":"$proxy_protocol_addr","http_referrer":"$http_referer"}}
+          EOT
+          )
+        }
       }
     })
   ]
