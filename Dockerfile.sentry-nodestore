@@ -1,0 +1,7 @@
+# Образ Sentry с пакетом sentry-nodestore-elastic для nodestore в Elasticsearch.
+# Тег базового образа должен совпадать с Chart.AppVersion чарта sentry (helm show chart sentry/sentry --version <ver>).
+FROM getsentry/sentry:26.2.0
+
+USER root
+RUN pip install --no-cache-dir "sentry-nodestore-elastic>=1.1.0,<2"
+USER sentry

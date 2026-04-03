@@ -1,0 +1,45 @@
+# Elasticsearch для nodestore Sentry (Helm: elastic/elasticsearch).
+# Сервис HTTP: <clusterName>-<nodeGroup> в namespace релиза, например sentry-nodestore-master.
+clusterName: sentry-nodestore
+nodeGroup: master
+masterService: ""
+
+roles:
+  - master
+  - data
+  - data_content
+  - ingest
+
+replicas: 1
+minimumMasterNodes: 1
+
+# Одна реплика — не требовать разнесения по узлам
+antiAffinity: soft
+
+esJavaOpts: "-Xms1g -Xmx1g"
+
+# Внутрикластерный сценарий без TLS и пароля (только при изоляции сети; в продакшене включите security).
+protocol: http
+createCert: false
+
+esConfig:
+  elasticsearch.yml: |
+    xpack.security.enabled: false
+    xpack.security.enrollment.enabled: false
+
+volumeClaimTemplate:
+  accessModes: ["ReadWriteOnce"]
+  storageClassName: yc-network-ssd
+  resources:
+    requests:
+      storage: 20Gi
+
+resources:
+  requests:
+    cpu: "500m"
+    memory: "2Gi"
+  limits:
+    memory: "2Gi"
+
+sysctlInitContainer:
+  enabled: true

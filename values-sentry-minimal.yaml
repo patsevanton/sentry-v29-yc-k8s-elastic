@@ -1,0 +1,46 @@
+# Минимальный пример без nodestore в Elasticsearch.
+# Для Elasticsearch + sentry-nodestore-elastic см. elasticsearch.md и Dockerfile.sentry-nodestore.
+user:
+  create: true
+  email: admin@sentry.local
+  password: admin
+
+# Доступ по sentry.apatsev.org.ru через Traefik (Gateway API).
+# Включить ровно один способ маршрутизации: route.main, ingress, traefikIngressRoute или nginx.
+route:
+  main:
+    enabled: true
+    hostnames:
+      - sentry.apatsev.org.ru
+    parentRefs:
+      - name: traefik-gateway
+        namespace: traefik
+
+# URL для CSRF и редиректов
+system:
+  url: "http://sentry.apatsev.org.ru"
+
+# Внешний ClickHouse. Сервис CHI Altinity: chi-<CHI-name>-<cluster>-<shard>-<replica>
+externalClickhouse:
+  host: "chi-sentry-clickhouse-single-node-0-0.clickhouse.svc"
+  tcpPort: 9000
+  httpPort: 8123
+  username: default
+  password: ""   # в clickhouse.yaml пароль не задан; при необходимости настройте пользователя в CHI
+  database: default
+  singleNode: true
+
+# В кластере: PostgreSQL, Redis, Kafka (Kraft — без Zookeeper)
+postgresql:
+  enabled: true
+redis:
+  enabled: true
+kafka:
+  enabled: true
+  zookeeper:
+    enabled: false
+  kraft:
+    enabled: true
+  provisioning:
+    enabled: true
+    replicationFactor: 1
