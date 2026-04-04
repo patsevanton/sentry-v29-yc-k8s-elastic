@@ -21,7 +21,7 @@ rm -rf cloud-on-k8s
 
 **1.2. Кластер Elasticsearch 9.x**
 
-Манифест кластера — [elasticsearch.yaml](elasticsearch.yaml) (в примере образ **9.3.2**; при необходимости смените `spec.version`, ресурсы и `storageClassName`). При отключённом TLS на HTTP в `podTemplate` задан `readinessProbe` на порт **9200** (иначе проверка ECK ориентируется на **8080**, и под остаётся `0/1` Ready).
+Манифест кластера — [elasticsearch.yaml](elasticsearch.yaml).
 
 ```bash
 kubectl create namespace elasticsearch
