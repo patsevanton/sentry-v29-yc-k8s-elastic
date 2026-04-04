@@ -88,11 +88,11 @@ INSTALLED_APPS.append("sentry_nodestore_elastic")
 INSTALLED_APPS = tuple(INSTALLED_APPS)
 ```
 
-Установка или обновление релиза с nodestore — один values-файл с образом и `config.sentryConfPy` ([values-sentry-minimal.yaml](values-sentry-minimal.yaml)):
+Установка или обновление релиза с nodestore — один values-файл с образом и `config.sentryConfPy` ([values-sentry-minimal.yaml](values-sentry-minimal.yaml)). Перед `helm upgrade` подключите репозиторий чарта (**§3**). Namespace `sentry` создаётся флагом `--create-namespace` (если уже создали вручную в **§3**, флаг не мешает):
 
 ```bash
 helm upgrade --install sentry sentry/sentry --version 29.5.1 -n sentry \
-  -f values-sentry-minimal.yaml --timeout=900s
+  -f values-sentry-minimal.yaml --timeout=900s --create-namespace
 ```
 
 После первого подключения к Elasticsearch инициализируйте шаблон индекса nodestore:
@@ -146,7 +146,7 @@ kubectl apply -f clickhouse.yaml
 
 ### 3. Репозиторий Sentry
 
-Подключите Helm-репозиторий чарта Sentry и при необходимости создайте namespace `sentry` (команды идемпотентны):
+Подключите Helm-репозиторий чарта Sentry. Namespace `sentry` можно создать заранее или при установке в **§1.4** / **§4** флагом `--create-namespace`.
 
 ```bash
 kubectl create namespace sentry
@@ -154,16 +154,18 @@ helm repo add sentry https://sentry-kubernetes.github.io/charts
 helm repo update
 ```
 
+Если namespace уже есть, `kubectl create namespace sentry` завершится ошибкой — это нормально. Либо опустите эту строку и полагайтесь только на `--create-namespace` у Helm.
+
 ### 4. Установка Sentry
 
 Установка с [values-sentry-minimal.yaml](values-sentry-minimal.yaml): в файле уже заданы nodestore в Elasticsearch (`images.sentry`, `config.sentryConfPy`). Перед `helm upgrade` разверните оператор и кластер из **§1.1–1.2** ([elasticsearch.yaml](elasticsearch.yaml)).
 
 ```bash
 helm upgrade --install sentry sentry/sentry --version 29.5.1 -n sentry \
-  -f values-sentry-minimal.yaml --timeout=900s
+  -f values-sentry-minimal.yaml --timeout=900s --create-namespace
 ```
 
-Свой образ и правки nodestore — по **§1.3–1.4** (в том же `values-sentry-minimal.yaml` или в дополнительном `-f` при необходимости).
+Свой образ и правки nodestore — по **§1.3–1.4** (в том же `values-sentry-minimal.yaml` или в дополнительном `-f` при необходимости). Репозиторий Helm — **§3** (выполните до первой установки).
 
 ### 5. Проверка подов и логов
 
