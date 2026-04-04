@@ -88,20 +88,7 @@ INSTALLED_APPS.append("sentry_nodestore_elastic")
 INSTALLED_APPS = tuple(INSTALLED_APPS)
 ```
 
-Установка или обновление релиза с nodestore — один values-файл с образом и `config.sentryConfPy` ([values-sentry-minimal.yaml](values-sentry-minimal.yaml)). Перед `helm upgrade` подключите репозиторий чарта (**§3**). Namespace `sentry` создаётся флагом `--create-namespace` (если уже создали вручную в **§3**, флаг не мешает):
-
-```bash
-helm upgrade --install sentry sentry/sentry --version 29.5.1 -n sentry \
-  -f values-sentry-minimal.yaml --timeout=900s --create-namespace
-```
-
-После первого подключения к Elasticsearch инициализируйте шаблон индекса nodestore:
-
-```bash
-kubectl -n sentry exec -it deploy/sentry-web -- sentry upgrade --with-nodestore
-```
-
-Пакет `sentry-nodestore-elastic` относится к **sentry-web** и воркерам на том же образе. **Relay** и **taskbroker** отдельно не настраиваются. Для **Snuba** при необходимости см. [Dockerfile.snuba-nodestore](Dockerfile.snuba-nodestore).
+Установка или обновление релиза с nodestore — один values-файл с образом и `config.sentryConfPy` ([values-sentry-minimal.yaml](values-sentry-minimal.yaml)). Саму команду `helm upgrade` и инициализацию nodestore выполняйте один раз после **§2** (ClickHouse) и **§3** (репозиторий Helm) — см. **§4**.
 
 **1.5. TLS и версии**
 
@@ -152,7 +139,7 @@ kubectl -n clickhouse wait --for=condition=ready pod/chi-sentry-clickhouse-singl
 
 ### 3. Репозиторий Sentry
 
-Подключите Helm-репозиторий чарта Sentry. Namespace `sentry` можно создать заранее или при установке в **§1.4** / **§4** флагом `--create-namespace`.
+Подключите Helm-репозиторий чарта Sentry. Namespace `sentry` можно создать заранее или при установке в **§4** флагом `--create-namespace`.
 
 ```bash
 kubectl create namespace sentry
@@ -172,6 +159,14 @@ helm repo update
 helm upgrade --install sentry sentry/sentry --version 29.5.1 -n sentry \
   -f values-sentry-minimal.yaml --timeout=900s --create-namespace
 ```
+
+После первого подключения к Elasticsearch инициализируйте шаблон индекса nodestore:
+
+```bash
+kubectl -n sentry exec -it deploy/sentry-web -- sentry upgrade --with-nodestore
+```
+
+Пакет `sentry-nodestore-elastic` относится к **sentry-web** и воркерам на том же образе. **Relay** и **taskbroker** отдельно не настраиваются. Для **Snuba** при необходимости см. [Dockerfile.snuba-nodestore](Dockerfile.snuba-nodestore).
 
 Свой образ и правки nodestore — по **§1.3–1.4** (в том же `values-sentry-minimal.yaml` или в дополнительном `-f` при необходимости). Репозиторий Helm — **§3** (выполните до первой установки).
 
