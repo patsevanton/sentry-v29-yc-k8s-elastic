@@ -31,7 +31,7 @@ kubectl apply -f elasticsearch.yaml
 Проверка готовности:
 
 ```bash
-kubectl -n elasticsearch get elasticsearch.elasticsearch.k8s.elastic.co sentry-nodestore -w
+kubectl -n elasticsearch get elasticsearch.elasticsearch.k8s.elastic.co sentry-nodestore
 kubectl -n elasticsearch get pods,svc
 ```
 
