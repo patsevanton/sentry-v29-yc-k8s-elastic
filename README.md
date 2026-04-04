@@ -16,6 +16,8 @@ kubectl create namespace clickhouse
 
 Для nodestore в **Elasticsearch** разверните кластер и соберите образ Sentry с пакетом `sentry-nodestore-elastic` — см. [elasticsearch.md](elasticsearch.md) и [Dockerfile.sentry-nodestore](Dockerfile.sentry-nodestore). В `helm upgrade ... sentry` передайте `images.sentry` и `config.sentryConfPy` (или сгенерируйте `values_sentry.yaml` из [values_sentry.yaml.tpl](values_sentry.yaml.tpl)).
 
+Пакет `sentry-nodestore-elastic` — это Python-пакет для Django/Sentry backend (nodestore). **Relay** и **taskbroker** плагин не подключают; nodestore относится к **sentry-web** и воркерам. Для Elasticsearch nodestore в первую очередь нужен кастомный образ **sentry** (и воркеры на нём же). **Snuba** — Python-образ, при необходимости см. [Dockerfile.snuba-nodestore](Dockerfile.snuba-nodestore).
+
 ### 2. ClickHouse
 
 

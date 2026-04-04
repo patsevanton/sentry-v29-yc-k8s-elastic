@@ -1,7 +1,0 @@
-# Relay + sentry-nodestore-elastic. База: ghcr.io/getsentry/relay (без pip сборка упадёт — тогда нужен другой способ установки).
-FROM ghcr.io/getsentry/relay:26.2.1
-
-USER root
-RUN pip install --no-cache-dir --no-deps "sentry-nodestore-elastic>=1.1.0,<2" && \
-    pip install --no-cache-dir "elasticsearch>=9.0.0,<10.0.0"
-USER nonroot

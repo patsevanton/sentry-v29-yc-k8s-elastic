@@ -44,10 +44,6 @@ jobs:
             dockerfile: Dockerfile.sentry-nodestore
           - image: snuba
             dockerfile: Dockerfile.snuba-nodestore
-          - image: relay
-            dockerfile: Dockerfile.relay-nodestore
-          - image: taskbroker
-            dockerfile: Dockerfile.taskbroker-nodestore
     steps:
       - name: Checkout repository
         uses: actions/checkout@v4
