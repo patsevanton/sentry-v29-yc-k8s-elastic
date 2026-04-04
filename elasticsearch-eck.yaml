@@ -1,5 +1,6 @@
 # Elasticsearch 9.x через ECK (Elastic Cloud on Kubernetes).
 # Перед применением установите оператор: см. README.md § 1.1.
+# На нодах нужен vm.max_map_count >= 262144: сначала kubectl apply -f elasticsearch-node-sysctl.yaml
 apiVersion: elasticsearch.k8s.elastic.co/v1
 kind: Elasticsearch
 metadata:
@@ -22,6 +23,14 @@ spec:
         spec:
           containers:
             - name: elasticsearch
+              # При http.tls отключён ECK по умолчанию ждёт порт 8080; без TLS слушает только 9200.
+              readinessProbe:
+                tcpSocket:
+                  port: 9200
+                initialDelaySeconds: 10
+                periodSeconds: 5
+                timeoutSeconds: 5
+                failureThreshold: 12
               resources:
                 requests:
                   cpu: "500m"

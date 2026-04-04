@@ -32,13 +32,18 @@ helm template elastic-operator /tmp/cloud-on-k8s-eck/cloud-on-k8s-3.3.2/deploy/e
   --set installCRDs=false \
   | kubectl apply -f -
 rm -rf /tmp/cloud-on-k8s-eck
-
-kubectl rollout status statefulset/elastic-operator -n elastic-system --timeout=5m
 ```
 
 **1.2. Кластер Elasticsearch 9.x**
 
-Манифест — [elasticsearch-eck.yaml](elasticsearch-eck.yaml) (в примере образ **9.3.2**; при необходимости смените `spec.version`, ресурсы и `storageClassName`):
+Elasticsearch на Kubernetes проверяет **`vm.max_map_count` на ноде** (нужно не ниже **262144**; иначе контейнер падает с bootstrap check и кодом выхода 78). Перед кластером примените [elasticsearch-node-sysctl.yaml](elasticsearch-node-sysctl.yaml) — DaemonSet в `kube-system` выставляет `vm.max_map_count` на нодах (привилегированный контейнер с `hostNetwork`/`hostPID`).
+
+```bash
+kubectl apply -f elasticsearch-node-sysctl.yaml
+kubectl rollout status daemonset/elasticsearch-vm-max-map-count -n kube-system --timeout=5m
+```
+
+Манифест кластера — [elasticsearch-eck.yaml](elasticsearch-eck.yaml) (в примере образ **9.3.2**; при необходимости смените `spec.version`, ресурсы и `storageClassName`). При отключённом TLS на HTTP в `podTemplate` задан `readinessProbe` на порт **9200** (иначе проверка ECK ориентируется на **8080** и под остаётся `0/1` Ready).
 
 ```bash
 kubectl create namespace elasticsearch
