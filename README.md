@@ -1,8 +1,8 @@
-# Развёртывание Sentry v29.5.1 в Yandex Cloud на Kubernetes. 
+# Развёртывание Sentry v29.5.1 в Yandex Cloud на Kubernetes
 
 ### 0. Подготовка
 
-Создайте необходимые namespace и подключите необходимые Helm-репозитории (репозиторий Elastic для оператора ECK не нужен — установка из GitHub, см. **§1.1**).
+Создайте нужные namespace и подключите Helm-репозитории (репозиторий Elastic для оператора ECK не нужен — установка из GitHub, см. раздел **1.1**).
 
 ```bash
 kubectl create namespace clickhouse
@@ -12,7 +12,7 @@ kubectl create namespace clickhouse
 
 ### 1. Elasticsearch (nodestore) и оператор ECK
 
-Nodestore хранит «сырые» узлы событий; здесь используется [sentry-nodestore-elastic](https://pypi.org/project/sentry-nodestore-elastic/) и кластер **Elasticsearch 9.x** через [ECK](https://www.elastic.co/guide/en/cloud-on-k8s/current/index.html). Чарт Sentry не ставит `sentry-nodestore-elastic` сам (в отличие от nodestore S3), поэтому нужен **кастомный образ** на базе `ghcr.io/getsentry/sentry` ([реестр](https://github.com/getsentry/sentry/pkgs/container/sentry); образ `getsentry/sentry` на Docker Hub deprecated) — см. [Dockerfile.sentry-nodestore](Dockerfile.sentry-nodestore). На PyPI у пакета ограничение `elasticsearch<9` (Python-клиент); для кластера **9.x** клиент **9.x** в образе ставится отдельно (комментарии в `Dockerfile.sentry-nodestore`).
+Nodestore хранит «сырые» узлы событий; здесь используется [sentry-nodestore-elastic](https://pypi.org/project/sentry-nodestore-elastic/) и кластер **Elasticsearch 9.x** через [ECK](https://www.elastic.co/guide/en/cloud-on-k8s/current/index.html). Чарт Sentry не ставит `sentry-nodestore-elastic` сам (в отличие от nodestore S3), поэтому нужен **кастомный образ** на базе `ghcr.io/getsentry/sentry` ([реестр](https://github.com/getsentry/sentry/pkgs/container/sentry); образ `getsentry/sentry` на Docker Hub помечен как deprecated) — см. [Dockerfile.sentry-nodestore](Dockerfile.sentry-nodestore). На PyPI у пакета ограничение `elasticsearch<9` (Python-клиент); для кластера **9.x** клиент **9.x** в образе ставится отдельно (комментарии в `Dockerfile.sentry-nodestore`).
 
 **1.1. Оператор Elasticsearch (ECK)**
 
@@ -33,7 +33,7 @@ rm -rf cloud-on-k8s
 
 Elasticsearch на Kubernetes проверяет **`vm.max_map_count` на ноде** (нужно не ниже **262144**; иначе контейнер падает с bootstrap check и кодом выхода 78). В [elasticsearch-eck.yaml](elasticsearch-eck.yaml) в `podTemplate` задан привилегированный `initContainer`, который выполняет `sysctl -w vm.max_map_count=262144` перед стартом Elasticsearch.
 
-Манифест кластера — [elasticsearch-eck.yaml](elasticsearch-eck.yaml) (в примере образ **9.3.2**; при необходимости смените `spec.version`, ресурсы и `storageClassName`). При отключённом TLS на HTTP в `podTemplate` задан `readinessProbe` на порт **9200** (иначе проверка ECK ориентируется на **8080** и под остаётся `0/1` Ready).
+Манифест кластера — [elasticsearch-eck.yaml](elasticsearch-eck.yaml) (в примере образ **9.3.2**; при необходимости смените `spec.version`, ресурсы и `storageClassName`). При отключённом TLS на HTTP в `podTemplate` задан `readinessProbe` на порт **9200** (иначе проверка ECK ориентируется на **8080**, и под остаётся `0/1` Ready).
 
 ```bash
 kubectl create namespace elasticsearch
@@ -51,7 +51,7 @@ ECK создаёт HTTP-сервис **`<имя-ресурса>-es-http`**. Дл
 
 `sentry-nodestore-es-http.elasticsearch.svc.cluster.local:9200`
 
-В манифесте отключены TLS на HTTP и встроенная security Elasticsearch: это упрощает минимальный сценарий — nodestore в Sentry подключается по обычному `http://` без выдачи сертификатов, доверия к CA и без логина/пароля в `sentryConfPy`; трафик к API Elasticsearch остаётся внутри сети кластера.
+В манифесте отключены TLS на HTTP и встроенная security Elasticsearch: это упрощает минимальный сценарий — nodestore в Sentry подключается по обычному `http://` без выдачи сертификатов, доверия к CA и без логина и пароля в `sentryConfPy`; трафик к API Elasticsearch остаётся внутри сети кластера.
 
 **1.3. Сборка и публикация образа Sentry**
 
@@ -71,7 +71,7 @@ images:
 
 **1.4. Интеграция nodestore в Sentry**
 
-В `config.sentryConfPy` (или через [values_sentry.yaml.tpl](values_sentry.yaml.tpl) → переменная `nodestore_elasticsearch_sentry_conf_py`) задайте клиент и приложение Django, например для HTTP без TLS (как в манифесте ECK выше):
+В `config.sentryConfPy` вашего values-файла (например отдельный `values-sentry-nodestore.yaml`, если вынесли конфигурацию отдельно) задайте клиент и приложение Django, например для HTTP без TLS (как в манифесте ECK выше):
 
 ```python
 from elasticsearch import Elasticsearch
@@ -130,8 +130,7 @@ kubectl delete namespace elasticsearch
 
 ### 2. ClickHouse
 
-
-**2.1. Установка Altinity ClickHouse Operator**:
+**2.1. Установка Altinity ClickHouse Operator**
 
 ```bash
 helm repo add altinity https://helm.altinity.com
@@ -143,15 +142,13 @@ helm upgrade --install clickhouse-operator altinity/altinity-clickhouse-operator
   --wait
 ```
 
-Оператор через ClickHouseOperatorConfiguration будет наблюдать за namespace `clickhouse`
-
+Оператор через `ClickHouseOperatorConfiguration` будет наблюдать за namespace `clickhouse`.
 
 ```bash
-kubectl apply -n clickhouse-operator -f clickhouse-operator-config.yaml 
+kubectl apply -n clickhouse-operator -f clickhouse-operator-config.yaml
 ```
 
-Перезапуск оператора, чтобы подхватить ClickHouseOperatorConfiguration.
-Подробнее в issue https://github.com/Altinity/clickhouse-operator/issues/1930.
+Перезапуск оператора, чтобы подхватить `ClickHouseOperatorConfiguration`. Подробнее в [issue #1930](https://github.com/Altinity/clickhouse-operator/issues/1930).
 
 ```bash
 kubectl rollout status deployment/clickhouse-operator-altinity-clickhouse-operator -n clickhouse-operator --timeout=1m
@@ -159,7 +156,7 @@ kubectl rollout status deployment/clickhouse-operator-altinity-clickhouse-operat
 
 Имя deployment задаёт Helm (release `clickhouse-operator` + chart `altinity-clickhouse-operator`). При другом `--name` релиза смотрите: `kubectl get deploy -n clickhouse-operator`.
 
-**2.2. Создание ClickHouse**:
+**2.2. Создание ClickHouse**
 
 ```bash
 kubectl apply -f clickhouse.yaml
@@ -167,7 +164,7 @@ kubectl apply -f clickhouse.yaml
 
 ### 3. Репозиторий Sentry
 
-Репозиторий и namespace уже созданы в шаге 0. При необходимости повторите:
+Helm-репозиторий чарта и namespace `sentry` уже могли быть созданы в шаге 0. При необходимости повторите:
 
 ```bash
 kubectl create namespace sentry
@@ -184,11 +181,11 @@ helm upgrade --install sentry sentry/sentry --version 29.5.1 -n sentry \
   -f values-sentry-minimal.yaml --timeout=900s
 ```
 
-С **Elasticsearch** для nodestore следуйте **§ 1.3–1.4** выше и передайте дополнительный `-f` с `images.sentry` и `config.sentryConfPy`.
+С **Elasticsearch** для nodestore следуйте разделам **1.3–1.4** выше и передайте дополнительный `-f` с `images.sentry` и `config.sentryConfPy`.
 
 ### 5. Проверка подов и логов
 
-В конце установки Sentry убедитесь, что все Job завершились (статус `Completed`). Пока Job ещё запущены, поды инициализации могут быть в статусе `Running`, а helm может ждать готовности.
+В конце установки Sentry убедитесь, что все Job завершились (статус `Completed`). Пока Job ещё запущены, поды инициализации могут быть в статусе `Running`, а Helm может ждать готовности.
 
 ```bash
 kubectl -n sentry get jobs
