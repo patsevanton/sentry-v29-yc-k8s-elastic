@@ -21,11 +21,11 @@ rm -rf cloud-on-k8s
 
 **1.2. Кластер Elasticsearch 9.x**
 
-Манифест кластера — [elasticsearch-eck.yaml](elasticsearch-eck.yaml) (в примере образ **9.3.2**; при необходимости смените `spec.version`, ресурсы и `storageClassName`). При отключённом TLS на HTTP в `podTemplate` задан `readinessProbe` на порт **9200** (иначе проверка ECK ориентируется на **8080**, и под остаётся `0/1` Ready).
+Манифест кластера — [elasticsearch.yaml](elasticsearch.yaml) (в примере образ **9.3.2**; при необходимости смените `spec.version`, ресурсы и `storageClassName`). При отключённом TLS на HTTP в `podTemplate` задан `readinessProbe` на порт **9200** (иначе проверка ECK ориентируется на **8080**, и под остаётся `0/1` Ready).
 
 ```bash
 kubectl create namespace elasticsearch
-kubectl apply -f elasticsearch-eck.yaml
+kubectl apply -f elasticsearch.yaml
 ```
 
 Проверка готовности:
@@ -105,7 +105,7 @@ kubectl -n sentry exec -it deploy/sentry-web -- sentry upgrade --with-nodestore
 
 - Для HTTPS и аутентификации настройте Elasticsearch по [документации Elastic](https://www.elastic.co/guide/en/elasticsearch/reference/current/configuring-security.html) и используйте `basic_auth` / `ssl_assert_fingerprint` в клиенте Python — см. [PyPI sentry-nodestore-elastic](https://pypi.org/project/sentry-nodestore-elastic/).
 - Версия образа Sentry должна совпадать с `appVersion` чарта Sentry (`helm show chart sentry/sentry --version <ver>`).
-- Кластер **9.x** и образ с **elasticsearch-py 9.x** согласованы с [elasticsearch-eck.yaml](elasticsearch-eck.yaml) и `Dockerfile.sentry-nodestore`.
+- Кластер **9.x** и образ с **elasticsearch-py 9.x** согласованы с [elasticsearch.yaml](elasticsearch.yaml) и `Dockerfile.sentry-nodestore`.
 
 **1.6. Удаление**
 
