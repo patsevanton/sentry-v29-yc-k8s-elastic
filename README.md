@@ -58,8 +58,6 @@ ECK создаёт HTTP-сервис **`<имя-ресурса>-es-http`**. Дл
 
 В манифесте отключены TLS на HTTP и встроенная security Elasticsearch (**в продакшене** включите TLS и учётные записи по [документации Elastic](https://www.elastic.co/guide/en/elasticsearch/reference/current/configuring-security.html)).
 
-**Legacy — чарт `elastic/elasticsearch` (только ES 8.5.x):** последняя версия чарта [helm.elastic.co](https://helm.elastic.co) — **8.5.1**; для стека 9.x новых релизов нет. Для nodestore на **Elasticsearch 8.x** можно использовать [values-elasticsearch.yaml](values-elasticsearch.yaml) и `helm upgrade ... elastic/elasticsearch --version 8.5.1`.
-
 **1.3. Сборка и публикация образа Sentry**
 
 ```bash
