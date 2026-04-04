@@ -23,13 +23,10 @@ Nodestore хранит «сырые» узлы событий; здесь исп
 ```bash
 kubectl create namespace elastic-system
 
-kubectl create -f "https://raw.githubusercontent.com/elastic/cloud-on-k8s/v3.3.2/config/crds/v1/all-crds.yaml"
-
 mkdir -p /tmp/cloud-on-k8s-eck
 curl -fsSL "https://github.com/elastic/cloud-on-k8s/archive/refs/tags/v3.3.2.tar.gz" | tar xz -C /tmp/cloud-on-k8s-eck
 helm template elastic-operator /tmp/cloud-on-k8s-eck/cloud-on-k8s-3.3.2/deploy/eck-operator \
   -n elastic-system \
-  --set installCRDs=false \
   | kubectl apply -f -
 rm -rf /tmp/cloud-on-k8s-eck
 ```
