@@ -60,9 +60,11 @@ config:
     INSTALLED_APPS.append("sentry_nodestore_elastic")
     INSTALLED_APPS = tuple(INSTALLED_APPS)
 
-# Внешний ClickHouse. Сервис CHI Altinity: chi-<CHI-name>-<cluster>-<shard>-<replica>
+# Внешний ClickHouse (до helm install Sentry: README §2, иначе Job sentry-db-check
+# зависнет с «getaddrinfo: Name does not resolve»). Имя пода = chi-<metadata.name CHI>-<cluster>-<shard>-<replica>
+# (см. clickhouse.yaml: sentry-clickhouse / single-node → chi-sentry-clickhouse-single-node-0-0).
 externalClickhouse:
-  host: "chi-sentry-clickhouse-single-node-0-0.clickhouse.svc"
+  host: "chi-sentry-clickhouse-single-node-0-0.clickhouse.svc.cluster.local"
   tcpPort: 9000
   httpPort: 8123
   username: default
