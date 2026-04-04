@@ -63,7 +63,7 @@ images:
 
 **1.4. Интеграция nodestore в Sentry**
 
-В `config.sentryConfPy` вашего values-файла (например отдельный `values-sentry-nodestore.yaml`, если вынесли конфигурацию отдельно) задайте клиент и приложение Django, например для HTTP без TLS (как в манифесте ECK выше):
+В `config.sentryConfPy` в [values-sentry-minimal.yaml](values-sentry-minimal.yaml) (или в своём values поверх него) задайте клиент и приложение Django, например для HTTP без TLS (как в манифесте ECK выше). Готовый пример — тот же файл:
 
 ```python
 from elasticsearch import Elasticsearch
@@ -88,14 +88,12 @@ INSTALLED_APPS.append("sentry_nodestore_elastic")
 INSTALLED_APPS = tuple(INSTALLED_APPS)
 ```
 
-Установка или обновление релиза с nodestore (отдельный файл values с образом и `config.sentryConfPy`):
+Установка или обновление релиза с nodestore — один values-файл с образом и `config.sentryConfPy` ([values-sentry-minimal.yaml](values-sentry-minimal.yaml)):
 
 ```bash
 helm upgrade --install sentry sentry/sentry --version 29.5.1 -n sentry \
-  -f values-sentry-minimal.yaml -f values-sentry-nodestore.yaml --timeout=900s
+  -f values-sentry-minimal.yaml --timeout=900s
 ```
-
-(`values-sentry-nodestore.yaml` — ваш файл поверх [values-sentry-minimal.yaml](values-sentry-minimal.yaml).)
 
 После первого подключения к Elasticsearch инициализируйте шаблон индекса nodestore:
 
@@ -165,7 +163,7 @@ helm upgrade --install sentry sentry/sentry --version 29.5.1 -n sentry \
   -f values-sentry-minimal.yaml --timeout=900s
 ```
 
-Свой образ или вынесенный в отдельный values конфиг nodestore — по **§1.3–1.4**.
+Свой образ и правки nodestore — по **§1.3–1.4** (в том же `values-sentry-minimal.yaml` или в дополнительном `-f` при необходимости).
 
 ### 5. Проверка подов и логов
 
