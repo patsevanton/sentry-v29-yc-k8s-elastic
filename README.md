@@ -111,15 +111,6 @@ kubectl -n sentry exec -it deploy/sentry-web -- sentry upgrade --with-nodestore
 - Версия образа Sentry должна совпадать с `appVersion` чарта Sentry (`helm show chart sentry/sentry --version <ver>`).
 - Кластер **9.x** и образ с **elasticsearch-py 9.x** согласованы с [elasticsearch.yaml](elasticsearch.yaml) и `Dockerfile.sentry-nodestore`.
 
-**1.6. Удаление**
-
-```bash
-kubectl delete elasticsearch sentry-nodestore -n elasticsearch
-kubectl delete namespace elasticsearch
-```
-
-Оператор ECK, если больше не нужен: удалите ресурсы в `eck-operator` (например `kubectl delete namespace eck-operator`) и при отсутствии других ресурсов ECK в кластере — CRD по [документации Elastic](https://www.elastic.co/docs/deploy-manage/uninstall/uninstall-elastic-cloud-on-kubernetes).
-
 ### 2. ClickHouse
 
 **2.1. Установка Altinity ClickHouse Operator**
