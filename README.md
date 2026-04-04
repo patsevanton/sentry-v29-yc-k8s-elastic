@@ -18,13 +18,13 @@ Nodestore хранит «сырые» узлы событий; здесь исп
 
 **1.1. Оператор Elasticsearch (ECK)**
 
-Установите [ECK Operator](https://www.elastic.co/docs/deploy-manage/deploy/cloud-on-k8s/install-using-yaml-manifest-quickstart) из Helm-чарта [deploy/eck-operator](https://github.com/elastic/cloud-on-k8s/tree/3.2/deploy/eck-operator) репозитория [elastic/cloud-on-k8s](https://github.com/elastic/cloud-on-k8s) (ветка **3.2**). Вместо скачивания tar-архива репозитория можно взять только каталог чарта — по смыслу это то же, что в Flux `GitRepository` с `ignore` и включением `!/deploy/eck-operator`: **shallow clone** + **sparse-checkout** (нужен Git с поддержкой sparse-checkout, обычно 2.25+).
+Установите [ECK Operator](https://www.elastic.co/docs/deploy-manage/deploy/cloud-on-k8s/install-using-yaml-manifest-quickstart) из Helm-чарта [deploy/eck-operator](https://github.com/elastic/cloud-on-k8s/tree/v3.3.2/deploy/eck-operator) репозитория [elastic/cloud-on-k8s](https://github.com/elastic/cloud-on-k8s) (тег **v3.3.2**).
 
 ```bash
 kubectl create namespace elastic-system
 
 ECK_TMP=$(mktemp -d)
-git clone --depth 1 --branch 3.2 --filter=blob:none --sparse \
+git clone --depth 1 --branch v3.3.2 --filter=blob:none --sparse \
   https://github.com/elastic/cloud-on-k8s.git "$ECK_TMP/cloud-on-k8s"
 git -C "$ECK_TMP/cloud-on-k8s" sparse-checkout set deploy/eck-operator
 helm template elastic-operator "$ECK_TMP/cloud-on-k8s/deploy/eck-operator" \
@@ -32,8 +32,6 @@ helm template elastic-operator "$ECK_TMP/cloud-on-k8s/deploy/eck-operator" \
   | kubectl apply -f -
 rm -rf "$ECK_TMP"
 ```
-
-Дополнительные значения Helm (как `values` у `HelmRelease`: `managedNamespaces`, свой образ оператора и т.д.) передайте через `-f your-values.yaml` к `helm template`. Чтобы зафиксировать версию тегом (как `ref.tag` у Flux), замените `--branch 3.2` на `--branch <тег>` из [релизов](https://github.com/elastic/cloud-on-k8s/tags) (например `v3.1.0`).
 
 **1.2. Кластер Elasticsearch 9.x**
 
