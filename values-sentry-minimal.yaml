@@ -1,5 +1,5 @@
 # Минимальный пример без nodestore в Elasticsearch.
-# Для Elasticsearch + sentry-nodestore-elastic см. elasticsearch.md и Dockerfile.sentry-nodestore.
+# Для Elasticsearch + sentry-nodestore-elastic см. README.md § 1 и Dockerfile.sentry-nodestore.
 user:
   create: true
   email: admin@sentry.local

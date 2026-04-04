@@ -1,5 +1,5 @@
 # Elasticsearch 9.x через ECK (Elastic Cloud on Kubernetes).
-# Перед применением установите оператор: см. elasticsearch.md.
+# Перед применением установите оператор: см. README.md § 1.1.
 apiVersion: elasticsearch.k8s.elastic.co/v1
 kind: Elasticsearch
 metadata:

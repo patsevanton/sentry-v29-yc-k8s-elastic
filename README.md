@@ -12,11 +12,122 @@ kubectl create namespace clickhouse
 
 **ingress-nginx** ставится вместе с кластером: в Terraform это `helm_release` в [k8s.tf](k8s.tf) (чарт Yandex Cloud Marketplace OCI, версия как в манифесте). Внешний IP сервиса задаётся через зарезервированный адрес (`controller.service.loadBalancerIP` → [yandex_vpc_address](ip-dns.tf)); при необходимости правьте ресурсы в `ip-dns.tf` и значения в `k8s.tf`.
 
-### 1. Elasticsearch (nodestore)
+### 1. Elasticsearch (nodestore) и оператор ECK
 
-Для nodestore в **Elasticsearch** разверните кластер и соберите образ Sentry с пакетом `sentry-nodestore-elastic` — см. [elasticsearch.md](elasticsearch.md) и [Dockerfile.sentry-nodestore](Dockerfile.sentry-nodestore). В `helm upgrade ... sentry` передайте `images.sentry` и `config.sentryConfPy` (или сгенерируйте `values_sentry.yaml` из [values_sentry.yaml.tpl](values_sentry.yaml.tpl)).
+Nodestore хранит «сырые» узлы событий; здесь используется [sentry-nodestore-elastic](https://pypi.org/project/sentry-nodestore-elastic/) и кластер **Elasticsearch 9.x** через [ECK](https://www.elastic.co/guide/en/cloud-on-k8s/current/index.html). Чарт Sentry не ставит `sentry-nodestore-elastic` сам (в отличие от nodestore S3), поэтому нужен **кастомный образ** на базе `ghcr.io/getsentry/sentry` ([реестр](https://github.com/getsentry/sentry/pkgs/container/sentry); образ `getsentry/sentry` на Docker Hub deprecated) — см. [Dockerfile.sentry-nodestore](Dockerfile.sentry-nodestore). На PyPI у пакета ограничение `elasticsearch<9` (Python-клиент); для кластера **9.x** клиент **9.x** в образе ставится отдельно (комментарии в `Dockerfile.sentry-nodestore`).
 
-Пакет `sentry-nodestore-elastic` — это Python-пакет для Django/Sentry backend (nodestore). **Relay** и **taskbroker** плагин не подключают; nodestore относится к **sentry-web** и воркерам. Для Elasticsearch nodestore в первую очередь нужен кастомный образ **sentry** (и воркеры на нём же). **Snuba** — Python-образ, при необходимости см. [Dockerfile.snuba-nodestore](Dockerfile.snuba-nodestore).
+**1.1. Оператор Elasticsearch (ECK)**
+
+Подключите Helm-репозиторий Elastic и установите [ECK Operator](https://www.elastic.co/guide/en/cloud-on-k8s/current/k8s-install-helm.html):
+
+```bash
+helm repo add elastic https://helm.elastic.co
+helm repo update
+helm upgrade --install elastic-operator elastic/eck-operator \
+  --version 3.3.2 \
+  --namespace elastic-system \
+  --create-namespace \
+  --wait
+```
+
+**1.2. Кластер Elasticsearch 9.x**
+
+Манифест — [elasticsearch-eck.yaml](elasticsearch-eck.yaml) (в примере образ **9.3.2**; при необходимости смените `spec.version`, ресурсы и `storageClassName`):
+
+```bash
+kubectl create namespace elasticsearch
+kubectl apply -f elasticsearch-eck.yaml
+```
+
+Проверка готовности:
+
+```bash
+kubectl -n elasticsearch get elasticsearch.elasticsearch.k8s.elastic.co sentry-nodestore -w
+kubectl -n elasticsearch get pods,svc
+```
+
+ECK создаёт HTTP-сервис **`<имя-ресурса>-es-http`**. Для `metadata.name: sentry-nodestore` это `sentry-nodestore-es-http`. Полный DNS из подов в `sentry`:
+
+`sentry-nodestore-es-http.elasticsearch.svc.cluster.local:9200`
+
+В манифесте отключены TLS на HTTP и встроенная security Elasticsearch (**в продакшене** включите TLS и учётные записи по [документации Elastic](https://www.elastic.co/guide/en/elasticsearch/reference/current/configuring-security.html)).
+
+**Legacy — чарт `elastic/elasticsearch` (только ES 8.5.x):** последняя версия чарта [helm.elastic.co](https://helm.elastic.co) — **8.5.1**; для стека 9.x новых релизов нет. Для nodestore на **Elasticsearch 8.x** можно использовать [values-elasticsearch.yaml](values-elasticsearch.yaml) и `helm upgrade ... elastic/elasticsearch --version 8.5.1`.
+
+**1.3. Сборка и публикация образа Sentry**
+
+```bash
+docker build -f Dockerfile.sentry-nodestore -t <registry>/sentry-nodestore:26.2.1 .
+docker push <registry>/sentry-nodestore:26.2.1
+```
+
+В values при установке Sentry:
+
+```yaml
+images:
+  sentry:
+    repository: <registry>/sentry-nodestore
+    tag: "26.2.1"
+```
+
+**1.4. Интеграция nodestore в Sentry**
+
+В `config.sentryConfPy` (или через [values_sentry.yaml.tpl](values_sentry.yaml.tpl) → переменная `nodestore_elasticsearch_sentry_conf_py`) задайте клиент и приложение Django, например для HTTP без TLS (как в манифесте ECK выше):
+
+```python
+from elasticsearch import Elasticsearch
+
+es = Elasticsearch(
+    ["http://sentry-nodestore-es-http.elasticsearch.svc.cluster.local:9200"],
+    request_timeout=60,
+    max_retries=3,
+    retry_on_timeout=True,
+)
+
+SENTRY_NODESTORE = "sentry_nodestore_elastic.ElasticNodeStorage"
+SENTRY_NODESTORE_OPTIONS = {
+    "es": es,
+    "refresh": False,
+}
+
+from sentry.conf.server import *
+
+INSTALLED_APPS = list(INSTALLED_APPS)
+INSTALLED_APPS.append("sentry_nodestore_elastic")
+INSTALLED_APPS = tuple(INSTALLED_APPS)
+```
+
+Установка или обновление релиза с nodestore (отдельный файл values с образом и `config.sentryConfPy`):
+
+```bash
+helm upgrade --install sentry sentry/sentry --version 29.5.1 -n sentry \
+  -f values-sentry-minimal.yaml -f values-sentry-nodestore.yaml --timeout=900s
+```
+
+(`values-sentry-nodestore.yaml` — ваш файл поверх [values-sentry-minimal.yaml](values-sentry-minimal.yaml).)
+
+После первого подключения к Elasticsearch инициализируйте шаблон индекса nodestore:
+
+```bash
+kubectl -n sentry exec -it deploy/sentry-web -- sentry upgrade --with-nodestore
+```
+
+Пакет `sentry-nodestore-elastic` относится к **sentry-web** и воркерам на том же образе. **Relay** и **taskbroker** отдельно не настраиваются. Для **Snuba** при необходимости см. [Dockerfile.snuba-nodestore](Dockerfile.snuba-nodestore).
+
+**1.5. TLS и версии**
+
+- Для HTTPS и аутентификации настройте Elasticsearch по [документации Elastic](https://www.elastic.co/guide/en/elasticsearch/reference/current/configuring-security.html) и используйте `basic_auth` / `ssl_assert_fingerprint` в клиенте Python — см. [PyPI sentry-nodestore-elastic](https://pypi.org/project/sentry-nodestore-elastic/).
+- Версия образа Sentry должна совпадать с `appVersion` чарта Sentry (`helm show chart sentry/sentry --version <ver>`).
+- Кластер **9.x** и образ с **elasticsearch-py 9.x** согласованы с [elasticsearch-eck.yaml](elasticsearch-eck.yaml) и `Dockerfile.sentry-nodestore`.
+
+**1.6. Удаление**
+
+```bash
+kubectl delete elasticsearch sentry-nodestore -n elasticsearch
+kubectl delete namespace elasticsearch
+```
+
+Оператор ECK, если больше не нужен: `helm uninstall elastic-operator -n elastic-system`.
 
 ### 2. ClickHouse
 
@@ -74,7 +185,7 @@ helm upgrade --install sentry sentry/sentry --version 29.5.1 -n sentry \
   -f values-sentry-minimal.yaml --timeout=900s
 ```
 
-Для nodestore в Elasticsearch добавьте `-f` с вашим `values`, где заданы `images.sentry` (кастомный образ) и `config.sentryConfPy` — см. [elasticsearch.md](elasticsearch.md).
+С **Elasticsearch** для nodestore следуйте **§ 1.3–1.4** выше и передайте дополнительный `-f` с `images.sentry` и `config.sentryConfPy`.
 
 ### 5. Проверка подов и логов
 

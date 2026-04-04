@@ -1,5 +1,5 @@
 # Elasticsearch для nodestore Sentry (legacy: только чарт elastic/elasticsearch 8.5.1, образ ES 8.5.x).
-# Для Elasticsearch 9.x используйте ECK и elasticsearch-eck.yaml — см. elasticsearch.md.
+# Для Elasticsearch 9.x используйте ECK и elasticsearch-eck.yaml — см. README.md § 1.
 # Сервис HTTP: <clusterName>-<nodeGroup> в namespace релиза, например sentry-nodestore-master.
 clusterName: sentry-nodestore
 nodeGroup: master
