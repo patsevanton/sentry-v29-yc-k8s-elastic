@@ -37,7 +37,7 @@ spec:
           spec:
             accessModes:
               - ReadWriteOnce
-            storageClassName: yc-network-ssd
+            storageClassName: yc-network-hdd
             resources:
               requests:
                 storage: 20Gi
