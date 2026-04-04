@@ -16,6 +16,17 @@ spec:
     tls:
       selfSignedCertificate:
         disabled: true
+  # PVC сохраняются при удалении CR Elasticsearch (данные для восстановления); при scale down удаляются как раньше.
+  volumeClaimDeletePolicy: DeleteOnScaledownOnly
+  # Rolling updates: не более одного недоступного пода; без временного «наддува» подов.
+  updateStrategy:
+    changeBudget:
+      maxUnavailable: 1
+      maxSurge: 0
+  # Voluntary disruptions (drain, kubectl delete pod): минимум 2 из 3 подов доступны.
+  podDisruptionBudget:
+    spec:
+      minAvailable: 2
   nodeSets:
     - name: zone-a
       count: 1
@@ -24,9 +35,17 @@ spec:
         node.attr.zone: ru-central1-a
         cluster.routing.allocation.awareness.attributes: zone
         cluster.routing.allocation.awareness.force.zone.values: ru-central1-a,ru-central1-b,ru-central1-d
+        cluster.routing.allocation.disk.watermark.low: "85%"
+        cluster.routing.allocation.disk.watermark.high: "90%"
+        cluster.routing.allocation.disk.watermark.flood_stage: "95%"
         xpack.security.enabled: false
         xpack.security.enrollment.enabled: false
       podTemplate:
+        metadata: &es-pod-metadata
+          labels:
+            app.kubernetes.io/name: elasticsearch
+            app.kubernetes.io/instance: sentry-nodestore
+            app.kubernetes.io/component: nodestore
         spec:
           affinity:
             nodeAffinity:
@@ -37,6 +56,14 @@ spec:
                         operator: In
                         values:
                           - ru-central1-a
+            podAntiAffinity: &es-pod-anti-affinity
+              preferredDuringSchedulingIgnoredDuringExecution:
+                - weight: 100
+                  podAffinityTerm:
+                    labelSelector:
+                      matchLabels:
+                        elasticsearch.k8s.elastic.co/cluster-name: sentry-nodestore
+                    topologyKey: kubernetes.io/hostname
           initContainers: &es-init-sysctl
             - name: sysctl-max-map-count
               image: docker.io/library/busybox:1.36
@@ -88,9 +115,13 @@ spec:
         node.attr.zone: ru-central1-b
         cluster.routing.allocation.awareness.attributes: zone
         cluster.routing.allocation.awareness.force.zone.values: ru-central1-a,ru-central1-b,ru-central1-d
+        cluster.routing.allocation.disk.watermark.low: "85%"
+        cluster.routing.allocation.disk.watermark.high: "90%"
+        cluster.routing.allocation.disk.watermark.flood_stage: "95%"
         xpack.security.enabled: false
         xpack.security.enrollment.enabled: false
       podTemplate:
+        metadata: *es-pod-metadata
         spec:
           affinity:
             nodeAffinity:
@@ -101,6 +132,7 @@ spec:
                         operator: In
                         values:
                           - ru-central1-b
+            podAntiAffinity: *es-pod-anti-affinity
           initContainers: *es-init-sysctl
           containers: *es-container
       volumeClaimTemplates: *es-pvc
@@ -112,9 +144,13 @@ spec:
         node.attr.zone: ru-central1-d
         cluster.routing.allocation.awareness.attributes: zone
         cluster.routing.allocation.awareness.force.zone.values: ru-central1-a,ru-central1-b,ru-central1-d
+        cluster.routing.allocation.disk.watermark.low: "85%"
+        cluster.routing.allocation.disk.watermark.high: "90%"
+        cluster.routing.allocation.disk.watermark.flood_stage: "95%"
         xpack.security.enabled: false
         xpack.security.enrollment.enabled: false
       podTemplate:
+        metadata: *es-pod-metadata
         spec:
           affinity:
             nodeAffinity:
@@ -125,6 +161,7 @@ spec:
                         operator: In
                         values:
                           - ru-central1-d
+            podAntiAffinity: *es-pod-anti-affinity
           initContainers: *es-init-sysctl
           containers: *es-container
       volumeClaimTemplates: *es-pvc
