@@ -44,7 +44,7 @@ kubectl apply -n clickhouse-operator -f clickhouse-operator-config.yaml
 Подробнее в issue https://github.com/Altinity/clickhouse-operator/issues/1930.
 
 ```bash
-kubectl rollout restart deployment/clickhouse-operator-altinity-clickhouse-operator -n clickhouse-operator
+kubectl rollout status deployment/clickhouse-operator-altinity-clickhouse-operator -n clickhouse-operator --timeout=1m
 ```
 
 Имя deployment задаёт Helm (release `clickhouse-operator` + chart `altinity-clickhouse-operator`). При другом `--name` релиза смотрите: `kubectl get deploy -n clickhouse-operator`.

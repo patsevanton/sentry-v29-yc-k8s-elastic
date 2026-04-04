@@ -5,6 +5,14 @@ user:
   email: admin@sentry.local
   password: admin
 
+images:
+  sentry:
+    repository: ghcr.io/patsevanton/sentry-v29-yc-k8s-elastic
+    tag: sentry-1.3.0
+  snuba:
+    repository: ghcr.io/patsevanton/sentry-v29-yc-k8s-elastic
+    tag: snuba-1.3.0
+
 # Доступ по sentry.apatsev.org.ru через ingress-nginx (стандартный Ingress).
 # Включить ровно один способ маршрутизации: route.main, ingress или nginx.
 route:
