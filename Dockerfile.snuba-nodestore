@@ -1,0 +1,7 @@
+# Snuba + sentry-nodestore-elastic. База: ghcr.io/getsentry/snuba (при необходимости подправьте pip/USER под ваш тег образа).
+FROM ghcr.io/getsentry/snuba:26.2.1
+
+USER root
+RUN pip install --no-cache-dir --no-deps "sentry-nodestore-elastic>=1.1.0,<2" && \
+    pip install --no-cache-dir "elasticsearch>=9.0.0,<10.0.0"
+USER snuba

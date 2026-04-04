@@ -6,12 +6,13 @@ on:
       - main
 
 jobs:
-  release-and-docker:
+  release:
     runs-on: ubuntu-latest
     permissions:
       contents: write
-      packages: write
-
+    outputs:
+      version: ${{ steps.semver.outputs.version }}
+      tag: ${{ steps.semver.outputs.tag }}
     steps:
       - name: Checkout repository
         uses: actions/checkout@v4
@@ -29,8 +30,29 @@ jobs:
           echo "Version: ${{ steps.semver.outputs.version }}"
           echo "Tag:     ${{ steps.semver.outputs.tag }}"
 
+  docker:
+    needs: release
+    if: needs.release.outputs.tag != ''
+    runs-on: ubuntu-latest
+    permissions:
+      packages: write
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - image: sentry
+            dockerfile: Dockerfile.sentry-nodestore
+          - image: snuba
+            dockerfile: Dockerfile.snuba-nodestore
+          - image: relay
+            dockerfile: Dockerfile.relay-nodestore
+          - image: taskbroker
+            dockerfile: Dockerfile.taskbroker-nodestore
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
       - name: Login to GHCR
-        if: steps.semver.outputs.tag != ''
         uses: docker/login-action@v3
         with:
           registry: ghcr.io
@@ -38,12 +60,23 @@ jobs:
           password: ${{ secrets.GITHUB_TOKEN }}
 
       - name: Build and push Docker image
-        if: steps.semver.outputs.tag != ''
+        id: build
         uses: docker/build-push-action@v6
         with:
           context: .
-          file: ./Dockerfile.sentry-nodestore
+          file: ./${{ matrix.dockerfile }}
           push: true
           tags: |
-            ghcr.io/${{ github.repository }}:${{ steps.semver.outputs.version }}
-            ghcr.io/${{ github.repository }}:latest
+            ghcr.io/${{ github.repository }}:${{ matrix.image }}-${{ needs.release.outputs.version }}
+            ghcr.io/${{ github.repository }}:${{ matrix.image }}-latest
+
+      # Прежние теги без префикса (только sentry), как в однообразной сборке.
+      - name: Alias default tags (sentry)
+        if: matrix.image == 'sentry'
+        run: |
+          set -eux
+          SRC="ghcr.io/${{ github.repository }}:sentry-${{ needs.release.outputs.version }}"
+          docker buildx imagetools create \
+            --tag "ghcr.io/${{ github.repository }}:${{ needs.release.outputs.version }}" \
+            --tag "ghcr.io/${{ github.repository }}:latest" \
+            "$SRC"
