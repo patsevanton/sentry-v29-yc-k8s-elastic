@@ -2,7 +2,7 @@
 
 Nodestore хранит «сырые» узлы событий; вместо Cassandra/ScyllaDB здесь используется [sentry-nodestore-elastic](https://pypi.org/project/sentry-nodestore-elastic/) и кластер **Elasticsearch 9.x** (через [ECK](https://www.elastic.co/guide/en/cloud-on-k8s/current/index.html)).
 
-Чарт Sentry не ставит `sentry-nodestore-elastic` сам (в отличие от варианта nodestore S3), поэтому нужен **кастомный образ** на базе `getsentry/sentry` — см. `Dockerfile.sentry-nodestore` в репозитории.
+Чарт Sentry не ставит `sentry-nodestore-elastic` сам (в отличие от варианта nodestore S3), поэтому нужен **кастомный образ** на базе официального образа `ghcr.io/getsentry/sentry` ([GitHub Container Registry](https://github.com/getsentry/sentry/pkgs/container/sentry); образ `getsentry/sentry` на Docker Hub deprecated) — см. `Dockerfile.sentry-nodestore` в репозитории.
 
 Пакет на PyPI ограничивает зависимость `elasticsearch<9` (Python-клиент); для кластера **9.x** в образе клиент **9.x** ставится отдельно (см. комментарии в `Dockerfile.sentry-nodestore`).
 
