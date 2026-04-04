@@ -53,7 +53,7 @@ ECK создаёт HTTP-сервис **`<имя-ресурса>-es-http`**. Дл
 
 `sentry-nodestore-es-http.elasticsearch.svc.cluster.local:9200`
 
-В манифесте отключены TLS на HTTP и встроенная security Elasticsearch.
+В манифесте отключены TLS на HTTP и встроенная security Elasticsearch: это упрощает минимальный сценарий — nodestore в Sentry подключается по обычному `http://` без выдачи сертификатов, доверия к CA и без логина/пароля в `sentryConfPy`; трафик к API Elasticsearch остаётся внутри сети кластера.
 
 **1.3. Сборка и публикация образа Sentry**
 
