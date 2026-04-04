@@ -53,7 +53,7 @@ ECK создаёт HTTP-сервис **`<имя-ресурса>-es-http`**. Дл
 
 `sentry-nodestore-es-http.elasticsearch.svc.cluster.local:9200`
 
-В манифесте отключены TLS на HTTP и встроенная security Elasticsearch (**в продакшене** включите TLS и учётные записи по [документации Elastic](https://www.elastic.co/guide/en/elasticsearch/reference/current/configuring-security.html)).
+В манифесте отключены TLS на HTTP и встроенная security Elasticsearch.
 
 **1.3. Сборка и публикация образа Sentry**
 
