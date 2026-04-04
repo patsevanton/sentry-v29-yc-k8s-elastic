@@ -21,8 +21,6 @@ rm -rf cloud-on-k8s
 
 **1.2. Кластер Elasticsearch 9.x**
 
-Elasticsearch на Kubernetes проверяет **`vm.max_map_count` на ноде** (нужно не ниже **262144**; иначе контейнер падает с bootstrap check и кодом выхода 78). В [elasticsearch-eck.yaml](elasticsearch-eck.yaml) в `podTemplate` задан привилегированный `initContainer`, который выполняет `sysctl -w vm.max_map_count=262144` перед стартом Elasticsearch.
-
 Манифест кластера — [elasticsearch-eck.yaml](elasticsearch-eck.yaml) (в примере образ **9.3.2**; при необходимости смените `spec.version`, ресурсы и `storageClassName`). При отключённом TLS на HTTP в `podTemplate` задан `readinessProbe` на порт **9200** (иначе проверка ECK ориентируется на **8080**, и под остаётся `0/1` Ready).
 
 ```bash
