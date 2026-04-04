@@ -41,20 +41,24 @@ ECK создаёт HTTP-сервис **`<имя-ресурса>-es-http`**. Дл
 
 В манифесте отключены TLS на HTTP и встроенная security Elasticsearch: это упрощает минимальный сценарий — nodestore в Sentry подключается по обычному `http://` без выдачи сертификатов, доверия к CA и без логина и пароля в `sentryConfPy`; трафик к API Elasticsearch остаётся внутри сети кластера.
 
-**1.3. Сборка и публикация образа Sentry**
+**1.3. Образ Sentry с nodestore**
+
+В этом репозитории образ **уже собран** и публикуется в GHCR; для установки по примеру из README достаточно указать его в Helm values — см. [values-sentry-minimal.yaml](values-sentry-minimal.yaml) (`images.sentry.repository` и `images.sentry.tag`).
+
+Если вы **сами** собираете образ (другой реестр, свои правки в `Dockerfile.sentry-nodestore` или обновление под новый релиз чарта), делайте так:
 
 ```bash
-docker build -f Dockerfile.sentry-nodestore -t <registry>/sentry-nodestore:26.2.1 .
-docker push <registry>/sentry-nodestore:26.2.1
+docker build -f Dockerfile.sentry-nodestore -t <registry>/<имя>:<тег> .
+docker push <registry>/<имя>:<тег>
 ```
 
-В values при установке Sentry:
+Тег образа Sentry должен соответствовать версии приложения в чарте (см. **1.5**). В `values` при установке:
 
 ```yaml
 images:
   sentry:
-    repository: <registry>/sentry-nodestore
-    tag: "26.2.1"
+    repository: <registry>/<имя>
+    tag: "<тег>"
 ```
 
 **1.4. Интеграция nodestore в Sentry**
