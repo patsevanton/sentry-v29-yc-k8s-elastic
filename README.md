@@ -23,9 +23,8 @@ Nodestore хранит «сырые» узлы событий; здесь исп
 ```bash
 kubectl create namespace elastic-system
 
-git clone --depth 1 --branch v3.3.2 --filter=blob:none --sparse \
+git clone --depth 1 --branch v3.3.2 \
   https://github.com/elastic/cloud-on-k8s.git cloud-on-k8s
-git -C cloud-on-k8s sparse-checkout set deploy/eck-operator
 helm template elastic-operator cloud-on-k8s/deploy/eck-operator \
   -n elastic-system \
   | kubectl apply -f -
