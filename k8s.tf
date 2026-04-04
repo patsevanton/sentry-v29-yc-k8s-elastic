@@ -27,7 +27,7 @@ resource "yandex_kubernetes_cluster" "sentry" {
   network_id = yandex_vpc_network.sentry.id
 
   master {
-    version = "1.33" # обновить до 33
+    version = "1.33"
     zonal {
       zone      = yandex_vpc_subnet.sentry-a.zone
       subnet_id = yandex_vpc_subnet.sentry-a.id
@@ -46,7 +46,7 @@ resource "yandex_kubernetes_node_group" "k8s_node_group" {
   description = "Node group for the Managed Service for Kubernetes cluster"
   name        = "k8s-node-group"
   cluster_id  = yandex_kubernetes_cluster.sentry.id
-  version     = "1.33" # обновить до 33
+  version     = "1.33"
 
   scale_policy {
     fixed_scale {
