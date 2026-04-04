@@ -4,7 +4,7 @@
 обновить до 33 и использовать приемтив ноды
 ### 0. Подготовка
 
-Создайте необходимые namespace и подключите необходимые helm репозитории
+Создайте необходимые namespace и подключите необходимые Helm-репозитории (репозиторий Elastic для оператора ECK не нужен — установка из GitHub, см. **§1.1**).
 
 ```bash
 kubectl create namespace clickhouse
@@ -18,16 +18,22 @@ Nodestore хранит «сырые» узлы событий; здесь исп
 
 **1.1. Оператор Elasticsearch (ECK)**
 
-Подключите Helm-репозиторий Elastic и установите [ECK Operator](https://www.elastic.co/guide/en/cloud-on-k8s/current/k8s-install-helm.html):
+Установите [ECK Operator](https://www.elastic.co/docs/deploy-manage/deploy/cloud-on-k8s/install-using-yaml-manifest-quickstart) из манифестов репозитория [elastic/cloud-on-k8s](https://github.com/elastic/cloud-on-k8s) на GitHub. Так вы не зависите от `helm.elastic.co` и `download.elastic.co` (часто дают **403** в ограниченных сетях). Нужны `kubectl` и `helm` только для `helm template` (локальный рендер YAML из чарта в архиве; репозиторий Helm Elastic не подключается).
 
 ```bash
-helm repo add elastic https://helm.elastic.co
-helm repo update
-helm upgrade --install elastic-operator elastic/eck-operator \
-  --version 3.3.2 \
-  --namespace elastic-system \
-  --create-namespace \
-  --wait
+kubectl create namespace elastic-system
+
+kubectl create -f "https://raw.githubusercontent.com/elastic/cloud-on-k8s/v3.3.2/config/crds/v1/all-crds.yaml"
+
+mkdir -p /tmp/cloud-on-k8s-eck
+curl -fsSL "https://github.com/elastic/cloud-on-k8s/archive/refs/tags/v3.3.2.tar.gz" | tar xz -C /tmp/cloud-on-k8s-eck
+helm template elastic-operator /tmp/cloud-on-k8s-eck/cloud-on-k8s-3.3.2/deploy/eck-operator \
+  -n elastic-system \
+  --set installCRDs=false \
+  | kubectl apply -f -
+rm -rf /tmp/cloud-on-k8s-eck
+
+kubectl rollout status statefulset/elastic-operator -n elastic-system --timeout=5m
 ```
 
 **1.2. Кластер Elasticsearch 9.x**
@@ -127,7 +133,7 @@ kubectl delete elasticsearch sentry-nodestore -n elasticsearch
 kubectl delete namespace elasticsearch
 ```
 
-Оператор ECK, если больше не нужен: `helm uninstall elastic-operator -n elastic-system`.
+Оператор ECK, если больше не нужен: удалите ресурсы в `elastic-system` (например `kubectl delete namespace elastic-system`) и при отсутствии других ресурсов ECK в кластере — CRD по [документации Elastic](https://www.elastic.co/docs/deploy-manage/uninstall/uninstall-elastic-cloud-on-kubernetes).
 
 ### 2. ClickHouse
 
