@@ -18,7 +18,7 @@ Nodestore хранит «сырые» узлы событий; здесь исп
 
 **1.1. Оператор Elasticsearch (ECK)**
 
-Установите [ECK Operator](https://www.elastic.co/docs/deploy-manage/deploy/cloud-on-k8s/install-using-yaml-manifest-quickstart) из манифестов репозитория [elastic/cloud-on-k8s](https://github.com/elastic/cloud-on-k8s) на GitHub. Так вы не зависите от `helm.elastic.co` и `download.elastic.co` (часто дают **403** в ограниченных сетях). Нужны `kubectl` и `helm` только для `helm template` (локальный рендер YAML из чарта в архиве; репозиторий Helm Elastic не подключается).
+Установите [ECK Operator](https://www.elastic.co/docs/deploy-manage/deploy/cloud-on-k8s/install-using-yaml-manifest-quickstart) из манифестов репозитория [elastic/cloud-on-k8s](https://github.com/elastic/cloud-on-k8s) на GitHub.
 
 ```bash
 kubectl create namespace elastic-system
