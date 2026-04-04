@@ -167,14 +167,14 @@ helm repo update
 
 ### 4. Установка Sentry
 
-Пример только с [values-sentry-minimal.yaml](values-sentry-minimal.yaml) (без nodestore в Elasticsearch):
+Установка с [values-sentry-minimal.yaml](values-sentry-minimal.yaml): в файле уже заданы nodestore в Elasticsearch (`images.sentry`, `config.sentryConfPy`). Перед `helm upgrade` разверните оператор и кластер из **§1.1–1.2** ([elasticsearch.yaml](elasticsearch.yaml)).
 
 ```bash
 helm upgrade --install sentry sentry/sentry --version 29.5.1 -n sentry \
   -f values-sentry-minimal.yaml --timeout=900s
 ```
 
-С **Elasticsearch** для nodestore следуйте разделам **1.3–1.4** выше и передайте дополнительный `-f` с `images.sentry` и `config.sentryConfPy`.
+Свой образ или вынесенный в отдельный values конфиг nodestore — по **§1.3–1.4**.
 
 ### 5. Проверка подов и логов
 

@@ -1,5 +1,6 @@
-# Минимальный пример без nodestore в Elasticsearch.
-# Для Elasticsearch + sentry-nodestore-elastic см. README.md § 1 и Dockerfile.sentry-nodestore.
+# Минимальный пример с nodestore в Elasticsearch (ECK).
+# Кластер: elasticsearch.yaml, сервис HTTP — sentry-nodestore-es-http.elasticsearch.svc:9200.
+# См. README.md § 1 и Dockerfile.sentry-nodestore.
 user:
   create: true
   email: admin@sentry.local
@@ -31,9 +32,33 @@ system:
 # Убрать warning sentry-web: «Empty model costs» (sentry.relay.config.ai_model_costs):
 # не тянуть цены LLM с внешних API. Если нужен расчёт AI cost — оставьте False и
 # обеспечьте egress к https://openrouter.ai и https://models.dev для celery-задачи fetch_ai_model_costs.
+#
+# Nodestore: образ с sentry-nodestore-elastic (images.sentry выше). После первого деплоя:
+# kubectl -n sentry exec -it deploy/sentry-web -- sentry upgrade --with-nodestore
 config:
   sentryConfPy: |
+    from elasticsearch import Elasticsearch
+
+    es = Elasticsearch(
+        ["http://sentry-nodestore-es-http.elasticsearch.svc.cluster.local:9200"],
+        request_timeout=60,
+        max_retries=3,
+        retry_on_timeout=True,
+    )
+
+    SENTRY_NODESTORE = "sentry_nodestore_elastic.ElasticNodeStorage"
+    SENTRY_NODESTORE_OPTIONS = {
+        "es": es,
+        "refresh": False,
+    }
+
+    from sentry.conf.server import *
+
     SENTRY_AIR_GAP = True
+
+    INSTALLED_APPS = list(INSTALLED_APPS)
+    INSTALLED_APPS.append("sentry_nodestore_elastic")
+    INSTALLED_APPS = tuple(INSTALLED_APPS)
 
 # Внешний ClickHouse. Сервис CHI Altinity: chi-<CHI-name>-<cluster>-<shard>-<replica>
 externalClickhouse:
