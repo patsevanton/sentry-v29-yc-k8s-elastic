@@ -9,12 +9,12 @@ Nodestore хранит «сырые» узлы событий; здесь исп
 Установите [ECK Operator](https://www.elastic.co/docs/deploy-manage/deploy/cloud-on-k8s/install-using-yaml-manifest-quickstart) из Helm-чарта [deploy/eck-operator](https://github.com/elastic/cloud-on-k8s/tree/v3.3.2/deploy/eck-operator) репозитория [elastic/cloud-on-k8s](https://github.com/elastic/cloud-on-k8s) (тег **v3.3.2**).
 
 ```bash
-kubectl create namespace elastic-system
+kubectl create namespace eck-operator
 
 git clone --depth 1 --branch v3.3.2 \
   https://github.com/elastic/cloud-on-k8s.git cloud-on-k8s
 helm template elastic-operator cloud-on-k8s/deploy/eck-operator \
-  -n elastic-system \
+  -n eck-operator \
   | kubectl apply -f -
 rm -rf cloud-on-k8s
 ```
@@ -116,7 +116,7 @@ kubectl delete elasticsearch sentry-nodestore -n elasticsearch
 kubectl delete namespace elasticsearch
 ```
 
-Оператор ECK, если больше не нужен: удалите ресурсы в `elastic-system` (например `kubectl delete namespace elastic-system`) и при отсутствии других ресурсов ECK в кластере — CRD по [документации Elastic](https://www.elastic.co/docs/deploy-manage/uninstall/uninstall-elastic-cloud-on-kubernetes).
+Оператор ECK, если больше не нужен: удалите ресурсы в `eck-operator` (например `kubectl delete namespace eck-operator`) и при отсутствии других ресурсов ECK в кластере — CRD по [документации Elastic](https://www.elastic.co/docs/deploy-manage/uninstall/uninstall-elastic-cloud-on-kubernetes).
 
 ### 2. ClickHouse
 
