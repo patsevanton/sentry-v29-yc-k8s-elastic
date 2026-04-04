@@ -2,11 +2,7 @@
 
 ### 0. Подготовка
 
-Создайте нужные namespace и подключите Helm-репозитории (репозиторий Elastic для оператора ECK не нужен — установка из GitHub, см. раздел **1.1**).
-
-```bash
-kubectl create namespace clickhouse
-```
+Подключите Helm-репозитории (репозиторий Elastic для оператора ECK не нужен — установка из GitHub, см. раздел **1.1**). Namespace для ClickHouse создаётся в разделе **2.2**.
 
 **ingress-nginx** ставится вместе с кластером: в Terraform это `helm_release` в [k8s.tf](k8s.tf) (чарт Yandex Cloud Marketplace OCI, версия как в манифесте). Внешний IP сервиса задаётся через зарезервированный адрес (`controller.service.loadBalancerIP` → [yandex_vpc_address](ip-dns.tf)); при необходимости правьте ресурсы в `ip-dns.tf` и значения в `k8s.tf`.
 
@@ -159,12 +155,13 @@ kubectl rollout status deployment/clickhouse-operator-altinity-clickhouse-operat
 **2.2. Создание ClickHouse**
 
 ```bash
+kubectl create namespace clickhouse
 kubectl apply -f clickhouse.yaml
 ```
 
 ### 3. Репозиторий Sentry
 
-Helm-репозиторий чарта и namespace `sentry` уже могли быть созданы в шаге 0. При необходимости повторите:
+Подключите Helm-репозиторий чарта Sentry и при необходимости создайте namespace `sentry` (команды идемпотентны):
 
 ```bash
 kubectl create namespace sentry
