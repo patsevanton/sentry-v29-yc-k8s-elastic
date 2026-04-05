@@ -21,41 +21,16 @@
 1. В UI Sentry создайте проект (например Python и/или Node — для демо подойдёт любой; SDK отправляет по одному DSN).
 2. Скопируйте DSN (**Settings → Client Keys**). Для подов в кластере DSN должен указывать на **доступный из кластера** хост Sentry (часто тот же URL, что в браузере, или внутренний Ingress). Если события не доходят, проверьте DNS и сетевую связность до Relay/Ingress.
 
-## Сборка образов
+## Запуск в Kubernetes
 
 Из корня репозитория:
 
 ```bash
-docker build -t sentry-demo-python:latest -f demo/python/Dockerfile demo/python
-docker build -t sentry-demo-node:latest -f demo/node/Dockerfile demo/node
-```
-
-Для облачного кластера замените тег на свой реестр и выполните `docker push`:
-
-```bash
-docker tag sentry-demo-python:latest ghcr.io/<org>/sentry-demo-python:v1
-docker push ghcr.io/<org>/sentry-demo-python:v1
-```
-
-В манифестах [`demo/k8s/deployment-python.yaml`](k8s/deployment-python.yaml) и [`demo/k8s/deployment-node.yaml`](k8s/deployment-node.yaml) укажите то же значение поля `image:`.
-
-## Secret с DSN
-
-```bash
 kubectl apply -f demo/k8s/namespace.yaml
+# DSN (один из вариантов):
 kubectl create secret generic sentry-dsn -n demo-sentry \
   --from-literal=dsn='https://<public_key>@<host>/<project_id>'
-```
-
-Манифест Secret с плейсхолдером: [`demo/k8s/secret-sentry-dsn.yaml`](k8s/secret-sentry-dsn.yaml).
-
-## Развёртывание в Kubernetes
-
-```bash
-kubectl apply -f demo/k8s/namespace.yaml
-# Secret с DSN (один из вариантов):
-kubectl create secret generic sentry-dsn -n demo-sentry --from-literal=dsn='https://...'
-# либо подставить dsn в k8s/secret-sentry-dsn.yaml и:
+# либо подставить dsn в demo/k8s/secret-sentry-dsn.yaml и:
 # kubectl apply -f demo/k8s/secret-sentry-dsn.yaml
 
 kubectl apply -f demo/k8s/deployment-python.yaml
@@ -63,7 +38,7 @@ kubectl apply -f demo/k8s/deployment-node.yaml
 kubectl apply -f demo/k8s/service.yaml
 ```
 
-Если образы только локально (kind/minikube/k3d), загрузите их в кластер (`kind load docker-image ...`, `minikube image load ...`) или используйте `imagePullPolicy: Never` и те же теги.
+Манифест Secret с плейсхолдером: [`demo/k8s/secret-sentry-dsn.yaml`](k8s/secret-sentry-dsn.yaml).
 
 ## Проверка (port-forward и curl)
 
