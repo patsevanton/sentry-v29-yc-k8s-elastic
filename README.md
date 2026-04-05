@@ -66,7 +66,27 @@ ECK создаёт HTTP-сервис **`<имя-ресурса>-es-http`**. Дл
 
 В манифесте отключены TLS на HTTP и встроенная security Elasticsearch: это упрощает минимальный сценарий — nodestore в Sentry подключается по обычному `http://` без выдачи сертификатов, доверия к CA и без логина и пароля в `sentryConfPy`; трафик к API Elasticsearch остаётся внутри сети кластера.
 
-**1.3. Образ Sentry с nodestore**
+**1.3. ILM: удаление старых данных (опционально)**
+
+Манифест [index-lifecycle-policy-delete.yaml](index-lifecycle-policy-delete.yaml) задаёт политику ILM с фазой `delete` через ресурс `StackConfigPolicy` (ECK **3.3+**). Для [Elastic Stack configuration policies](https://www.elastic.co/guide/en/cloud-on-k8s/current/k8s-stack-config-policy.html) в ECK нужна лицензия **Enterprise** или **trial** ([лицензии в ECK](https://www.elastic.co/docs/deploy-manage/license/manage-your-license-in-eck)).
+
+После того как кластер из **§1.2** в статусе `Ready`:
+
+```bash
+kubectl apply -f index-lifecycle-policy-delete.yaml
+```
+
+Политика в `namespace: elasticsearch` без `resourceSelector` применяется ко всем кластерам Elasticsearch в этом namespace (в т.ч. к `sentry-nodestore`). Оператор создаёт в Elasticsearch именованную политику `index-lifecycle-policy-delete` (удаление через **20 дней** после `min_age`). Чтобы ретенция реально действовала на индексы nodestore, политику нужно **привязать** к ним (index template, `index.lifecycle.name` или `PUT` настроек индекса) — само наличие ILM в кластере не меняет существующие индексы без привязки.
+
+Проверка:
+
+```bash
+kubectl -n elasticsearch get stackconfigpolicy index-lifecycle-policy-delete
+# из пода в кластере, при необходимости:
+curl -s "http://sentry-nodestore-es-http.elasticsearch.svc.cluster.local:9200/_ilm/policy/index-lifecycle-policy-delete"
+```
+
+**1.4. Образ Sentry с nodestore**
 
 В этом репозитории образ **уже собран** и публикуется в GHCR; для установки по примеру из README достаточно указать его в Helm values — см. [values-sentry-minimal.yaml](values-sentry-minimal.yaml) (`images.sentry.repository` и `images.sentry.tag`).
 
@@ -77,7 +97,7 @@ docker build -f Dockerfile.sentry-nodestore -t <registry>/<имя>:<тег> .
 docker push <registry>/<имя>:<тег>
 ```
 
-Тег образа Sentry должен соответствовать версии приложения в чарте (см. **1.5**). В `values` при установке:
+Тег образа Sentry должен соответствовать версии приложения в чарте (см. **1.6**). В `values` при установке:
 
 ```yaml
 images:
@@ -86,7 +106,7 @@ images:
     tag: "<тег>"
 ```
 
-**1.4. Интеграция nodestore в Sentry**
+**1.5. Интеграция nodestore в Sentry**
 
 В `config.sentryConfPy` в [values-sentry-minimal.yaml](values-sentry-minimal.yaml) (или в своём values поверх него) задайте клиент и приложение Django, например для HTTP без TLS (как в манифесте ECK выше). Готовый пример — тот же файл:
 
@@ -117,7 +137,7 @@ INSTALLED_APPS = tuple(INSTALLED_APPS)
 
 Установка или обновление релиза с nodestore — один values-файл с образом и `config.sentryConfPy` ([values-sentry-minimal.yaml](values-sentry-minimal.yaml)). Саму команду `helm upgrade` и инициализацию nodestore выполняйте один раз после **§2** (ClickHouse) и **§3** (репозиторий Helm) — см. **§4**.
 
-**1.5. TLS и версии**
+**1.6. TLS и версии**
 
 - Для HTTPS и аутентификации настройте Elasticsearch по [документации Elastic](https://www.elastic.co/guide/en/elasticsearch/reference/current/configuring-security.html) и используйте `basic_auth` / `ssl_assert_fingerprint` в клиенте Python — см. [PyPI sentry-nodestore-elastic](https://pypi.org/project/sentry-nodestore-elastic/).
 - Версия образа Sentry должна совпадать с `appVersion` чарта Sentry (`helm show chart sentry/sentry --version <ver>`).
@@ -195,7 +215,7 @@ kubectl -n sentry exec -it deploy/sentry-web -- sentry upgrade --with-nodestore
 
 Пакет `sentry-nodestore-elastic` относится к **sentry-web** и воркерам на том же образе. **Relay** и **taskbroker** отдельно не настраиваются. Для **Snuba** при необходимости см. [Dockerfile.snuba-nodestore](Dockerfile.snuba-nodestore).
 
-Свой образ и правки nodestore — по **§1.3–1.4** (в том же `values-sentry-minimal.yaml` или в дополнительном `-f` при необходимости). Репозиторий Helm — **§3** (выполните до первой установки).
+Свой образ и правки nodestore — по **§1.4–1.5** (в том же `values-sentry-minimal.yaml` или в дополнительном `-f` при необходимости). Репозиторий Helm — **§3** (выполните до первой установки).
 
 ### 5. Проверка подов и логов
 
