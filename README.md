@@ -234,7 +234,7 @@ kubectl -n ingress-nginx get svc
 |------|----------|
 | `GET /health` | Проверка готовности (без DSN) |
 | `GET /demo/exception` | Необработанное исключение |
-| `GET /demo/capture-exception` | `capture_exception` |
+| `GET /demo/capture-exception` | Необработанное исключение (другой текст, как `/demo/exception`) |
 | `GET /demo/message` | `capture_message` (info + warning) |
 | `GET /demo/transaction` | Spans / performance |
 | `GET /demo/breadcrumb` | Breadcrumb, затем ошибка |

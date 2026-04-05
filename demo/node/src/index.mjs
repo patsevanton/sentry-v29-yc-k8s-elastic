@@ -1,4 +1,5 @@
 import "./instrument.mjs";
+import http from "node:http";
 import express from "express";
 import * as Sentry from "@sentry/node";
 
@@ -23,14 +24,9 @@ app.get("/demo/exception", (req, res) => {
   throw new Error("Demo: unhandled exception from Node");
 });
 
-app.get("/demo/capture-exception", async (req, res) => {
+app.get("/demo/capture-exception", (req, res) => {
   if (!requireDsn(res)) return;
-  try {
-    throw new Error("Demo: caught then reported");
-  } catch (e) {
-    Sentry.captureException(e);
-  }
-  res.json({ ok: true, event: "capture_exception" });
+  throw new Error("Demo: unhandled exception from capture-exception route");
 });
 
 app.get("/demo/message", (req, res) => {
@@ -84,9 +80,11 @@ app.listen(port, "0.0.0.0", () => {
   const intervalSec = parseAutoExceptionIntervalSec();
   if (dsn && intervalSec > 0) {
     setInterval(() => {
-      Sentry.captureException(
-        new Error("Demo: automatic periodic exception from Node"),
-      );
+      http
+        .get(`http://127.0.0.1:${port}/demo/exception`, (r) => {
+          r.resume();
+        })
+        .on("error", () => {});
     }, intervalSec * 1000);
     console.log(
       `Auto Sentry exceptions every ${intervalSec}s (set DEMO_AUTO_EXCEPTION_INTERVAL_SEC=0 to disable)`,

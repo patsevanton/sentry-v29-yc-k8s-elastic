@@ -1,6 +1,8 @@
 import asyncio
 import logging
 import os
+import urllib.error
+import urllib.request
 
 import sentry_sdk
 from fastapi import FastAPI, HTTPException
@@ -49,11 +51,7 @@ def demo_unhandled_exception():
 @app.get("/demo/capture-exception")
 def demo_capture_exception():
     require_dsn()
-    try:
-        raise ValueError("Demo: caught then reported")
-    except ValueError as e:
-        sentry_sdk.capture_exception(e)
-    return {"ok": True, "event": "capture_exception"}
+    raise ValueError("Demo: unhandled exception from capture-exception route")
 
 
 @app.get("/demo/message")
@@ -114,11 +112,21 @@ async def startup_auto_exception() -> None:
         return
 
     async def tick() -> None:
+        await asyncio.sleep(1)
+        port = int(os.environ.get("PORT", "8080"))
         while True:
             await asyncio.sleep(interval_sec)
-            sentry_sdk.capture_exception(
-                RuntimeError("Demo: automatic periodic exception from Python"),
-            )
+
+            def hit() -> None:
+                try:
+                    urllib.request.urlopen(
+                        f"http://127.0.0.1:{port}/demo/exception",
+                        timeout=10,
+                    )
+                except (urllib.error.HTTPError, OSError):
+                    pass
+
+            await asyncio.to_thread(hit)
 
     asyncio.create_task(tick())
     logger.info(
