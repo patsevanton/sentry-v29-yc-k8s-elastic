@@ -333,3 +333,20 @@ kubectl apply -f demo/k8s/service.yaml
 Манифесты Secret с плейсхолдерами: [`demo/k8s/secret-sentry-dsn-node.yaml`](demo/k8s/secret-sentry-dsn-node.yaml), [`demo/k8s/secret-sentry-dsn-python.yaml`](demo/k8s/secret-sentry-dsn-python.yaml).
 
 Переменная `DEMO_AUTO_EXCEPTION_INTERVAL_SEC` в манифестах demo (и при локальном запуске) задаёт интервал автоматической отправки исключений в Sentry; `0` отключает. Откройте проект в Sentry и убедитесь, что появились issues и (при включённом performance) транзакции.
+
+#### Нативный пример (C, Linux ELF)
+
+В [examples/sentry-native-debug-sample](examples/sentry-native-debug-sample) — минимальный `main.c` и скрипт [upload-releases.sh](examples/sentry-native-debug-sample/upload-releases.sh): сборка отладочного бинарника (`cc -g -O0`), создание имён релизов в Sentry и загрузка **debug information files** через `sentry-cli debug-files upload` (тип `elf`). Нужны установленные **`sentry-cli`** и компилятор **`cc`**.
+
+Перед запуском задайте URL self-hosted (если не дефолтный `sentry.io`), организацию, проект и токен с правами на загрузку артефактов / релизов (см. комментарии в скрипте):
+
+```bash
+export SENTRY_URL="http://sentry.apatsev.org.ru"   # при необходимости
+export SENTRY_AUTH_TOKEN="<токен>"
+export SENTRY_ORG="<slug организации>"
+export SENTRY_PROJECT="<slug проекта>"
+
+bash examples/sentry-native-debug-sample/upload-releases.sh
+```
+
+После успешного выполнения файлы видны в **Project Settings → Debug Information Files**; имена релизов — в разделе **Releases**. Нативные DIF в Sentry сопоставляются с событием по **debug id** (build-id), а не по имени релиза; подробности — в комментариях в начале скрипта.
