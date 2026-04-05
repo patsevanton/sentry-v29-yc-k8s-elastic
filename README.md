@@ -234,28 +234,7 @@ kubectl -n sentry logs sentry-taskbroker-ingest-0 --tail=20
 kubectl -n sentry logs deployment/sentry-web --tail=20
 ```
 
-### 6. Мониторинг Sentry (Prometheus exporter)
-
-После установки Sentry (**§4**, namespace `sentry`) можно поднять [sentry-prometheus-exporter](https://github.com/italux/sentry-prometheus-exporter) манифестом [k8s/sentry-prometheus-exporter.yaml](k8s/sentry-prometheus-exporter.yaml): метрики на порту **9790**, путь `/metrics`. Внутри кластера API Sentry задаётся как `http://sentry-web.sentry.svc.cluster.local:9000/api/0/`. В Deployment переменная **`SENTRY_EXPORTER_ORG`** должна совпадать со **slug организации** в UI (путь `/organizations/<slug>/`); в файле по умолчанию указано `sentry` — при необходимости отредактируйте перед `kubectl apply`.
-
-1. Создайте **Auth Token** в Sentry с правами на чтение организации и проектов (см. [документацию API](https://docs.sentry.io/api/auth/)): **User Settings → Auth Tokens** (или токен через Internal Integration — по политике вашей установки).
-
-2. Сохраните токен в Secret в том же namespace, что и релиз Helm:
-
-```bash
-kubectl -n sentry create secret generic sentry-auth-token \
-  --from-literal=token='<SENTRY_AUTH_TOKEN>'
-```
-
-3. Примените манифест:
-
-```bash
-kubectl apply -f k8s/sentry-prometheus-exporter.yaml
-```
-
-4. После установки VictoriaMetrics K8s Stack (**§7**) подключите scrape через `VMServiceScrape`: [k8s/vmscrape-sentry-prometheus-exporter.yaml](k8s/vmscrape-sentry-prometheus-exporter.yaml) (`kubectl apply -f k8s/vmscrape-sentry-prometheus-exporter.yaml`). Либо укажите цель вручную, например `http://sentry-prometheus-exporter.sentry.svc.cluster.local:9790/metrics`.
-
-### 7. VictoriaMetrics K8s Stack
+### 6. VictoriaMetrics K8s Stack
 
 Стек [VictoriaMetrics K8s Stack](https://docs.victoriametrics.com/helm/victoria-metrics-k8s-stack/) поднимает оператор VictoriaMetrics, **VMSingle**, **VMAgent**, **Grafana**, **vmalert**, Alertmanager, **node-exporter** и **kube-state-metrics**. Готовые значения — [vmks-values.yaml](vmks-values.yaml) (Ingress для UI хранилища и Grafana).
 
@@ -274,7 +253,28 @@ helm upgrade --install vmks vm/victoria-metrics-k8s-stack \
 
 Для имён из `vmks-values.yaml` (`vmsingle.apatsev.org.ru`, `grafana.apatsev.org.ru`) добавьте **A-записи** на тот же внешний IP, что у ingress (см. [ip-dns.tf](ip-dns.tf) для `sentry.apatsev.org.ru`).
 
-Интеграция с экспортёром Sentry — шаг 4 в **§6** и манифест [k8s/vmscrape-sentry-prometheus-exporter.yaml](k8s/vmscrape-sentry-prometheus-exporter.yaml).
+Интеграция с экспортёром Sentry — шаг 4 в **§7** и манифест [k8s/vmscrape-sentry-prometheus-exporter.yaml](k8s/vmscrape-sentry-prometheus-exporter.yaml).
+
+### 7. Мониторинг Sentry (Prometheus exporter)
+
+После установки Sentry (**§4**, namespace `sentry`) и VictoriaMetrics K8s Stack (**§6**) можно поднять [sentry-prometheus-exporter](https://github.com/italux/sentry-prometheus-exporter) манифестом [k8s/sentry-prometheus-exporter.yaml](k8s/sentry-prometheus-exporter.yaml): метрики на порту **9790**, путь `/metrics`. Внутри кластера API Sentry задаётся как `http://sentry-web.sentry.svc.cluster.local:9000/api/0/`. В Deployment переменная **`SENTRY_EXPORTER_ORG`** должна совпадать со **slug организации** в UI (путь `/organizations/<slug>/`); в файле по умолчанию указано `sentry` — при необходимости отредактируйте перед `kubectl apply`.
+
+1. Создайте **Auth Token** в Sentry с правами на чтение организации и проектов (см. [документацию API](https://docs.sentry.io/api/auth/)): **User Settings → Auth Tokens** (или токен через Internal Integration — по политике вашей установки).
+
+2. Сохраните токен в Secret в том же namespace, что и релиз Helm:
+
+```bash
+kubectl -n sentry create secret generic sentry-auth-token \
+  --from-literal=token='<SENTRY_AUTH_TOKEN>'
+```
+
+3. Примените манифест:
+
+```bash
+kubectl apply -f k8s/sentry-prometheus-exporter.yaml
+```
+
+4. Подключите scrape через `VMServiceScrape`: [k8s/vmscrape-sentry-prometheus-exporter.yaml](k8s/vmscrape-sentry-prometheus-exporter.yaml) (`kubectl apply -f k8s/vmscrape-sentry-prometheus-exporter.yaml`). Либо укажите цель вручную, например `http://sentry-prometheus-exporter.sentry.svc.cluster.local:9790/metrics`.
 
 ### 8. Доступ к Sentry
 

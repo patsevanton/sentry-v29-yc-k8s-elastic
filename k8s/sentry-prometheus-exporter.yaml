@@ -1,6 +1,6 @@
 # Дополнение к установке Sentry из README §4 (namespace sentry, сервис sentry-web).
 # Экспортёр: https://github.com/italux/sentry-prometheus-exporter
-# Нужен Secret sentry-auth-token (ключ token) — см. README §6.
+# Нужен Secret sentry-auth-token (ключ token) — см. README §7.
 ---
 apiVersion: apps/v1
 kind: Deployment
