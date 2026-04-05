@@ -37,6 +37,9 @@ system:
 # kubectl -n sentry exec -it deploy/sentry-web -- sentry upgrade --with-nodestore
 config:
   sentryConfPy: |
+    # Импорт server первым — иначе нет CACHES (ImproperlyConfigured: cache.backend).
+    from sentry.conf.server import *
+
     from elasticsearch import Elasticsearch
 
     es = Elasticsearch(
@@ -51,8 +54,6 @@ config:
         "es": es,
         "refresh": False,
     }
-
-    from sentry.conf.server import *
 
     SENTRY_AIR_GAP = True
 

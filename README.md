@@ -66,6 +66,8 @@ images:
 В `config.sentryConfPy` в [values-sentry-minimal.yaml](values-sentry-minimal.yaml) (или в своём values поверх него) задайте клиент и приложение Django, например для HTTP без TLS (как в манифесте ECK выше). Готовый пример — тот же файл:
 
 ```python
+from sentry.conf.server import *
+
 from elasticsearch import Elasticsearch
 
 es = Elasticsearch(
@@ -81,7 +83,7 @@ SENTRY_NODESTORE_OPTIONS = {
     "refresh": False,
 }
 
-from sentry.conf.server import *
+SENTRY_AIR_GAP = True
 
 INSTALLED_APPS = list(INSTALLED_APPS)
 INSTALLED_APPS.append("sentry_nodestore_elastic")
