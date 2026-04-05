@@ -8,10 +8,13 @@
 apiVersion: elasticsearch.k8s.elastic.co/v1
 kind: Elasticsearch
 metadata:
+  # Имя CR — ссылка из манифестов Sentry; отдельный namespace изолирует ресурсы Elasticsearch.
   name: sentry-nodestore
   namespace: elasticsearch
 spec:
+  # Версия образа Elasticsearch, которую разворачивает ECK.
   version: 9.3.2
+  # Без самоподписанного сертификата ECK на HTTP (доступ обычно внутри кластера); при необходимости TLS настраивается отдельно.
   http:
     tls:
       selfSignedCertificate:
@@ -31,13 +34,17 @@ spec:
     - name: zone-a
       count: 1
       config:
+        # Один узел совмещает master, data и ingest.
         node.roles: ["master", "data", "ingest"]
+        # Атрибут зоны + allocation awareness — шарды раскладываются по AZ (см. force.zone ниже).
         node.attr.zone: ru-central1-a
         cluster.routing.allocation.awareness.attributes: zone
         cluster.routing.allocation.awareness.force.zone.values: ru-central1-a,ru-central1-b,ru-central1-d
+        # Пороги диска: перенос шардов (low/high), блокировка записей (flood_stage).
         cluster.routing.allocation.disk.watermark.low: "85%"
         cluster.routing.allocation.disk.watermark.high: "90%"
         cluster.routing.allocation.disk.watermark.flood_stage: "95%"
+        # Встроенная security ES отключена; границы доверия — сеть/Kubernetes и конфиг Sentry.
         xpack.security.enabled: false
         xpack.security.enrollment.enabled: false
       podTemplate:
@@ -48,6 +55,7 @@ spec:
             app.kubernetes.io/component: nodestore
         spec:
           affinity:
+            # Под планируется только на ноды этой зоны Yandex Cloud.
             nodeAffinity:
               requiredDuringSchedulingIgnoredDuringExecution:
                 nodeSelectorTerms:
@@ -56,6 +64,7 @@ spec:
                         operator: In
                         values:
                           - ru-central1-a
+            # По возможности не несколько подов кластера на одном worker (soft).
             podAntiAffinity: &es-pod-anti-affinity
               preferredDuringSchedulingIgnoredDuringExecution:
                 - weight: 100
@@ -64,6 +73,7 @@ spec:
                       matchLabels:
                         elasticsearch.k8s.elastic.co/cluster-name: sentry-nodestore
                     topologyKey: kubernetes.io/hostname
+          # См. заголовок файла: sysctl vm.max_map_count (privileged).
           initContainers: &es-init-sysctl
             - name: sysctl-max-map-count
               image: docker.io/library/busybox:1.36
@@ -81,6 +91,7 @@ spec:
                   memory: 32Mi
           containers: &es-container
             - name: elasticsearch
+              # Готовность по TCP-порту HTTP API (9200).
               readinessProbe:
                 tcpSocket:
                   port: 9200
@@ -88,6 +99,7 @@ spec:
                 periodSeconds: 5
                 timeoutSeconds: 5
                 failureThreshold: 12
+              # Heap JVM (-Xmx) согласован с limits.memory контейнера.
               resources:
                 requests:
                   cpu: "500m"
@@ -97,6 +109,7 @@ spec:
               env:
                 - name: ES_JAVA_OPTS
                   value: "-Xms1g -Xmx1g"
+      # RWO-том на под; сетевой HDD YC — при росте данных увеличьте storage.
       volumeClaimTemplates: &es-pvc
         - metadata:
             name: elasticsearch-data
@@ -106,8 +119,9 @@ spec:
             storageClassName: yc-network-hdd
             resources:
               requests:
-                storage: 20Gi
+                storage: 20Gi  # начальный размер тома на узел
 
+    # Конфигурация как у zone-a; зона ru-central1-b.
     - name: zone-b
       count: 1
       config:
@@ -137,6 +151,7 @@ spec:
           containers: *es-container
       volumeClaimTemplates: *es-pvc
 
+    # Конфигурация как у zone-a; зона ru-central1-d.
     - name: zone-d
       count: 1
       config:
