@@ -131,10 +131,10 @@ kubectl create namespace clickhouse
 kubectl apply -f clickhouse.yaml
 ```
 
-Дождитесь готовности пода (имя совпадает с `externalClickhouse.host` в values — для [clickhouse.yaml](clickhouse.yaml) это `chi-sentry-clickhouse-single-node-0-0`):
+Дождитесь готовности пода. Оператор создаёт под с именем вида `chi-sentry-clickhouse-single-node-0-0-0` (StatefulSet `…-0-0`, ординал StatefulSet — ещё `-0`); DNS в `externalClickhouse.host` — сервис `chi-sentry-clickhouse-single-node-0-0` в [values-sentry-minimal.yaml](values-sentry-minimal.yaml), это не имя пода. Удобнее ждать по label CHI:
 
 ```bash
-kubectl -n clickhouse wait --for=condition=ready pod/chi-sentry-clickhouse-single-node-0-0 --timeout=600s
+kubectl -n clickhouse wait --for=condition=ready pod -l clickhouse.altinity.com/chi=sentry-clickhouse --timeout=600s
 ```
 
 ### 3. Репозиторий Sentry
@@ -151,7 +151,7 @@ helm repo update
 
 ### 4. Установка Sentry
 
-**Порядок зависимостей.** Чарт поднимает PostgreSQL, Redis и Kafka в namespace `sentry`, но **ClickHouse задаётся снаружи** ([values-sentry-minimal.yaml](values-sentry-minimal.yaml), `externalClickhouse`). Helm-hook **Job `sentry-db-check`** ждёт TCP до `externalClickhouse.host:9000` и до Kraft-контроллеров Kafka. Пока ClickHouse не развёрнут, в логах пода будет `nc: getaddrinfo: Name does not resolve` и `... is not available yet` — это нормально только до выполнения **§2** (namespace `clickhouse`, [clickhouse.yaml](clickhouse.yaml), под `chi-sentry-clickhouse-single-node-0-0` в статусе `Running`). Сначала: **§1.1–1.2** (Elasticsearch), **§2.1–2.2** (ClickHouse), **§3** (репозиторий Helm), затем команда ниже.
+**Порядок зависимостей.** Чарт поднимает PostgreSQL, Redis и Kafka в namespace `sentry`, но **ClickHouse задаётся снаружи** ([values-sentry-minimal.yaml](values-sentry-minimal.yaml), `externalClickhouse`). Helm-hook **Job `sentry-db-check`** ждёт TCP до `externalClickhouse.host:9000` и до Kraft-контроллеров Kafka. Пока ClickHouse не развёрнут, в логах пода будет `nc: getaddrinfo: Name does not resolve` и `... is not available yet` — это нормально только до выполнения **§2** (namespace `clickhouse`, [clickhouse.yaml](clickhouse.yaml), под ClickHouse в статусе `Running`, см. команду `wait` выше). Сначала: **§1.1–1.2** (Elasticsearch), **§2.1–2.2** (ClickHouse), **§3** (репозиторий Helm), затем команда ниже.
 
 Установка с [values-sentry-minimal.yaml](values-sentry-minimal.yaml): в файле уже заданы nodestore в Elasticsearch (`images.sentry`, `config.sentryConfPy`). Перед `helm upgrade` разверните оператор и кластер из **§1.1–1.2** ([elasticsearch.yaml](elasticsearch.yaml)).
 

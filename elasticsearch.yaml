@@ -109,16 +109,16 @@ spec:
                 periodSeconds: 5
                 timeoutSeconds: 5
                 failureThreshold: 12
-              # Heap JVM (-Xmx) согласован с limits.memory контейнера.
+              # JVM heap (-Xms/-Xmx): Elasticsearch 7.11+ выставляет автоматически от доступной
+              # памяти контейнера; в Kubernetes это обычно resources.limits.memory (см. ECK / heap).
+              # Без limits cgroup может не ограничивать память — JVM часто видит память всей ноды,
+              # heap становится непредсказуемым, возможны OOM и конфликты с другими подами.
               resources:
                 requests:
                   cpu: "500m"
                   memory: 2Gi
                 limits:
                   memory: 2Gi
-              env:
-                - name: ES_JAVA_OPTS
-                  value: "-Xms1g -Xmx1g"
       # RWO-том на под; сетевой HDD YC — при росте данных увеличьте storage.
       volumeClaimTemplates: &es-pvc
         - metadata:
