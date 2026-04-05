@@ -47,7 +47,7 @@ kubectl create secret generic sentry-dsn -n demo-sentry \
   --from-literal=dsn='https://<public_key>@<host>/<project_id>'
 ```
 
-Шаблон без реального значения: [`demo/k8s/secret-sentry-dsn.yaml.example`](k8s/secret-sentry-dsn.yaml.example).
+Манифест Secret с плейсхолдером: [`demo/k8s/secret-sentry-dsn.yaml`](k8s/secret-sentry-dsn.yaml).
 
 ## Развёртывание в Kubernetes
 
@@ -55,7 +55,7 @@ kubectl create secret generic sentry-dsn -n demo-sentry \
 kubectl apply -f demo/k8s/namespace.yaml
 # Secret с DSN (один из вариантов):
 kubectl create secret generic sentry-dsn -n demo-sentry --from-literal=dsn='https://...'
-# либо скопировать k8s/secret-sentry-dsn.yaml.example, подставить dsn, сохранить как k8s/secret-sentry-dsn.yaml и:
+# либо подставить dsn в k8s/secret-sentry-dsn.yaml и:
 # kubectl apply -f demo/k8s/secret-sentry-dsn.yaml
 
 kubectl apply -f demo/k8s/deployment-python.yaml

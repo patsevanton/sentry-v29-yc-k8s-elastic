@@ -32,9 +32,6 @@ override.tf.json
 # Generated Sentry values (contains secrets)
 values_sentry.yaml
 
-# Local DSN secret (use secret-sentry-dsn.yaml.example)
-demo/k8s/secret-sentry-dsn.yaml
-
 # Include tfplan files to ignore the plan output of command: terraform plan -out=tfplan
 # example: *tfplan*
 
