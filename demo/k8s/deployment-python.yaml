@@ -1,6 +1,6 @@
 # Образ: соберите и поменяйте image при необходимости, например:
-#   docker build -t ghcr.io/<user>/sentry-demo-python:v1 -f demo/python/Dockerfile demo/python
-#   docker push ghcr.io/<user>/sentry-demo-python:v1
+#   docker build -t ghcr.io/patsevanton/sentry-v29-yc-k8s-elastic:demo-python-1.5.0 -f demo/python/Dockerfile demo/python
+#   docker push ghcr.io/patsevanton/sentry-v29-yc-k8s-elastic:demo-python-1.5.0
 apiVersion: apps/v1
 kind: Deployment
 metadata:
@@ -20,7 +20,7 @@ spec:
     spec:
       containers:
         - name: app
-          image: sentry-demo-python:latest
+          image: ghcr.io/patsevanton/sentry-v29-yc-k8s-elastic:demo-python-1.5.0
           imagePullPolicy: IfNotPresent
           ports:
             - name: http
