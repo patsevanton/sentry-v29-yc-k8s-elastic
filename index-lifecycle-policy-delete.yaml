@@ -1,0 +1,21 @@
+# ILM: удаление данных через 20 дней. Через StackConfigPolicy (ECK 3.3+);
+# нужна Enterprise-лицензия или trial — см. документацию ECK по Stack configuration policies.
+# Исходный вариант с kind: IndexLifecyclePolicy / es.eck.github.com не относится к CRD ECK.
+apiVersion: stackconfigpolicy.k8s.elastic.co/v1alpha1
+kind: StackConfigPolicy
+metadata:
+  name: index-lifecycle-policy-delete
+  namespace: elasticsearch
+spec:
+  elasticsearch:
+    indexLifecyclePolicies:
+      index-lifecycle-policy-delete:
+        _meta:
+          description: Delete old data after 20 days
+          project:
+            name: index-lifecycle-policy-delete
+        phases:
+          delete:
+            min_age: 20d
+            actions:
+              delete: {}
