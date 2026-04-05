@@ -243,10 +243,10 @@ kubectl -n sentry logs deployment/sentry-web --tail=20
 ```bash
 helm repo add vm https://victoriametrics.github.io/helm-charts/
 helm repo update
-kubectl create namespace monitoring
+kubectl create namespace vmks
 helm upgrade --install vmks vm/victoria-metrics-k8s-stack \
   --version 0.72.6 \
-  -n monitoring \
+  -n vmks \
   -f vmks-values.yaml \
   --wait --timeout=15m
 ```

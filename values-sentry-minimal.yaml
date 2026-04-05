@@ -88,3 +88,13 @@ kafka:
   provisioning:
     enabled: true
     replicationFactor: 1
+
+# Symbolicator: скачивание и кеш debug-символов для native stack traces.
+# См. https://github.com/sentry-kubernetes/charts/blob/develop/charts/sentry/values.yaml (symbolicator)
+symbolicator:
+  enabled: true
+  api:
+    usedeployment: false # Set true to use Deployment, false for StatefulSet
+    persistence:
+      enabled: true # Set true for using PersistentVolumeClaim, false for emptyDir
+      size: "1Gi"
