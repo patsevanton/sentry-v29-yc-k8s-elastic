@@ -37,8 +37,9 @@ system:
 # kubectl -n sentry exec -it deploy/sentry-web -- sentry upgrade --with-nodestore
 config:
   sentryConfPy: |
-    # Импорт server первым — иначе нет CACHES (ImproperlyConfigured: cache.backend).
-    from sentry.conf.server import *
+    # НЕ делайте «from sentry.conf.server import *» здесь: этот блок дописывается в КОНЕЦ
+    # сгенерированного sentry.conf.py, где SENTRY_CACHE уже задан чартом. Повторный import *
+    # сбрасывает SENTRY_CACHE в None → ImproperlyConfigured: cache.backend.
 
     from elasticsearch import Elasticsearch
 

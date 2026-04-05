@@ -66,8 +66,8 @@ images:
 В `config.sentryConfPy` в [values-sentry-minimal.yaml](values-sentry-minimal.yaml) (или в своём values поверх него) задайте клиент и приложение Django, например для HTTP без TLS (как в манифесте ECK выше). Готовый пример — тот же файл:
 
 ```python
-from sentry.conf.server import *
-
+# Не импортируйте sentry.conf.server здесь: фрагмент дописывается в конец sentry.conf.py
+# чарта; повторный import * обнуляет SENTRY_CACHE (ошибка cache.backend).
 from elasticsearch import Elasticsearch
 
 es = Elasticsearch(
