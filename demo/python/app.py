@@ -1,3 +1,4 @@
+import asyncio
 import logging
 import os
 
@@ -91,3 +92,36 @@ def demo_context():
     sentry_sdk.set_context("demo_payload", {"feature": "context-demo", "version": 1})
     sentry_sdk.capture_message("Demo: message with tags and context", level="info")
     return {"ok": True, "event": "context_and_message"}
+
+
+def _auto_exception_interval_sec() -> int:
+    raw = os.environ.get("DEMO_AUTO_EXCEPTION_INTERVAL_SEC")
+    if raw is None or raw == "":
+        return 60
+    try:
+        n = int(raw)
+    except ValueError:
+        return 0
+    return n if n >= 0 else 0
+
+
+@app.on_event("startup")
+async def startup_auto_exception() -> None:
+    if not DSN:
+        return
+    interval_sec = _auto_exception_interval_sec()
+    if interval_sec <= 0:
+        return
+
+    async def tick() -> None:
+        while True:
+            await asyncio.sleep(interval_sec)
+            sentry_sdk.capture_exception(
+                RuntimeError("Demo: automatic periodic exception from Python"),
+            )
+
+    asyncio.create_task(tick())
+    logger.info(
+        "Auto Sentry exceptions every %ss (set DEMO_AUTO_EXCEPTION_INTERVAL_SEC=0 to disable)",
+        interval_sec,
+    )

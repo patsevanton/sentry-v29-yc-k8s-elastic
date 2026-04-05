@@ -268,15 +268,4 @@ kubectl apply -f demo/k8s/service.yaml
 
 Манифесты Secret с плейсхолдерами: [`demo/k8s/secret-sentry-dsn-node.yaml`](demo/k8s/secret-sentry-dsn-node.yaml), [`demo/k8s/secret-sentry-dsn-python.yaml`](demo/k8s/secret-sentry-dsn-python.yaml).
 
-#### Проверка (port-forward и curl)
-
-```bash
-kubectl -n demo-sentry port-forward svc/sentry-demo-python 18080:8080 &
-kubectl -n demo-sentry port-forward svc/sentry-demo-node 18081:8080 &
-curl -s http://127.0.0.1:18080/health
-curl -s http://127.0.0.1:18081/health
-curl -s "http://127.0.0.1:18080/demo/message"
-curl -s "http://127.0.0.1:18080/demo/exception"
-```
-
-Откройте проект в Sentry и убедитесь, что появились issues и (при включённом performance) транзакции.
+Переменная `DEMO_AUTO_EXCEPTION_INTERVAL_SEC` в манифестах demo (и при локальном запуске) задаёт интервал автоматической отправки исключений в Sentry; `0` отключает. Откройте проект в Sentry и убедитесь, что появились issues и (при включённом performance) транзакции.

@@ -71,7 +71,25 @@ app.get("/demo/context", (req, res) => {
 
 Sentry.setupExpressErrorHandler(app);
 
+function parseAutoExceptionIntervalSec() {
+  const raw = process.env.DEMO_AUTO_EXCEPTION_INTERVAL_SEC;
+  if (raw === undefined || raw === "") return 60;
+  const n = Number.parseInt(raw, 10);
+  return Number.isFinite(n) && n >= 0 ? n : 0;
+}
+
 const port = Number(process.env.PORT) || 8080;
 app.listen(port, "0.0.0.0", () => {
   console.log(`Listening on ${port}`);
+  const intervalSec = parseAutoExceptionIntervalSec();
+  if (dsn && intervalSec > 0) {
+    setInterval(() => {
+      Sentry.captureException(
+        new Error("Demo: automatic periodic exception from Node"),
+      );
+    }, intervalSec * 1000);
+    console.log(
+      `Auto Sentry exceptions every ${intervalSec}s (set DEMO_AUTO_EXCEPTION_INTERVAL_SEC=0 to disable)`,
+    );
+  }
 });

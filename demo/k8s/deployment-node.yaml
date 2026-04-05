@@ -31,6 +31,9 @@ spec:
                 secretKeyRef:
                   name: sentry-dsn-node
                   key: dsn
+            # Периодическая отправка demo-исключений в Sentry (0 — выключить)
+            - name: DEMO_AUTO_EXCEPTION_INTERVAL_SEC
+              value: "60"
           readinessProbe:
             httpGet:
               path: /health
