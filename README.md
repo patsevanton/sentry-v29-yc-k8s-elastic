@@ -6,21 +6,6 @@
 
 **Установка** (опционально). Нужен настроенный `kubectl` на кластер. Подставляется ClusterIP сервиса кластерного DNS (`kube-dns`), затем манифест применяется через `kubectl apply -f -`. Режим **iptables** у kube-proxy — типичный случай.
 
-Полная команда **без клона репозитория** (манифест с GitHub, ветка `main`; при форке замените URL):
-
-```bash
-kubedns=$(kubectl get svc kube-dns -n kube-system -o jsonpath='{.spec.clusterIP}')
-domain=cluster.local
-localdns=169.254.20.10
-curl -fsSL "https://raw.githubusercontent.com/patsevanton/sentry-v29-yc-k8s-elastic/main/k8s/nodelocaldns.yaml" \
-  | sed -e "s/__PILLAR__LOCAL__DNS__/${localdns}/g" \
-        -e "s/__PILLAR__DNS__DOMAIN__/${domain}/g" \
-        -e "s/__PILLAR__DNS__SERVER__/${kubedns}/g" \
-  | kubectl apply -f -
-```
-
-То же **из корня клонированного репозитория** (файл `k8s/nodelocaldns.yaml`):
-
 ```bash
 kubedns=$(kubectl get svc kube-dns -n kube-system -o jsonpath='{.spec.clusterIP}')
 domain=cluster.local

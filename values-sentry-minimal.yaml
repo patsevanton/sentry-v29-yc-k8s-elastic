@@ -94,6 +94,9 @@ kafka:
 symbolicator:
   enabled: true
   api:
+    # Образ distroless nonroot (UID/GID 65532); иначе корень PVC root:755 → Permission denied на /data
+    securityContext:
+      fsGroup: 65532
     usedeployment: false # Set true to use Deployment, false for StatefulSet
     persistence:
       enabled: true # Set true for using PersistentVolumeClaim, false for emptyDir
