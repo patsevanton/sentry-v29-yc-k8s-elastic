@@ -41,9 +41,17 @@ jobs:
       matrix:
         include:
           - image: sentry
+            context: .
             dockerfile: Dockerfile.sentry-nodestore
           - image: snuba
+            context: .
             dockerfile: Dockerfile.snuba-nodestore
+          - image: demo-node
+            context: demo/node
+            dockerfile: demo/node/Dockerfile
+          - image: demo-python
+            context: demo/python
+            dockerfile: demo/python/Dockerfile
     steps:
       - name: Checkout repository
         uses: actions/checkout@v4
@@ -59,7 +67,7 @@ jobs:
         id: build
         uses: docker/build-push-action@v6
         with:
-          context: .
+          context: ${{ matrix.context }}
           file: ./${{ matrix.dockerfile }}
           push: true
           tags: |
