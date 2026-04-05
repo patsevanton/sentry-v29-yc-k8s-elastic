@@ -19,7 +19,9 @@ spec:
     tls:
       selfSignedCertificate:
         disabled: true
-  # PVC сохраняются при удалении CR Elasticsearch (данные для восстановления); при scale down удаляются как раньше.
+  # DeleteOnScaledownOnly: при удалении CR Elasticsearch PVC не трогаются (данные остаются для повторного
+  # подключения). При уменьшении count в nodeSet (scale down) PVC для подов, которые больше не нужны,
+  # удаляются — то же поведение, что было у ECK до политики «сохранять PVC при удалении кластера».
   volumeClaimDeletePolicy: DeleteOnScaledownOnly
   # Rolling updates: не более одного недоступного пода; без временного «наддува» подов.
   updateStrategy:
