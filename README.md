@@ -1,5 +1,30 @@
 # Развёртывание Sentry v29.5.1 в Yandex Cloud на Kubernetes
 
+### 0. NodeLocal DNSCache (опционально)
+
+[NodeLocal DNSCache](https://kubernetes.io/docs/tasks/administer-cluster/nodelocaldns/) — кэш DNS на каждом узле (DaemonSet в `kube-system`), снижает задержки и нагрузку на CoreDNS. В манифесте [k8s/nodelocaldns.yaml](k8s/nodelocaldns.yaml) в блоке `.:53` добавлена статическая запись **`sentry.apatsev.org.ru` → `93.77.184.220`**, чтобы поды резолвили тот же адрес, что и публичная A-запись (см. [ip-dns.tf](ip-dns.tf)), даже если внешний DNS из кластера недоступен.
+
+Подставьте IP сервиса кластерного DNS и примените манифест (режим **iptables** у kube-proxy — типичный случай):
+
+```bash
+kubedns=$(kubectl get svc kube-dns -n kube-system -o jsonpath='{.spec.clusterIP}')
+domain=cluster.local
+localdns=169.254.20.10
+sed -e "s/__PILLAR__LOCAL__DNS__/${localdns}/g" \
+    -e "s/__PILLAR__DNS__DOMAIN__/${domain}/g" \
+    -e "s/__PILLAR__DNS__SERVER__/${kubedns}/g" \
+    k8s/nodelocaldns.yaml | kubectl apply -f -
+```
+
+Если kube-proxy в режиме **IPVS**, используйте подстановку из [документации](https://kubernetes.io/docs/tasks/administer-cluster/nodelocaldns/) (в т.ч. удаление `,__PILLAR__DNS__SERVER__` из `bind` и замена `__PILLAR__CLUSTER__DNS__`); для IPVS обычно меняют `--cluster-dns` у kubelet на адрес NodeLocal (`169.254.20.10`).
+
+Проверка из пода:
+
+```bash
+kubectl run -it --rm dns-test --image=busybox:1.36 --restart=Never -- nslookup sentry.apatsev.org.ru
+# ожидается: 93.77.184.220
+```
+
 ### 1. Elasticsearch (nodestore) и оператор ECK
 
 Nodestore хранит «сырые» узлы событий; здесь используется [sentry-nodestore-elastic](https://pypi.org/project/sentry-nodestore-elastic/) и кластер **Elasticsearch 9.x** через [ECK](https://www.elastic.co/guide/en/cloud-on-k8s/current/index.html). Чарт Sentry не ставит `sentry-nodestore-elastic` сам, поэтому нужен **кастомный образ** на базе `ghcr.io/getsentry/sentry` ([реестр](https://github.com/getsentry/sentry/pkgs/container/sentry); образ `getsentry/sentry` на Docker Hub помечен как deprecated) — см. [Dockerfile.sentry-nodestore](Dockerfile.sentry-nodestore). На PyPI у пакета ограничение `elasticsearch<9` (Python-клиент); для кластера **9.x** клиент **9.x** в образе ставится отдельно (комментарии в `Dockerfile.sentry-nodestore`).
