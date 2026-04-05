@@ -2,7 +2,7 @@
 
 ### 0. NodeLocal DNSCache (опционально)
 
-[NodeLocal DNSCache](https://kubernetes.io/docs/tasks/administer-cluster/nodelocaldns/) — кэш DNS на каждом узле (DaemonSet в `kube-system`), снижает задержки и нагрузку на CoreDNS. В манифесте [k8s/nodelocaldns.yaml](k8s/nodelocaldns.yaml) в блоке `.:53` добавлена статическая запись **`sentry.apatsev.org.ru` → `93.77.184.220`**, чтобы поды резолвили тот же адрес, что и публичная A-запись (см. [ip-dns.tf](ip-dns.tf)), даже если внешний DNS из кластера недоступен.
+[NodeLocal DNSCache](https://kubernetes.io/docs/tasks/administer-cluster/nodelocaldns/) — кэш DNS на каждом узле (DaemonSet в `kube-system`), снижает задержки и нагрузку на CoreDNS. В манифесте [k8s/nodelocaldns.yaml](k8s/nodelocaldns.yaml) в блоке `.:53` плейсхолдер **`__SENTRY_INGRESS_IP__`** нужно заменить на текущий внешний IP из `terraform output -raw ingress_public_ip` (тот же адрес, что резервирует [ip-dns.tf](ip-dns.tf) и куда указывают A-записи), чтобы поды резолвили тот же адрес, что и публичный DNS, даже если внешний DNS из кластера недоступен.
 
 **Установка** (опционально). Нужен настроенный `kubectl` на кластер. Подставляется ClusterIP сервиса кластерного DNS (`kube-dns`), затем манифест применяется через `kubectl apply -f -`. Режим **iptables** у kube-proxy — типичный случай.
 
@@ -10,9 +10,11 @@
 kubedns=$(kubectl get svc kube-dns -n kube-system -o jsonpath='{.spec.clusterIP}')
 domain=cluster.local
 localdns=169.254.20.10
+ingress_ip=$(terraform output -raw ingress_public_ip)
 sed -e "s/__PILLAR__LOCAL__DNS__/${localdns}/g" \
     -e "s/__PILLAR__DNS__DOMAIN__/${domain}/g" \
     -e "s/__PILLAR__DNS__SERVER__/${kubedns}/g" \
+    -e "s/__SENTRY_INGRESS_IP__/${ingress_ip}/g" \
     k8s/nodelocaldns.yaml | kubectl apply -f -
 ```
 
@@ -22,7 +24,7 @@ sed -e "s/__PILLAR__LOCAL__DNS__/${localdns}/g" \
 
 ```bash
 kubectl run -it --rm dns-test --image=busybox:1.36 --restart=Never -- nslookup sentry.apatsev.org.ru
-# ожидается: 93.77.184.220
+# ожидается IP из: terraform output -raw ingress_public_ip
 ```
 
 ### 1. Elasticsearch (nodestore) и оператор ECK

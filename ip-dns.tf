@@ -22,7 +22,7 @@ resource "yandex_dns_recordset" "sentry" {
   name    = "sentry.apatsev.org.ru."
   type    = "A"
   ttl     = 200
-  data    = [yandex_vpc_address.addr.external_ipv4_address[0].address]
+  data    = [local.ingress_public_ip]
 }
 
 resource "yandex_dns_recordset" "grafana" {
@@ -30,5 +30,5 @@ resource "yandex_dns_recordset" "grafana" {
   name    = "grafana.apatsev.org.ru."
   type    = "A"
   ttl     = 200
-  data    = [yandex_vpc_address.addr.external_ipv4_address[0].address]
+  data    = [local.ingress_public_ip]
 }

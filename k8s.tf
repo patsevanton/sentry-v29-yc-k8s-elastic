@@ -122,7 +122,7 @@ resource "helm_release" "ingress_nginx" {
           team = "ingress"
         }
         service = {
-          loadBalancerIP = yandex_vpc_address.addr.external_ipv4_address[0].address
+          loadBalancerIP = local.ingress_public_ip
         }
         config = {
           "log-format-escape-json" = "true"
@@ -138,4 +138,9 @@ resource "helm_release" "ingress_nginx" {
 
 output "k8s_cluster_credentials_command" {
   value = "yc managed-kubernetes cluster get-credentials --id ${yandex_kubernetes_cluster.sentry.id} --external --force"
+}
+
+output "ingress_public_ip" {
+  description = "Внешний IP ingress-nginx (yandex_vpc_address + LoadBalancer); для подстановки в k8s/nodelocaldns.yaml"
+  value       = local.ingress_public_ip
 }

@@ -3,7 +3,7 @@
 # (см. README). Плейсхолдеры __PILLAR__CLUSTER__DNS__ и __PILLAR__UPSTREAM__SERVERS__ оставьте —
 # их подставляет контейнер k8s-dns-node-cache из ConfigMap kube-dns.
 #
-# Статическая запись: sentry.apatsev.org.ru -> 93.77.184.220 (для резолва из подов без внешнего DNS).
+# Статическая запись: sentry.apatsev.org.ru -> __SENTRY_INGRESS_IP__ (подставьте terraform output -raw ingress_public_ip, см. README).
 ---
 apiVersion: v1
 kind: ServiceAccount
@@ -90,7 +90,7 @@ data:
         loop
         bind __PILLAR__LOCAL__DNS__ __PILLAR__DNS__SERVER__
         hosts {
-            93.77.184.220 sentry.apatsev.org.ru
+            __SENTRY_INGRESS_IP__ sentry.apatsev.org.ru
             fallthrough
         }
         forward . __PILLAR__UPSTREAM__SERVERS__
