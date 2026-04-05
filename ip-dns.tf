@@ -1,5 +1,6 @@
 resource "yandex_vpc_address" "addr" {
-  name = "sentry-pip"
+  name      = "sentry-pip"
+  folder_id = local.folder_id
 
   external_ipv4_address {
     zone_id = yandex_vpc_subnet.sentry-a.zone
@@ -7,7 +8,8 @@ resource "yandex_vpc_address" "addr" {
 }
 
 resource "yandex_dns_zone" "apatsev-org-ru" {
-  name = "apatsev-org-ru-zone"
+  name      = "apatsev-org-ru-zone"
+  folder_id = local.folder_id
 
   zone   = "apatsev.org.ru."
   public = true
