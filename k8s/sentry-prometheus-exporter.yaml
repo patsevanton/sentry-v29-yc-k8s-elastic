@@ -1,0 +1,63 @@
+# Дополнение к установке Sentry из README §4 (namespace sentry, сервис sentry-web).
+# Экспортёр: https://github.com/italux/sentry-prometheus-exporter
+# Нужен Secret sentry-auth-token (ключ token) — см. README §6.
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: sentry-prometheus-exporter
+  namespace: sentry
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: sentry-prometheus-exporter
+  template:
+    metadata:
+      labels:
+        app: sentry-prometheus-exporter
+    spec:
+      containers:
+        - name: sentry-prometheus-exporter
+          image: docker.io/italux/sentry-prometheus-exporter:latest
+          ports:
+            - containerPort: 9790
+              name: metrics
+          securityContext:
+            allowPrivilegeEscalation: false
+          env:
+            - name: GUNICORN_CMD_ARGS
+              value: "--timeout 300"
+            - name: SENTRY_AUTH_TOKEN
+              valueFrom:
+                secretKeyRef:
+                  name: sentry-auth-token
+                  key: token
+            # Slug организации из UI: /organizations/<slug>/
+            - name: SENTRY_EXPORTER_ORG
+              value: "sentry"
+            - name: SENTRY_BASE_URL
+              value: "http://sentry-web.sentry.svc.cluster.local:9000/api/0/"
+            - name: SENTRY_SCRAPE_RATE_LIMIT_METRICS
+              value: "False"
+            - name: SENTRY_ISSUES_1H
+              value: "True"
+            - name: SENTRY_ISSUES_24H
+              value: "False"
+            - name: SENTRY_ISSUES_14D
+              value: "False"
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: sentry-prometheus-exporter
+  namespace: sentry
+  labels:
+    app: sentry-prometheus-exporter
+spec:
+  selector:
+    app: sentry-prometheus-exporter
+  ports:
+    - name: metrics
+      port: 9790
+      targetPort: metrics
