@@ -29,7 +29,7 @@ spec:
             - name: SENTRY_DSN
               valueFrom:
                 secretKeyRef:
-                  name: sentry-dsn
+                  name: sentry-dsn-node
                   key: dsn
           readinessProbe:
             httpGet:

@@ -244,8 +244,8 @@ kubectl -n ingress-nginx get svc
 
 #### DSN
 
-1. В UI Sentry создайте проект (например Python и/или Node — для демо подойдёт любой; SDK отправляет по одному DSN).
-2. Скопируйте DSN (**Settings → Client Keys**). Для подов в кластере DSN должен указывать на **доступный из кластера** хост Sentry (часто тот же URL, что в браузере, или внутренний Ingress). Если события не доходят, проверьте DNS и сетевую связность до Relay/Ingress.
+1. В UI Sentry создайте проекты (часто отдельно для Node и для Python) и скопируйте DSN для каждого. В Kubernetes — два Secret (`sentry-dsn-node`, `sentry-dsn-python`); значения могут отличаться или совпадать, если используете один и тот же проект Sentry для обоих SDK.
+2. Скопируйте DSN каждого проекта (**Settings → Client Keys**). Для подов в кластере DSN должен указывать на **доступный из кластера** хост Sentry (часто тот же URL, что в браузере, или внутренний Ingress). Если события не доходят, проверьте DNS и сетевую связность до Relay/Ingress.
 
 #### Запуск в Kubernetes
 
@@ -253,18 +253,20 @@ kubectl -n ingress-nginx get svc
 
 ```bash
 kubectl apply -f demo/k8s/namespace.yaml
-# DSN (один из вариантов):
-kubectl create secret generic sentry-dsn -n demo-sentry \
-  --from-literal=dsn='https://<public_key>@<host>/<project_id>'
-# либо подставить dsn в demo/k8s/secret-sentry-dsn.yaml и:
-# kubectl apply -f demo/k8s/secret-sentry-dsn.yaml
+# DSN (по одному Secret на Node и Python):
+kubectl create secret generic sentry-dsn-node -n demo-sentry \
+  --from-literal=dsn='https://<public_key>@<host>/<project_id_node>'
+kubectl create secret generic sentry-dsn-python -n demo-sentry \
+  --from-literal=dsn='https://<public_key>@<host>/<project_id_python>'
+# либо подставить dsn в demo/k8s/secret-sentry-dsn-*.yaml и:
+# kubectl apply -f demo/k8s/secret-sentry-dsn-node.yaml -f demo/k8s/secret-sentry-dsn-python.yaml
 
 kubectl apply -f demo/k8s/deployment-python.yaml
 kubectl apply -f demo/k8s/deployment-node.yaml
 kubectl apply -f demo/k8s/service.yaml
 ```
 
-Манифест Secret с плейсхолдером: [`demo/k8s/secret-sentry-dsn.yaml`](demo/k8s/secret-sentry-dsn.yaml).
+Манифесты Secret с плейсхолдерами: [`demo/k8s/secret-sentry-dsn-node.yaml`](demo/k8s/secret-sentry-dsn-node.yaml), [`demo/k8s/secret-sentry-dsn-python.yaml`](demo/k8s/secret-sentry-dsn-python.yaml).
 
 #### Проверка (port-forward и curl)
 
