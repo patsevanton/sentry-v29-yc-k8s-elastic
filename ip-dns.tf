@@ -22,3 +22,11 @@ resource "yandex_dns_recordset" "sentry" {
   ttl     = 200
   data    = [yandex_vpc_address.addr.external_ipv4_address[0].address]
 }
+
+resource "yandex_dns_recordset" "grafana" {
+  zone_id = yandex_dns_zone.apatsev-org-ru.id
+  name    = "grafana.apatsev.org.ru."
+  type    = "A"
+  ttl     = 200
+  data    = [yandex_vpc_address.addr.external_ipv4_address[0].address]
+}
