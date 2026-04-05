@@ -1,0 +1,31 @@
+apiVersion: v1
+kind: Service
+metadata:
+  name: sentry-demo-python
+  namespace: demo-sentry
+  labels:
+    app: sentry-demo-python
+spec:
+  type: ClusterIP
+  selector:
+    app: sentry-demo-python
+  ports:
+    - name: http
+      port: 8080
+      targetPort: http
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: sentry-demo-node
+  namespace: demo-sentry
+  labels:
+    app: sentry-demo-node
+spec:
+  type: ClusterIP
+  selector:
+    app: sentry-demo-node
+  ports:
+    - name: http
+      port: 8080
+      targetPort: http
