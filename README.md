@@ -353,8 +353,11 @@ kubectl apply -f demo/k8s/service.yaml
 Если при запуске получаете `sentry-cli: command not found`, установите CLI:
 
 ```bash
-# Linux/macOS (официальный install-скрипт)
-curl -sL https://sentry.io/get-cli/ | bash
+# Linux (x86_64): установка бинарника из GitHub Releases
+curl -fL https://github.com/getsentry/sentry-cli/releases/latest/download/sentry-cli-Linux-x86_64 \
+  -o sentry-cli
+chmod +x sentry-cli
+sudo mv sentry-cli /usr/local/bin/sentry-cli
 
 # проверка
 sentry-cli --version
@@ -378,12 +381,20 @@ sentry-cli --version
 
 ```bash
 export SENTRY_URL="http://sentry.apatsev.org.ru"   # при необходимости
-export SENTRY_AUTH_TOKEN="60d1ae5a4357bdfb24abd847997f671eb0188e35ec30b818882bc0f0a4b426cd"
+export SENTRY_AUTH_TOKEN="<SENTRY_AUTH_TOKEN>"
 export SENTRY_ORG="sentry"
 export SENTRY_PROJECT="native"
 
 bash examples/sentry-native-debug-sample/upload-releases.sh
 ```
+
+Если получили ошибку вида `sentry reported an error: [Errno 13] Permission denied: '/var/lib/sentry/files/...'` (HTTP 400), это обычно права на файловое хранилище в self-hosted Sentry, а не проблема токена в `sentry-cli`. Проверьте, что `sentry-web` может писать в `/var/lib/sentry/files`:
+
+```bash
+kubectl -n sentry exec deploy/sentry-web -- sh -lc 'id && ls -ld /var/lib/sentry/files && touch /var/lib/sentry/files/.write-test'
+```
+
+Если `touch` падает с `Permission denied`, исправьте владельца/группу и `securityContext` (например, `fsGroup`) у pod'ов Sentry для volume с filestore, затем перезапустите `sentry-web`/workers.
 
 Для нативного примера: после успешного выполнения файлы видны в **Project Settings → Debug Information Files**; имена релизов — в разделе **Releases**. Нативные DIF в Sentry сопоставляются с событием по **debug id** (build-id), а не по имени релиза; подробности — в комментариях в начале скрипта.
 
@@ -393,7 +404,7 @@ bash examples/sentry-native-debug-sample/upload-releases.sh
 
 ```bash
 export SENTRY_URL="http://sentry.apatsev.org.ru"
-export SENTRY_AUTH_TOKEN="60d1ae5a4357bdfb24abd847997f671eb0188e35ec30b818882bc0f0a4b426cd"
+export SENTRY_AUTH_TOKEN="<SENTRY_AUTH_TOKEN>"
 export SENTRY_ORG="sentry"
 export SENTRY_PROJECT="<slug проекта>"
 bash examples/sourcemap-upload/upload-sourcemaps.sh

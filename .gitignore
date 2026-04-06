@@ -39,3 +39,4 @@ values_sentry.yaml
 .terraformrc
 terraform.rc
 .terraform.lock.hcl
+examples/sentry-native-debug-sample/app-linux-debug

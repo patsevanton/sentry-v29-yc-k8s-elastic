@@ -89,6 +89,14 @@ kafka:
     enabled: true
     replicationFactor: 1
 
+# Filestore (/var/lib/sentry/files) должен быть writable для sentry (uid/gid 999),
+# иначе upload debug-files падает с Errno 13 Permission denied.
+sentry:
+  web:
+    securityContext:
+      fsGroup: 999
+      fsGroupChangePolicy: OnRootMismatch
+
 # Symbolicator: скачивание и кеш debug-символов для native stack traces.
 # См. https://github.com/sentry-kubernetes/charts/blob/develop/charts/sentry/values.yaml (symbolicator)
 symbolicator:
