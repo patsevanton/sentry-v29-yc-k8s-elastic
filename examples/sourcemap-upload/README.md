@@ -18,6 +18,12 @@
 | `SENTRY_RELEASE` | нет | имя релиза, по умолчанию `demo-sourcemap@1.0.0` |
 | `SENTRY_URL_PREFIX` | нет | префикс URL, под которым в проде отдаётся каталог с `app.js` (см. ниже) |
 
+### Как получить значения
+
+1. `SENTRY_ORG`: возьмите slug организации из URL, например `https://sentry.example.com/organizations/<org-slug>/`.
+2. `SENTRY_PROJECT`: откройте **Project Settings → General Settings → Project Slug**.
+3. `SENTRY_AUTH_TOKEN`: создайте Personal Auth Token в **User Settings → API → Auth Tokens** (или `/settings/account/api/auth-tokens/`) с правами на релизы/артефакты (обычно `project:releases` и `org:read`).
+
 ## `SENTRY_URL_PREFIX`
 
 Должен совпадать с тем, как браузер загружает минифицированный файл. Примеры:

@@ -350,7 +350,14 @@ kubectl apply -f demo/k8s/service.yaml
 
 В [examples/sentry-native-debug-sample](examples/sentry-native-debug-sample) — минимальный `main.c` и скрипт [upload-releases.sh](examples/sentry-native-debug-sample/upload-releases.sh): сборка отладочного бинарника (`cc -g -O0`), создание имён релизов в Sentry и загрузка **debug information files** через `sentry-cli debug-files upload` (тип `elf`). Нужны установленные `**sentry-cli`** и компилятор `**cc**`.
 
-Перед запуском задайте URL self-hosted (если не дефолтный `sentry.io`), организацию, проект и токен с правами на загрузку артефактов / релизов (см. комментарии в скрипте):
+Перед запуском задайте URL self-hosted (если не дефолтный `sentry.io`), организацию, проект и токен с правами на загрузку артефактов / релизов (см. комментарии в скрипте).
+
+Как получить значения для `export` (подходит и для `examples/sentry-native-debug-sample`, и для `examples/sourcemap-upload`):
+
+1. `SENTRY_ORG` — slug организации из URL в Sentry, например `https://sentry.example.com/organizations/<org-slug>/`.
+2. `SENTRY_PROJECT` — slug проекта в **Project Settings → General Settings → Project Slug**.
+3. `SENTRY_AUTH_TOKEN` — создайте Personal Auth Token в **User Settings → API → Auth Tokens** (или `/settings/account/api/auth-tokens/`) и дайте ему права на релизы/артефакты (обычно хватает `project:releases` и `org:read`).
+4. Скопируйте значения в shell:
 
 ```bash
 export SENTRY_URL="http://sentry.apatsev.org.ru"   # при необходимости
