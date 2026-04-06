@@ -1,0 +1,12 @@
+{
+  "name": "sentry-sourcemap-upload-example",
+  "private": true,
+  "scripts": {
+    "build": "esbuild src/index.js --bundle --minify --sourcemap --outfile=dist/app.js --platform=browser",
+    "upload": "bash ./upload-sourcemaps.sh"
+  },
+  "devDependencies": {
+    "@sentry/cli": "^2.39.0",
+    "esbuild": "^0.24.0"
+  }
+}

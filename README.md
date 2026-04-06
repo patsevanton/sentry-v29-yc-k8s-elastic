@@ -349,4 +349,16 @@ export SENTRY_PROJECT="<slug проекта>"
 bash examples/sentry-native-debug-sample/upload-releases.sh
 ```
 
-После успешного выполнения файлы видны в **Project Settings → Debug Information Files**; имена релизов — в разделе **Releases**. Нативные DIF в Sentry сопоставляются с событием по **debug id** (build-id), а не по имени релиза; подробности — в комментариях в начале скрипта.
+Для нативного примера: после успешного выполнения файлы видны в **Project Settings → Debug Information Files**; имена релизов — в разделе **Releases**. Нативные DIF в Sentry сопоставляются с событием по **debug id** (build-id), а не по имени релиза; подробности — в комментариях в начале скрипта.
+
+#### JS source maps (только загрузка артефактов)
+
+В [examples/sourcemap-upload](examples/sourcemap-upload) — минифицированный бандл (`esbuild`) и загрузка **source maps** в релиз через `sentry-cli releases files … upload-sourcemaps`. Отдельный сервис в примере не поднимается; чтобы стеки в UI совпали с картами, в браузерном SDK укажите тот же **`release`**, что и `SENTRY_RELEASE` при upload. Где в интерфейсе смотреть загруженные файлы — в [README примера](examples/sourcemap-upload/README.md) (**Releases** → нужный релиз → **Artifacts** / **Files**).
+
+```bash
+export SENTRY_URL="http://sentry.apatsev.org.ru"
+export SENTRY_AUTH_TOKEN="<токен>"
+export SENTRY_ORG="<slug организации>"
+export SENTRY_PROJECT="<slug проекта>"
+bash examples/sourcemap-upload/upload-sourcemaps.sh
+```

@@ -1,0 +1,52 @@
+# Загрузка JS source maps в Sentry
+
+Минифицированный бандл `dist/app.js` + `dist/app.js.map` собираются **esbuild**, затем **`sentry-cli releases files … upload-sourcemaps`** отправляет артефакты в выбранный **release**. Отдельный рантайм или браузерный SDK в этом каталоге не поднимаются — только сборка и upload.
+
+## Требования
+
+- Node.js 18+
+- Проект и токен в Sentry с правами на **Release / Artifact uploads**
+
+## Переменные окружения
+
+| Переменная | Обязательно | Описание |
+|------------|-------------|----------|
+| `SENTRY_AUTH_TOKEN` | да | токен |
+| `SENTRY_ORG` | да | slug организации |
+| `SENTRY_PROJECT` | да | slug проекта (типа browser/javascript) |
+| `SENTRY_URL` | нет | self-hosted, например `http://sentry.apatsev.org.ru` |
+| `SENTRY_RELEASE` | нет | имя релиза, по умолчанию `demo-sourcemap@1.0.0` |
+| `SENTRY_URL_PREFIX` | нет | префикс URL, под которым в проде отдаётся каталог с `app.js` (см. ниже) |
+
+## `SENTRY_URL_PREFIX`
+
+Должен совпадать с тем, как браузер загружает минифицированный файл. Примеры:
+
+- Файл открывается как `https://example.com/app.js` → `~/`
+- Как `https://example.com/static/app.js` → `~/static`
+- Как `https://cdn.example.com/assets/app.js` → `~/assets` (если origin в событии совпадает с тем, что ожидает Sentry для маппинга; при необходимости см. [документацию](https://docs.sentry.io/platforms/javascript/sourcemaps/) по `url-prefix` и `dist`).
+
+По умолчанию в скрипте задано `~/` — удобно, если вы тестируете с корня origin.
+
+## Запуск
+
+```bash
+cd examples/sourcemap-upload
+export SENTRY_URL="http://sentry.apatsev.org.ru"
+export SENTRY_AUTH_TOKEN="<токен>"
+export SENTRY_ORG="<org>"
+export SENTRY_PROJECT="<project>"
+bash upload-sourcemaps.sh
+```
+
+Связка с реальными ошибками: в приложении с `@sentry/browser` / `@sentry/react` задайте **`release`** (и при использовании — **`dist`**) так же, как `SENTRY_RELEASE` при upload, иначе Sentry не применит карты к стеку.
+
+## Где смотреть в Sentry UI
+
+1. **Релиз и артефакты (основное)**  
+   В левом меню организации откройте **Releases** (иногда в группе **Insights**). Найдите релиз с тем же именем, что `SENTRY_RELEASE` (по умолчанию `demo-sourcemap@1.0.0`), откройте его. На странице релиза откройте вкладку **Artifacts** или **Files** — там должны быть загруженные `app.js`, `app.js.map` и связанные записи. Прямой вид URL в self-hosted обычно такой: `/organizations/<org>/releases/<release>/` (вкладка с файлами релиза).
+
+2. **Настройки проекта (справочно)**  
+   **Settings** → **Projects** → нужный проект → раздел **Source Maps** — страница про подключение source maps и часто ссылки на документацию; сами загруженные через CLI файлы удобнее смотреть в пункте 1.
+
+Названия вкладок могут слегка отличаться в зависимости от версии Sentry, но путь всегда через **Releases** → конкретный **release** → список артефактов этого релиза.
