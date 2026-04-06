@@ -198,6 +198,26 @@ helm repo update
 
 Если namespace уже есть, `kubectl create namespace sentry` завершится ошибкой — это нормально. Либо опустите эту строку и полагайтесь только на `--create-namespace` у Helm.
 
+### 3.1. S3 filestore (Yandex Object Storage)
+
+По умолчанию чарт Sentry хранит артефакты (debug-символы, source maps, blob-ы загрузок) на локальной ФС (`/var/lib/sentry/files`) с PVC в режиме **RWO** (ReadWriteOnce). RWO-том доступен только одному поду (обычно `sentry-web`); taskworker-ы при сборке (`assemble`) debug-файлов не находят blob-ы → `FileNotFoundError` / `internal server error` в UI. S3-бэкенд доступен всем подам одновременно.
+
+Terraform-файл [s3.tf](s3.tf) создаёт сервисный аккаунт, статический ключ и бакет в Yandex Object Storage:
+
+```bash
+terraform apply
+```
+
+После apply подставьте значения в [values-sentry-minimal.yaml](values-sentry-minimal.yaml) (секция `filestore.s3`):
+
+```bash
+terraform output -raw sentry_s3_access_key
+terraform output -raw sentry_s3_secret_key
+terraform output -raw sentry_s3_bucket_name
+```
+
+Затем переустановите Sentry (см. **§4**).
+
 ### 4. Установка Sentry
 
 **Порядок зависимостей.** Чарт поднимает PostgreSQL, Redis и Kafka в namespace `sentry`, но **ClickHouse задаётся снаружи** ([values-sentry-minimal.yaml](values-sentry-minimal.yaml), `externalClickhouse`). Helm-hook **Job `sentry-db-check`** ждёт TCP до `externalClickhouse.host:9000` и до Kraft-контроллеров Kafka. Пока ClickHouse не развёрнут, в логах пода будет `nc: getaddrinfo: Name does not resolve` и `... is not available yet` — это нормально только до выполнения **§2** (namespace `clickhouse`, [clickhouse.yaml](clickhouse.yaml), под ClickHouse в статусе `Running`, см. команду `wait` выше). Сначала: **§1.1–1.2** (Elasticsearch), **§2.1–2.2** (ClickHouse), **§3** (репозиторий Helm), затем команда ниже.
@@ -388,28 +408,7 @@ export SENTRY_PROJECT="native"
 bash examples/sentry-native-debug-sample/upload-releases.sh
 ```
 
-Если получили ошибку вида `sentry reported an error: [Errno 13] Permission denied: '/var/lib/sentry/files/...'` (HTTP 400), это обычно права на файловое хранилище в self-hosted Sentry, а не проблема токена в `sentry-cli`. Проверьте, что `sentry-web` может писать в `/var/lib/sentry/files`:
-
-```bash
-kubectl -n sentry exec deploy/sentry-web -- sh -lc 'id && ls -ld /var/lib/sentry/files && touch /var/lib/sentry/files/.write-test'
-```
-
-Если `touch` падает с `Permission denied`, добавьте `fsGroup` для `sentry.web` в Helm values (в этом репозитории это уже сделано в [values-sentry-minimal.yaml](values-sentry-minimal.yaml)):
-
-```yaml
-sentry:
-  web:
-    securityContext:
-      fsGroup: 999
-      fsGroupChangePolicy: OnRootMismatch
-```
-
-И примените релиз заново:
-
-```bash
-helm upgrade --install sentry sentry/sentry --version 29.5.1 -n sentry \
-  -f values-sentry-minimal.yaml --timeout=900s
-```
+Если получили `internal server error` при загрузке debug-файлов, а в логах taskworker `FileNotFoundError: ... /var/lib/sentry/files/...` — filestore в режиме `filesystem` (PVC RWO) доступен только web-поду. Переключите на S3-бэкенд (Yandex Object Storage), см. **§3.1**.
 
 Для нативного примера: после успешного выполнения файлы видны в **Project Settings → Debug Information Files**; имена релизов — в разделе **Releases**. Нативные DIF в Sentry сопоставляются с событием по **debug id** (build-id), а не по имени релиза; подробности — в комментариях в начале скрипта.
 
