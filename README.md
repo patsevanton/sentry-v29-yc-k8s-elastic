@@ -356,7 +356,7 @@ kubectl apply -f demo/k8s/service.yaml
 
 1. `SENTRY_ORG` — slug организации из URL в Sentry, например `https://sentry.example.com/organizations/<org-slug>/`.
 2. `SENTRY_PROJECT` — slug проекта в **Project Settings → General Settings → Project Slug**.
-3. `SENTRY_AUTH_TOKEN` — создайте Personal Auth Token в **User Settings → API → Auth Tokens** (или `/settings/account/api/auth-tokens/`) и дайте ему права на релизы/артефакты (обычно хватает `project:releases` и `org:read`).
+3. `SENTRY_AUTH_TOKEN` — создайте токен через [Internal Integration](https://docs.sentry.io/product/integrations/integration-platform/internal-integration/) (как в **§7, шаг 1**): **Settings** → **Developer Settings** → **Custom Integrations** → **Create New Integration** → **Internal Integration**. Для скриптов upload обычно достаточно `project:releases` и `org:read` (при необходимости добавьте `project:read`).
 4. Скопируйте значения в shell:
 
 ```bash
