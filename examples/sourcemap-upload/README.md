@@ -2,10 +2,22 @@
 
 Минифицированный бандл `dist/app.js` + `dist/app.js.map` собираются **esbuild**, затем **`sentry-cli releases files … upload-sourcemaps`** отправляет артефакты в выбранный **release**. Отдельный рантайм или браузерный SDK в этом каталоге не поднимаются — только сборка и upload.
 
+## Какой проект создать в Sentry
+
+Чтобы к **этому** репозиторию (пример `examples/sourcemap-upload`) можно было привязать загрузку source maps, в Sentry нужен обычный **проект под клиентский JavaScript** — артефакты привязываются к **организации**, **slug проекта** и **имени релиза**.
+
+1. Откройте ваш инстанс Sentry (`https://sentry.io` или self-hosted, например `http://sentry.apatsev.org.ru`).
+2. Войдите и выберите **организацию** (или создайте новую: **Create organization**).
+3. **Projects → Create Project** (или аналог в меню).
+4. В качестве платформы выберите **Browser** / **JavaScript** / **React** и т.п. — для source maps через CLI важно, чтобы проект был **frontend/JS**; конкретный шаблон (Vanilla vs React) на загрузку `.map` почти не влияет.
+5. Задайте **имя проекта** и завершите мастер. После создания откройте **Project Settings → General** и запишите **Project slug** — это значение для `SENTRY_PROJECT`. Slug **организации** виден в URL: `/organizations/<org-slug>/...` — это `SENTRY_ORG`.
+
+Дальше создайте **Auth Token** с правами на релизы (см. таблицу ниже) и задайте переменные окружения для `upload-sourcemaps.sh`. Локально в этом каталоге уже есть минимальный npm-проект (`package.json`, `src/index.js`); отдельно «создавать» его не нужно — достаточно `npm install` и скрипта загрузки.
+
 ## Требования
 
 - Node.js 18+
-- Проект и токен в Sentry с правами на **Release / Artifact uploads**
+- Созданный в Sentry JS-проект и токен с правами на **Release / Artifact uploads**
 
 ## Переменные окружения
 
@@ -13,7 +25,7 @@
 |------------|-------------|----------|
 | `SENTRY_AUTH_TOKEN` | да | токен |
 | `SENTRY_ORG` | да | slug организации |
-| `SENTRY_PROJECT` | да | slug проекта (типа browser/javascript) |
+| `SENTRY_PROJECT` | да | slug проекта (из **Project Settings → General**) |
 | `SENTRY_URL` | нет | self-hosted, например `http://sentry.apatsev.org.ru` |
 | `SENTRY_RELEASE` | нет | имя релиза, по умолчанию `demo-sourcemap@1.0.0` |
 | `SENTRY_URL_PREFIX` | нет | префикс URL, под которым в проде отдаётся каталог с `app.js` (см. ниже) |
