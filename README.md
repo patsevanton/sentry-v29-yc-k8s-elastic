@@ -394,7 +394,22 @@ bash examples/sentry-native-debug-sample/upload-releases.sh
 kubectl -n sentry exec deploy/sentry-web -- sh -lc 'id && ls -ld /var/lib/sentry/files && touch /var/lib/sentry/files/.write-test'
 ```
 
-Если `touch` падает с `Permission denied`, исправьте владельца/группу и `securityContext` (например, `fsGroup`) у pod'ов Sentry для volume с filestore, затем перезапустите `sentry-web`/workers.
+Если `touch` падает с `Permission denied`, добавьте `fsGroup` для `sentry.web` в Helm values (в этом репозитории это уже сделано в [values-sentry-minimal.yaml](values-sentry-minimal.yaml)):
+
+```yaml
+sentry:
+  web:
+    securityContext:
+      fsGroup: 999
+      fsGroupChangePolicy: OnRootMismatch
+```
+
+И примените релиз заново:
+
+```bash
+helm upgrade --install sentry sentry/sentry --version 29.5.1 -n sentry \
+  -f values-sentry-minimal.yaml --timeout=900s
+```
 
 Для нативного примера: после успешного выполнения файлы видны в **Project Settings → Debug Information Files**; имена релизов — в разделе **Releases**. Нативные DIF в Sentry сопоставляются с событием по **debug id** (build-id), а не по имени релиза; подробности — в комментариях в начале скрипта.
 
