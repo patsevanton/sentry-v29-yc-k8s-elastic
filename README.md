@@ -350,6 +350,23 @@ kubectl apply -f demo/k8s/service.yaml
 
 В [examples/sentry-native-debug-sample](examples/sentry-native-debug-sample) — минимальный `main.c` и скрипт [upload-releases.sh](examples/sentry-native-debug-sample/upload-releases.sh): сборка отладочного бинарника (`cc -g -O0`), создание имён релизов в Sentry и загрузка **debug information files** через `sentry-cli debug-files upload` (тип `elf`). Нужны установленные `**sentry-cli`** и компилятор `**cc**`.
 
+Если при запуске получаете `sentry-cli: command not found`, установите CLI:
+
+```bash
+# Linux/macOS (официальный install-скрипт)
+curl -sL https://sentry.io/get-cli/ | bash
+
+# проверка
+sentry-cli --version
+```
+
+Альтернатива через Node.js/npm:
+
+```bash
+npm install -g @sentry/cli
+sentry-cli --version
+```
+
 Перед запуском задайте URL self-hosted (если не дефолтный `sentry.io`), организацию, проект и токен с правами на загрузку артефактов / релизов (см. комментарии в скрипте).
 
 Как получить значения для `export` (подходит и для `examples/sentry-native-debug-sample`, и для `examples/sourcemap-upload`):
@@ -361,9 +378,9 @@ kubectl apply -f demo/k8s/service.yaml
 
 ```bash
 export SENTRY_URL="http://sentry.apatsev.org.ru"   # при необходимости
-export SENTRY_AUTH_TOKEN="<токен>"
-export SENTRY_ORG="<slug организации>"
-export SENTRY_PROJECT="<slug проекта>"
+export SENTRY_AUTH_TOKEN="60d1ae5a4357bdfb24abd847997f671eb0188e35ec30b818882bc0f0a4b426cd"
+export SENTRY_ORG="sentry"
+export SENTRY_PROJECT="native"
 
 bash examples/sentry-native-debug-sample/upload-releases.sh
 ```
@@ -376,8 +393,8 @@ bash examples/sentry-native-debug-sample/upload-releases.sh
 
 ```bash
 export SENTRY_URL="http://sentry.apatsev.org.ru"
-export SENTRY_AUTH_TOKEN="<токен>"
-export SENTRY_ORG="<slug организации>"
+export SENTRY_AUTH_TOKEN="60d1ae5a4357bdfb24abd847997f671eb0188e35ec30b818882bc0f0a4b426cd"
+export SENTRY_ORG="sentry"
 export SENTRY_PROJECT="<slug проекта>"
 bash examples/sourcemap-upload/upload-sourcemaps.sh
 ```
