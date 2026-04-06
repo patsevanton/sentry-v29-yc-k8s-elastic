@@ -215,6 +215,8 @@ helm upgrade --install sentry sentry/sentry --version 29.5.1 -n sentry \
 kubectl -n sentry exec -it deploy/sentry-web -- sentry upgrade --with-nodestore
 ```
 
+Зайти в Sentry в браузере: **http://sentry.apatsev.org.ru** (DNS и ingress — **§8**; если задали другой хост в Ingress/`values`, используйте его).
+
 Пакет `sentry-nodestore-elastic` относится к **sentry-web** и воркерам на том же образе. **Relay** и **taskbroker** отдельно не настраиваются. Для **Snuba** при необходимости см. [Dockerfile.snuba-nodestore](Dockerfile.snuba-nodestore).
 
 Свой образ и правки nodestore — по **§1.4–1.5** (в том же `values-sentry-minimal.yaml` или в дополнительном `-f` при необходимости). Репозиторий Helm — **§3** (выполните до первой установки).

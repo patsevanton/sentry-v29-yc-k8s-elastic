@@ -32,3 +32,11 @@ resource "yandex_dns_recordset" "grafana" {
   ttl     = 200
   data    = [local.ingress_public_ip]
 }
+
+resource "yandex_dns_recordset" "vmsingle" {
+  zone_id = yandex_dns_zone.apatsev-org-ru.id
+  name    = "vmsingle.apatsev.org.ru."
+  type    = "A"
+  ttl     = 200
+  data    = [local.ingress_public_ip]
+}
