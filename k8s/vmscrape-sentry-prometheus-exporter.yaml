@@ -1,13 +1,22 @@
+# VMAgent из VictoriaMetrics K8s Stack смотрит VMServiceScrape в своём namespace (vmks), не в sentry.
+# Сервис экспортёра остаётся в sentry — выбор через namespaceSelector.
 ---
 apiVersion: operator.victoriametrics.com/v1beta1
 kind: VMServiceScrape
 metadata:
   name: sentry-prometheus-exporter
-  namespace: sentry
+  namespace: vmks
 spec:
+  namespaceSelector:
+    matchNames:
+      - sentry
   selector:
     matchLabels:
       app: sentry-prometheus-exporter
   endpoints:
     - port: metrics
-      path: /metrics
+      # без завершающего слэша экспортёр отдаёт 302 на /metrics/ — scrape без follow_redirects ломается
+      path: /metrics/
+      # экспортёр ходит в API Sentry; ответ /metrics/ часто >10s — дефолтный scrapeTimeout vmagent даёт down
+      scrape_interval: 60s
+      scrapeTimeout: 120s
