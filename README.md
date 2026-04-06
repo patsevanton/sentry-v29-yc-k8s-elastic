@@ -2,7 +2,7 @@
 
 ### 0. NodeLocal DNSCache (опционально)
 
-[NodeLocal DNSCache](https://kubernetes.io/docs/tasks/administer-cluster/nodelocaldns/) — кэш DNS на каждом узле (DaemonSet в `kube-system`), снижает задержки и нагрузку на CoreDNS. В манифесте [k8s/nodelocaldns.yaml](k8s/nodelocaldns.yaml) в блоке `.:53` плейсхолдер **`__SENTRY_INGRESS_IP__`** нужно заменить на текущий внешний IP из `terraform output -raw ingress_public_ip` (тот же адрес, что резервирует [ip-dns.tf](ip-dns.tf) и куда указывают A-записи), чтобы поды резолвили тот же адрес, что и публичный DNS, даже если внешний DNS из кластера недоступен.
+[NodeLocal DNSCache](https://kubernetes.io/docs/tasks/administer-cluster/nodelocaldns/) — кэш DNS на каждом узле (DaemonSet в `kube-system`), снижает задержки и нагрузку на CoreDNS. В манифесте [k8s/nodelocaldns.yaml](k8s/nodelocaldns.yaml) в блоке `.:53` плейсхолдер `**__SENTRY_INGRESS_IP__**` нужно заменить на текущий внешний IP из `terraform output -raw ingress_public_ip` (тот же адрес, что резервирует [ip-dns.tf](ip-dns.tf) и куда указывают A-записи), чтобы поды резолвили тот же адрес, что и публичный DNS, даже если внешний DNS из кластера недоступен.
 
 **Установка** (опционально). Нужен настроенный `kubectl` на кластер. Подставляется ClusterIP сервиса кластерного DNS (`kube-dns`), затем манифест применяется через `kubectl apply -f -`. Режим **iptables** у kube-proxy — типичный случай.
 
@@ -62,7 +62,7 @@ kubectl -n elasticsearch get elasticsearch.elasticsearch.k8s.elastic.co sentry-n
 kubectl -n elasticsearch get pods,svc
 ```
 
-ECK создаёт HTTP-сервис **`<имя-ресурса>-es-http`**. Для `metadata.name: sentry-nodestore` это `sentry-nodestore-es-http`. Полный DNS из подов в `sentry`:
+ECK создаёт HTTP-сервис `**<имя-ресурса>-es-http**`. Для `metadata.name: sentry-nodestore` это `sentry-nodestore-es-http`. Полный DNS из подов в `sentry`:
 
 `sentry-nodestore-es-http.elasticsearch.svc.cluster.local:9200`
 
@@ -215,7 +215,7 @@ helm upgrade --install sentry sentry/sentry --version 29.5.1 -n sentry \
 kubectl -n sentry exec -it deploy/sentry-web -- sentry upgrade --with-nodestore
 ```
 
-Зайти в Sentry в браузере: **http://sentry.apatsev.org.ru** (DNS и ingress — **§8**; если задали другой хост в Ingress/`values`, используйте его).
+Зайти в Sentry в браузере: **[http://sentry.apatsev.org.ru](http://sentry.apatsev.org.ru)** (DNS и ingress — **§8**; если задали другой хост в Ingress/`values`, используйте его).
 
 Пакет `sentry-nodestore-elastic` относится к **sentry-web** и воркерам на том же образе. **Relay** и **taskbroker** отдельно не настраиваются. Для **Snuba** при необходимости см. [Dockerfile.snuba-nodestore](Dockerfile.snuba-nodestore).
 
@@ -255,14 +255,14 @@ helm upgrade --install vmks vm/victoria-metrics-k8s-stack \
   --wait --timeout=15m
 ```
 
-**Пароль Grafana.** Подчарт Grafana создаёт Secret с учётными данными администратора: имя вида **`<имя Helm-релиза>-grafana`**. Для команды выше (релиз `vmks`, namespace `vmks`) это **`vmks-grafana`**. Пароль:
+**Пароль Grafana.** Подчарт Grafana создаёт Secret с учётными данными администратора: имя вида `**<имя Helm-релиза>-grafana`**. Для команды выше (релиз `vmks`, namespace `vmks`) это `**vmks-grafana**`. Пароль:
 
 ```bash
 kubectl -n vmks get secret vmks-grafana -o jsonpath='{.data.admin-password}' | base64 -d
 echo
 ```
 
-Логин по умолчанию — **`admin`** (его можно прочитать из ключа `admin-user` того же Secret). Если вы установили стек под другим именем релиза, замените `vmks-grafana` на `<ваш-релиз>-grafana`.
+Логин по умолчанию — `**admin**` (его можно прочитать из ключа `admin-user` того же Secret). Если вы установили стек под другим именем релиза, замените `vmks-grafana` на `<ваш-релиз>-grafana`.
 
 Для имён из `vmks-values.yaml` (`vmsingle.apatsev.org.ru`, `grafana.apatsev.org.ru`) добавьте **A-записи** на тот же внешний IP, что у ingress (см. [ip-dns.tf](ip-dns.tf) для `sentry.apatsev.org.ru`).
 
@@ -270,10 +270,9 @@ echo
 
 ### 7. Мониторинг Sentry (Prometheus exporter)
 
-После установки Sentry (**§4**, namespace `sentry`) и VictoriaMetrics K8s Stack (**§6**) можно поднять [sentry-prometheus-exporter](https://github.com/italux/sentry-prometheus-exporter) манифестом [k8s/sentry-prometheus-exporter.yaml](k8s/sentry-prometheus-exporter.yaml): метрики на порту **9790**, путь `/metrics`. Внутри кластера API Sentry задаётся как `http://sentry-web.sentry.svc.cluster.local:9000/api/0/`. В Deployment переменная **`SENTRY_EXPORTER_ORG`** должна совпадать со **slug организации** в UI (путь `/organizations/<slug>/`); в файле по умолчанию указано `sentry` — при необходимости отредактируйте перед `kubectl apply`.
+После установки Sentry (**§4**, namespace `sentry`) и VictoriaMetrics K8s Stack (**§6**) можно поднять [sentry-prometheus-exporter](https://github.com/italux/sentry-prometheus-exporter) манифестом [k8s/sentry-prometheus-exporter.yaml](k8s/sentry-prometheus-exporter.yaml): метрики на порту **9790**, путь `/metrics`. Внутри кластера API Sentry задаётся как `http://sentry-web.sentry.svc.cluster.local:9000/api/0/`. В Deployment переменная `**SENTRY_EXPORTER_ORG`** должна совпадать со **slug организации** в UI (путь `/organizations/<slug>/`); в файле по умолчанию указано `sentry` — при необходимости отредактируйте перед `kubectl apply`.
 
-1. Создайте токен через [Internal Integration](https://docs.sentry.io/product/integrations/integration-platform/internal-integration/). В UI: **Settings** → **Organization Settings** → **Developer Settings** → **Custom Integrations** → **Create New Integration** → в диалоге укажите тип **Internal Integration** → **Next** → имя интеграции. В **Permissions** задайте scope, с которыми работает [sentry-prometheus-exporter](https://github.com/italux/sentry-prometheus-exporter): `org:read`, `project:read`, `project:releases`, `event:read` (полный набор из upstream; при отключённых метриках по событиям/релизам иногда достаточно части прав, проще выдать все четыре). **Save** → внизу страницы скопируйте **Token** (на этой же странице можно создать до 20 токенов на интеграцию). См. [как создать auth token](https://docs.sentry.io/api/guides/create-auth-token/) и [документацию API](https://docs.sentry.io/api/auth/).
-
+1. Создайте токен через [Internal Integration](https://docs.sentry.io/product/integrations/integration-platform/internal-integration/). В UI Sentry 26+: **Settings** → в левой колонке **Developer Settings** → **Custom Integrations** → **Create New Integration** → тип **Internal Integration** → **Next** → имя интеграции. (Пункта «Organization Settings» в меню нет: общие настройки организации — **Organization** → **General Settings**; токен Internal Integration создаётся в **Developer Settings**.) В **Permissions** задайте scope, с которыми работает [sentry-prometheus-exporter](https://github.com/italux/sentry-prometheus-exporter): `org:read`, `project:read`, `project:releases`, `event:read` (полный набор из upstream; при отключённых метриках по событиям/релизам иногда достаточно части прав, проще выдать все четыре). **Save** → внизу страницы скопируйте **Token** (на этой же странице можно создать до 20 токенов на интеграцию). См. [как создать auth token](https://docs.sentry.io/api/guides/create-auth-token/) и [документацию API](https://docs.sentry.io/api/auth/).
 2. Сохраните токен в Secret в том же namespace, что и релиз Helm:
 
 ```bash
@@ -281,17 +280,17 @@ kubectl -n sentry create secret generic sentry-auth-token \
   --from-literal=token='<SENTRY_AUTH_TOKEN>'
 ```
 
-3. Примените манифест:
+1. Примените манифест:
 
 ```bash
 kubectl apply -f k8s/sentry-prometheus-exporter.yaml
 ```
 
-4. Подключите scrape через `VMServiceScrape`: [k8s/vmscrape-sentry-prometheus-exporter.yaml](k8s/vmscrape-sentry-prometheus-exporter.yaml) (`kubectl apply -f k8s/vmscrape-sentry-prometheus-exporter.yaml`). Либо укажите цель вручную, например `http://sentry-prometheus-exporter.sentry.svc.cluster.local:9790/metrics`.
+1. Подключите scrape через `VMServiceScrape`: [k8s/vmscrape-sentry-prometheus-exporter.yaml](k8s/vmscrape-sentry-prometheus-exporter.yaml) (`kubectl apply -f k8s/vmscrape-sentry-prometheus-exporter.yaml`). Либо укажите цель вручную, например `http://sentry-prometheus-exporter.sentry.svc.cluster.local:9790/metrics`.
 
 ### 8. Доступ к Sentry
 
-Sentry доступен по адресу **http://sentry.apatsev.org.ru** через [ingress-nginx](https://kubernetes.github.io/ingress-nginx/) (стандартный `Ingress`).
+Sentry доступен по адресу **[http://sentry.apatsev.org.ru](http://sentry.apatsev.org.ru)** через [ingress-nginx](https://kubernetes.github.io/ingress-nginx/) (стандартный `Ingress`).
 
 Убедитесь, что DNS-запись `sentry.apatsev.org.ru` указывает на внешний IP сервиса ingress-nginx (обычно `LoadBalancer` в namespace `ingress-nginx`):
 
@@ -305,15 +304,17 @@ kubectl -n ingress-nginx get svc
 
 #### Маршруты
 
-| Путь | Описание |
-|------|----------|
-| `GET /health` | Проверка готовности (без DSN) |
-| `GET /demo/exception` | Необработанное исключение |
+
+| Путь                          | Описание                                                        |
+| ----------------------------- | --------------------------------------------------------------- |
+| `GET /health`                 | Проверка готовности (без DSN)                                   |
+| `GET /demo/exception`         | Необработанное исключение                                       |
 | `GET /demo/capture-exception` | Необработанное исключение (другой текст, как `/demo/exception`) |
-| `GET /demo/message` | `capture_message` (info + warning) |
-| `GET /demo/transaction` | Spans / performance |
-| `GET /demo/breadcrumb` | Breadcrumb, затем ошибка |
-| `GET /demo/context` | Теги, user, context + message |
+| `GET /demo/message`           | `capture_message` (info + warning)                              |
+| `GET /demo/transaction`       | Spans / performance                                             |
+| `GET /demo/breadcrumb`        | Breadcrumb, затем ошибка                                        |
+| `GET /demo/context`           | Теги, user, context + message                                   |
+
 
 Без `SENTRY_DSN` маршруты `/demo/*` отвечают **503**; `/health` всегда **200**.
 
@@ -341,13 +342,13 @@ kubectl apply -f demo/k8s/deployment-node.yaml
 kubectl apply -f demo/k8s/service.yaml
 ```
 
-Манифесты Secret с плейсхолдерами: [`demo/k8s/secret-sentry-dsn-node.yaml`](demo/k8s/secret-sentry-dsn-node.yaml), [`demo/k8s/secret-sentry-dsn-python.yaml`](demo/k8s/secret-sentry-dsn-python.yaml).
+Манифесты Secret с плейсхолдерами: `[demo/k8s/secret-sentry-dsn-node.yaml](demo/k8s/secret-sentry-dsn-node.yaml)`, `[demo/k8s/secret-sentry-dsn-python.yaml](demo/k8s/secret-sentry-dsn-python.yaml)`.
 
 Переменная `DEMO_AUTO_EXCEPTION_INTERVAL_SEC` в манифестах demo (и при локальном запуске) задаёт интервал автоматической отправки исключений в Sentry; `0` отключает. Откройте проект в Sentry и убедитесь, что появились issues и (при включённом performance) транзакции.
 
 #### Нативный пример (C, Linux ELF)
 
-В [examples/sentry-native-debug-sample](examples/sentry-native-debug-sample) — минимальный `main.c` и скрипт [upload-releases.sh](examples/sentry-native-debug-sample/upload-releases.sh): сборка отладочного бинарника (`cc -g -O0`), создание имён релизов в Sentry и загрузка **debug information files** через `sentry-cli debug-files upload` (тип `elf`). Нужны установленные **`sentry-cli`** и компилятор **`cc`**.
+В [examples/sentry-native-debug-sample](examples/sentry-native-debug-sample) — минимальный `main.c` и скрипт [upload-releases.sh](examples/sentry-native-debug-sample/upload-releases.sh): сборка отладочного бинарника (`cc -g -O0`), создание имён релизов в Sentry и загрузка **debug information files** через `sentry-cli debug-files upload` (тип `elf`). Нужны установленные `**sentry-cli`** и компилятор `**cc**`.
 
 Перед запуском задайте URL self-hosted (если не дефолтный `sentry.io`), организацию, проект и токен с правами на загрузку артефактов / релизов (см. комментарии в скрипте):
 
@@ -364,7 +365,7 @@ bash examples/sentry-native-debug-sample/upload-releases.sh
 
 #### JS source maps (только загрузка артефактов)
 
-В [examples/sourcemap-upload](examples/sourcemap-upload) — минифицированный бандл (`esbuild`) и загрузка **source maps** в релиз через `sentry-cli releases files … upload-sourcemaps`. Отдельный сервис в примере не поднимается; чтобы стеки в UI совпали с картами, в браузерном SDK укажите тот же **`release`**, что и `SENTRY_RELEASE` при upload. Где в интерфейсе смотреть загруженные файлы — в [README примера](examples/sourcemap-upload/README.md) (**Releases** → нужный релиз → **Artifacts** / **Files**).
+В [examples/sourcemap-upload](examples/sourcemap-upload) — минифицированный бандл (`esbuild`) и загрузка **source maps** в релиз через `sentry-cli releases files … upload-sourcemaps`. Отдельный сервис в примере не поднимается; чтобы стеки в UI совпали с картами, в браузерном SDK укажите тот же `**release`**, что и `SENTRY_RELEASE` при upload. Где в интерфейсе смотреть загруженные файлы — в [README примера](examples/sourcemap-upload/README.md) (**Releases** → нужный релиз → **Artifacts** / **Files**).
 
 ```bash
 export SENTRY_URL="http://sentry.apatsev.org.ru"
@@ -373,3 +374,4 @@ export SENTRY_ORG="<slug организации>"
 export SENTRY_PROJECT="<slug проекта>"
 bash examples/sourcemap-upload/upload-sourcemaps.sh
 ```
+
