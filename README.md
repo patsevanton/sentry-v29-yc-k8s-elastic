@@ -1,5 +1,5 @@
 # Развёртывание Sentry v29.5.1 в Yandex Cloud на Kubernetes
-
+https://github.com/patsevanton/sentry-external-kf-ch-pg-rd/blob/2a3ce8f60469ae6720d838ce7c87fb3a9d8c4f69/templatefile.tf#L17
 ### 0. NodeLocal DNSCache (опционально)
 
 [NodeLocal DNSCache](https://kubernetes.io/docs/tasks/administer-cluster/nodelocaldns/) — кэш DNS на каждом узле (DaemonSet в `kube-system`), снижает задержки и нагрузку на CoreDNS. В манифесте [k8s/nodelocaldns.yaml](k8s/nodelocaldns.yaml) в блоке `.:53` плейсхолдер `**__SENTRY_INGRESS_IP__**` нужно заменить на текущий внешний IP из `terraform output -raw ingress_public_ip` (тот же адрес, что резервирует [ip-dns.tf](ip-dns.tf) и куда указывают A-записи), чтобы поды резолвили тот же адрес, что и публичный DNS, даже если внешний DNS из кластера недоступен.
