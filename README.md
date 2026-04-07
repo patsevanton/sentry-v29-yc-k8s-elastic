@@ -90,7 +90,7 @@ curl -s "http://sentry-nodestore-es-http.elasticsearch.svc.cluster.local:9200/_i
 
 **1.4. Образ Sentry с nodestore**
 
-В этом репозитории образ **уже собран** и публикуется в GHCR; для установки по примеру из README достаточно указать его в Helm values — см. [values-sentry-minimal.yaml](values-sentry-minimal.yaml) (`images.sentry.repository` и `images.sentry.tag`).
+В этом репозитории образ **уже собран** и публикуется в GHCR; для установки по примеру из README достаточно указать его в Helm values — см. [values_sentry.yaml.tpl](values_sentry.yaml.tpl) (`images.sentry.repository` и `images.sentry.tag`). Файл `values_sentry.yaml` генерируется автоматически из шаблона через Terraform (см. [templatefile.tf](templatefile.tf)).
 
 Если вы **сами** собираете образ (другой реестр, свои правки в `Dockerfile.sentry-nodestore` или обновление под новый релиз чарта), делайте так:
 
@@ -110,7 +110,7 @@ images:
 
 **1.5. Интеграция nodestore в Sentry**
 
-В `config.sentryConfPy` в [values-sentry-minimal.yaml](values-sentry-minimal.yaml) (или в своём values поверх него) задайте клиент и приложение Django, например для HTTP без TLS (как в манифесте ECK выше). Готовый пример — тот же файл:
+В `config.sentryConfPy` в [values_sentry.yaml.tpl](values_sentry.yaml.tpl) (или в своём values поверх него) задайте клиент и приложение Django, например для HTTP без TLS (как в манифесте ECK выше). Готовый пример — тот же файл:
 
 ```python
 # Не импортируйте sentry.conf.server здесь: фрагмент дописывается в конец sentry.conf.py
@@ -137,7 +137,7 @@ INSTALLED_APPS.append("sentry_nodestore_elastic")
 INSTALLED_APPS = tuple(INSTALLED_APPS)
 ```
 
-Установка или обновление релиза с nodestore — один values-файл с образом и `config.sentryConfPy` ([values-sentry-minimal.yaml](values-sentry-minimal.yaml)). Саму команду `helm upgrade` и инициализацию nodestore выполняйте один раз после **§2** (ClickHouse) и **§3** (репозиторий Helm) — см. **§4**.
+Установка или обновление релиза с nodestore — один values-файл с образом и `config.sentryConfPy` (`values_sentry.yaml`, генерируется из [values_sentry.yaml.tpl](values_sentry.yaml.tpl)). Саму команду `helm upgrade` и инициализацию nodestore выполняйте один раз после **§2** (ClickHouse) и **§3** (репозиторий Helm) — см. **§4**.
 
 **1.6. TLS и версии**
 
@@ -180,7 +180,7 @@ kubectl create namespace clickhouse
 kubectl apply -f clickhouse.yaml
 ```
 
-Дождитесь готовности пода. Оператор создаёт под с именем вида `chi-sentry-clickhouse-single-node-0-0-0` (StatefulSet `…-0-0`, ординал StatefulSet — ещё `-0`); DNS в `externalClickhouse.host` — сервис `chi-sentry-clickhouse-single-node-0-0` в [values-sentry-minimal.yaml](values-sentry-minimal.yaml), это не имя пода. Удобнее ждать по label CHI:
+Дождитесь готовности пода. Оператор создаёт под с именем вида `chi-sentry-clickhouse-single-node-0-0-0` (StatefulSet `…-0-0`, ординал StatefulSet — ещё `-0`); DNS в `externalClickhouse.host` — сервис `chi-sentry-clickhouse-single-node-0-0` в [values_sentry.yaml.tpl](values_sentry.yaml.tpl), это не имя пода. Удобнее ждать по label CHI:
 
 ```bash
 kubectl -n clickhouse wait --for=condition=ready pod -l clickhouse.altinity.com/chi=sentry-clickhouse --timeout=600s
@@ -208,25 +208,17 @@ Terraform-файл [s3.tf](s3.tf) создаёт сервисный аккаун
 terraform apply
 ```
 
-После apply подставьте значения в [values-sentry-minimal.yaml](values-sentry-minimal.yaml) (секция `filestore.s3`):
-
-```bash
-terraform output -raw sentry_s3_access_key
-terraform output -raw sentry_s3_secret_key
-terraform output -raw sentry_s3_bucket_name
-```
-
-Затем переустановите Sentry (см. **§4**).
+После apply файл `values_sentry.yaml` генерируется автоматически из шаблона [values_sentry.yaml.tpl](values_sentry.yaml.tpl) через Terraform (см. [templatefile.tf](templatefile.tf)) — ключи S3 подставляются из ресурсов Terraform, ручная подстановка не нужна.
 
 ### 4. Установка Sentry
 
-**Порядок зависимостей.** Чарт поднимает PostgreSQL, Redis и Kafka в namespace `sentry`, но **ClickHouse задаётся снаружи** ([values-sentry-minimal.yaml](values-sentry-minimal.yaml), `externalClickhouse`). Helm-hook **Job `sentry-db-check`** ждёт TCP до `externalClickhouse.host:9000` и до Kraft-контроллеров Kafka. Пока ClickHouse не развёрнут, в логах пода будет `nc: getaddrinfo: Name does not resolve` и `... is not available yet` — это нормально только до выполнения **§2** (namespace `clickhouse`, [clickhouse.yaml](clickhouse.yaml), под ClickHouse в статусе `Running`, см. команду `wait` выше). Сначала: **§1.1–1.2** (Elasticsearch), **§2.1–2.2** (ClickHouse), **§3** (репозиторий Helm), затем команда ниже.
+**Порядок зависимостей.** Чарт поднимает PostgreSQL, Redis и Kafka в namespace `sentry`, но **ClickHouse задаётся снаружи** ([values_sentry.yaml.tpl](values_sentry.yaml.tpl), `externalClickhouse`). Helm-hook **Job `sentry-db-check`** ждёт TCP до `externalClickhouse.host:9000` и до Kraft-контроллеров Kafka. Пока ClickHouse не развёрнут, в логах пода будет `nc: getaddrinfo: Name does not resolve` и `... is not available yet` — это нормально только до выполнения **§2** (namespace `clickhouse`, [clickhouse.yaml](clickhouse.yaml), под ClickHouse в статусе `Running`, см. команду `wait` выше). Сначала: **§1.1–1.2** (Elasticsearch), **§2.1–2.2** (ClickHouse), **§3** (репозиторий Helm), затем команда ниже.
 
-Установка с [values-sentry-minimal.yaml](values-sentry-minimal.yaml): в файле уже заданы nodestore в Elasticsearch (`images.sentry`, `config.sentryConfPy`). Перед `helm upgrade` разверните оператор и кластер из **§1.1–1.2** ([elasticsearch.yaml](elasticsearch.yaml)).
+Установка с `values_sentry.yaml` (генерируется из [values_sentry.yaml.tpl](values_sentry.yaml.tpl) через `terraform apply`): в файле уже заданы nodestore в Elasticsearch (`images.sentry`, `config.sentryConfPy`). Перед `helm upgrade` разверните оператор и кластер из **§1.1–1.2** ([elasticsearch.yaml](elasticsearch.yaml)).
 
 ```bash
 helm upgrade --install sentry sentry/sentry --version 29.5.1 -n sentry \
-  -f values-sentry-minimal.yaml --timeout=900s --create-namespace
+  -f values_sentry.yaml --timeout=900s --create-namespace
 ```
 
 После первого подключения к Elasticsearch инициализируйте шаблон индекса nodestore:
@@ -239,7 +231,7 @@ kubectl -n sentry exec -it deploy/sentry-web -- sentry upgrade --with-nodestore
 
 Пакет `sentry-nodestore-elastic` относится к **sentry-web** и воркерам на том же образе. **Relay** и **taskbroker** отдельно не настраиваются. Для **Snuba** при необходимости см. [Dockerfile.snuba-nodestore](Dockerfile.snuba-nodestore).
 
-Свой образ и правки nodestore — по **§1.4–1.5** (в том же `values-sentry-minimal.yaml` или в дополнительном `-f` при необходимости). Репозиторий Helm — **§3** (выполните до первой установки).
+Свой образ и правки nodestore — по **§1.4–1.5** (в том же `values_sentry.yaml.tpl` или в дополнительном `-f` при необходимости). Репозиторий Helm — **§3** (выполните до первой установки).
 
 ### 5. Проверка подов и логов
 

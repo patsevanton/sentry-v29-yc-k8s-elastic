@@ -1,18 +1,24 @@
 # Минимальный пример с nodestore в Elasticsearch (ECK).
 # Кластер: elasticsearch.yaml, сервис HTTP — sentry-nodestore-es-http.elasticsearch.svc:9200.
 # См. README.md § 1 и Dockerfile.sentry-nodestore.
+#
+# Этот файл — шаблон Terraform templatefile(). Не редактируйте values_sentry.yaml
+# напрямую: он генерируется из этого .tpl. Правьте переменные в templatefile.tf.
+
+# Пользовательская конфигурация для Sentry
 user:
   create: true
-  email: admin@sentry.local
-  password: admin
+  email: "${user_email}"
+  password: "${sentry_admin_password}"
 
+# Контейнерные образы компонентов Sentry
 images:
   sentry:
-    repository: ghcr.io/patsevanton/sentry-v29-yc-k8s-elastic
-    tag: sentry-1.3.0
+    repository: "${sentry_image_repository}"
+    tag: "${sentry_image_tag}"
   snuba:
-    repository: ghcr.io/patsevanton/sentry-v29-yc-k8s-elastic
-    tag: snuba-1.3.0
+    repository: "${snuba_image_repository}"
+    tag: "${snuba_image_tag}"
 
 # Доступ по sentry.apatsev.org.ru через ingress-nginx (стандартный Ingress).
 # Включить ровно один способ маршрутизации: route.main, ingress или nginx.
@@ -21,18 +27,14 @@ route:
     enabled: false
 
 ingress:
-  enabled: true
-  ingressClassName: nginx
-  hostname: sentry.apatsev.org.ru
+  enabled: ${ingress_enabled}
+  ingressClassName: "${ingress_class_name}"
+  hostname: "${ingress_hostname}"
 
 # URL для CSRF и редиректов
 system:
-  url: "http://sentry.apatsev.org.ru"
+  url: "${system_url}"
 
-# Убрать warning sentry-web: «Empty model costs» (sentry.relay.config.ai_model_costs):
-# не тянуть цены LLM с внешних API. Если нужен расчёт AI cost — оставьте False и
-# обеспечьте egress к https://openrouter.ai и https://models.dev для celery-задачи fetch_ai_model_costs.
-#
 # Nodestore: образ с sentry-nodestore-elastic (images.sentry выше). После первого деплоя:
 # kubectl -n sentry exec -it deploy/sentry-web -- sentry upgrade --with-nodestore
 config:
@@ -44,7 +46,7 @@ config:
     from elasticsearch import Elasticsearch
 
     es = Elasticsearch(
-        ["http://sentry-nodestore-es-http.elasticsearch.svc.cluster.local:9200"],
+        ["${elasticsearch_url}"],
         request_timeout=60,
         max_retries=3,
         retry_on_timeout=True,
@@ -63,24 +65,23 @@ config:
     INSTALLED_APPS = tuple(INSTALLED_APPS)
 
 # Внешний ClickHouse (до helm install Sentry: README §2, иначе Job sentry-db-check
-# зависнет с «getaddrinfo: Name does not resolve»). Имя пода = chi-<metadata.name CHI>-<cluster>-<shard>-<replica>
-# (см. clickhouse.yaml: sentry-clickhouse / single-node → chi-sentry-clickhouse-single-node-0-0).
+# зависнет с «getaddrinfo: Name does not resolve»).
 externalClickhouse:
-  host: "chi-sentry-clickhouse-single-node-0-0.clickhouse.svc.cluster.local"
-  tcpPort: 9000
-  httpPort: 8123
-  username: default
-  password: ""   # в clickhouse.yaml пароль не задан; при необходимости настройте пользователя в CHI
-  database: default
-  singleNode: true
+  host: "${external_clickhouse.host}"
+  tcpPort: ${external_clickhouse.tcpPort}
+  httpPort: ${external_clickhouse.httpPort}
+  username: "${external_clickhouse.username}"
+  password: "${external_clickhouse.password}"
+  database: "${external_clickhouse.database}"
+  singleNode: ${external_clickhouse.singleNode}
 
 # В кластере: PostgreSQL, Redis, Kafka (Kraft — без Zookeeper)
 postgresql:
-  enabled: true
+  enabled: ${postgresql_enabled}
 redis:
-  enabled: true
+  enabled: ${redis_enabled}
 kafka:
-  enabled: true
+  enabled: ${kafka_enabled}
   zookeeper:
     enabled: false
   kraft:
@@ -92,30 +93,24 @@ kafka:
 # Filestore: S3-совместимое хранилище (Yandex Object Storage) вместо локальной ФС.
 # При filesystem-бэкенде PVC (RWO) доступен только web-поду; taskworker-ы при
 # assemble debug-файлов не находят blob-ы → FileNotFoundError. S3 доступен всем подам.
-# Значения accessKey / secretKey / bucketName — из terraform output (см. s3.tf):
-#   terraform output -raw sentry_s3_access_key
-#   terraform output -raw sentry_s3_secret_key
-#   terraform output -raw sentry_s3_bucket_name
 filestore:
   backend: s3
   s3:
-    accessKey: "<SENTRY_S3_ACCESS_KEY>"
-    secretKey: "<SENTRY_S3_SECRET_KEY>"
-    bucketName: "<SENTRY_S3_BUCKET_NAME>"
+    accessKey: "${filestore.s3.accessKey}"
+    secretKey: "${filestore.s3.secretKey}"
+    bucketName: "${filestore.s3.bucketName}"
     endpointUrl: "https://storage.yandexcloud.net"
     region_name: "ru-central1"
     signature_version: "s3v4"
     default_acl: "private"
 
 # Symbolicator: скачивание и кеш debug-символов для native stack traces.
-# См. https://github.com/sentry-kubernetes/charts/blob/develop/charts/sentry/values.yaml (symbolicator)
 symbolicator:
   enabled: true
   api:
-    # Образ distroless nonroot (UID/GID 65532); иначе корень PVC root:755 → Permission denied на /data
     securityContext:
       fsGroup: 65532
-    usedeployment: false # Set true to use Deployment, false for StatefulSet
+    usedeployment: false
     persistence:
-      enabled: true # Set true for using PersistentVolumeClaim, false for emptyDir
+      enabled: true
       size: "1Gi"

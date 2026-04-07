@@ -7,8 +7,8 @@
 # «internal server error». S3-бэкенд доступен всем подам одновременно, решая
 # эту проблему без NFS или RWX-тома.
 #
-# После terraform apply подставьте значения из output в values-sentry-minimal.yaml
-# (секция filestore.s3) и выполните helm upgrade.
+# После terraform apply файл values_sentry.yaml генерируется автоматически
+# из шаблона values_sentry.yaml.tpl (см. templatefile.tf).
 
 resource "yandex_iam_service_account" "sa_s3_sentry" {
   folder_id   = local.folder_id
