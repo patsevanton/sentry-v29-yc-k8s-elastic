@@ -90,6 +90,16 @@ kafka:
     enabled: true
     replicationFactor: 1
 
+# Локальный filestore: том на узле часто монтируется как root:root; без fsGroup пользователь
+# sentry (uid/gid 999 в официальном образе) не может писать в /var/lib/sentry/files.
+# Чарт подставляет sentry.web.securityContext в pod.spec.securityContext (см. deployment-sentry-web).
+# При RWO и одном томе — Recreate, чтобы при обновлении не было двух подов с одним PVC.
+sentry:
+  web:
+    strategyType: Recreate
+    securityContext:
+      fsGroup: 999
+
 # Filestore: S3-совместимое хранилище (Yandex Object Storage) вместо локальной ФС.
 # При filesystem-бэкенде PVC (RWO) доступен только web-поду; taskworker-ы при
 # assemble debug-файлов не находят blob-ы → FileNotFoundError. S3 доступен всем подам.
