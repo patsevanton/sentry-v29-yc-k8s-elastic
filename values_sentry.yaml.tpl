@@ -90,14 +90,14 @@ kafka:
     enabled: true
     replicationFactor: 1
 
-# Filestore: S3-совместимое хранилище (Yandex Object Storage) вместо локальной ФС.
-# При filesystem-бэкенде PVC (RWO) доступен только web-поду; taskworker-ы при assemble
-# debug-файлов / artifact bundle не находят blob-ы → в логах deploy/sentry-taskworker-default:
-# sentry.tasks.assemble: failed to assemble bundle и FileNotFoundError под /var/lib/sentry/files/.../.
-# S3 доступен всем подам.
+# Если использовать filesystem-бэкенд, PVC с режимом RWO монтируется только в web-под.
+# Из-за этого taskworker при assemble debug-файлов / artifact bundle не видит blob-ы:
+# в логах deploy/sentry-taskworker-default появляются
+# `sentry.tasks.assemble: failed to assemble bundle` и FileNotFoundError в /var/lib/sentry/files/.../.
 #
-# sourcemap: загрузка source maps / artifact bundle (CLI, examples/sourcemap-upload) обрабатывается
-# воркерами; общий S3 filestore ниже нужен, чтобы web и taskworker читали одни и те же blob-ы.
+# Загрузка source maps / artifact bundle (CLI, examples/sourcemap-upload) обрабатывается воркерами,
+# поэтому filestore должен быть общим для web и taskworker. S3 решает эту проблему:
+# все поды читают одни и те же blob-ы.
 filestore:
   backend: s3
   s3:
