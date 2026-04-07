@@ -282,6 +282,13 @@ kubectl -n sentry rollout restart deploy/sentry-snuba-api
 kubectl -n sentry rollout restart deploy/sentry-snuba-consumer
 ```
 
+**2.5. Мини-чеклист: кластер снова здоров**
+
+- Все pod в `clickhouse` и `sentry` в `Running/Ready`, без `CrashLoopBackOff`.
+- В `system.replicas` для рабочих таблиц `is_readonly=0` и `is_session_expired=0`.
+- В логах `snuba-api`/consumers нет повторяющихся `All connection tries failed`.
+- В UI Sentry появляются новые события после failover-теста (данные читаются и пишутся).
+
 ### 3. Репозиторий Sentry
 
 Подключите Helm-репозиторий чарта Sentry. Namespace `sentry` можно создать заранее или при установке в **§4** флагом `--create-namespace`.
