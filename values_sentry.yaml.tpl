@@ -90,30 +90,24 @@ kafka:
     enabled: true
     replicationFactor: 1
 
-# Локальный filestore: том на узле часто монтируется как root:root; без fsGroup пользователь
-# sentry (uid/gid 999 в официальном образе) не может писать в /var/lib/sentry/files.
-# Чарт подставляет sentry.web.securityContext в pod.spec.securityContext (см. deployment-sentry-web).
-# При RWO и одном томе — Recreate, чтобы при обновлении не было двух подов с одним PVC.
-sentry:
-  web:
-    strategyType: Recreate
-    securityContext:
-      fsGroup: 999
-
 # Filestore: S3-совместимое хранилище (Yandex Object Storage) вместо локальной ФС.
-# При filesystem-бэкенде PVC (RWO) доступен только web-поду; taskworker-ы при
-# assemble debug-файлов не находят blob-ы → FileNotFoundError. S3 доступен всем подам.
-# Временно отключено — проверка влияния на source maps (chart уйдёт на filesystem по умолчанию).
-# filestore:
-#   backend: s3
-#   s3:
-#     accessKey: "${filestore.s3.accessKey}"
-#     secretKey: "${filestore.s3.secretKey}"
-#     bucketName: "${filestore.s3.bucketName}"
-#     endpointUrl: "https://storage.yandexcloud.net"
-#     region_name: "ru-central1"
-#     signature_version: "s3v4"
-#     default_acl: "private"
+# При filesystem-бэкенде PVC (RWO) доступен только web-поду; taskworker-ы при assemble
+# debug-файлов / artifact bundle не находят blob-ы → в логах deploy/sentry-taskworker-default:
+# sentry.tasks.assemble: failed to assemble bundle и FileNotFoundError под /var/lib/sentry/files/.../.
+# S3 доступен всем подам.
+#
+# sourcemap: загрузка source maps / artifact bundle (CLI, examples/sourcemap-upload) обрабатывается
+# воркерами; общий S3 filestore ниже нужен, чтобы web и taskworker читали одни и те же blob-ы.
+filestore:
+  backend: s3
+  s3:
+    accessKey: "${filestore.s3.accessKey}"
+    secretKey: "${filestore.s3.secretKey}"
+    bucketName: "${filestore.s3.bucketName}"
+    endpointUrl: "https://storage.yandexcloud.net"
+    region_name: "ru-central1"
+    signature_version: "s3v4"
+    default_acl: "private"
 
 # Symbolicator: скачивание и кеш debug-символов для native stack traces.
 symbolicator:
