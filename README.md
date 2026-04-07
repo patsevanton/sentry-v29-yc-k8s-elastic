@@ -177,13 +177,19 @@ kubectl rollout restart deployment/clickhouse-operator-altinity-clickhouse-opera
 
 ```bash
 kubectl create namespace clickhouse
+kubectl apply -f clickhouse-keeper.yaml
 kubectl apply -f clickhouse.yaml
 ```
 
-Дождитесь готовности пода. Оператор создаёт под с именем вида `chi-sentry-clickhouse-single-node-0-0-0` (StatefulSet `…-0-0`, ординал StatefulSet — ещё `-0`); DNS в `externalClickhouse.host` — сервис `chi-sentry-clickhouse-single-node-0-0` в [values_sentry.yaml.tpl](values_sentry.yaml.tpl), это не имя пода. Удобнее ждать по label CHI:
+`clickhouse-keeper.yaml` поднимает 3-нодовый Keeper-кластер, а `clickhouse.yaml` — отказоустойчивый ClickHouse `2 shard x 2 replica` (кластер `sentry-cluster`).
+Убедитесь, что в Kubernetes есть достаточно воркер-нод (минимум 3, лучше 4+), иначе не все реплики поднимутся.
+
+DNS для Sentry задаётся через `externalClickhouse.host` в [values_sentry.yaml.tpl](values_sentry.yaml.tpl): `clickhouse-sentry-clickhouse.clickhouse.svc.cluster.local`.
+Проверка готовности:
 
 ```bash
 kubectl -n clickhouse wait --for=condition=ready pod -l clickhouse.altinity.com/chi=sentry-clickhouse --timeout=600s
+kubectl -n clickhouse wait --for=condition=ready pod -l clickhouse-keeper.altinity.com/chki=clickhouse-keeper --timeout=600s
 ```
 
 ### 3. Репозиторий Sentry
@@ -212,7 +218,7 @@ terraform apply
 
 ### 4. Установка Sentry
 
-**Порядок зависимостей.** Чарт поднимает PostgreSQL, Redis и Kafka в namespace `sentry`, но **ClickHouse задаётся снаружи** ([values_sentry.yaml.tpl](values_sentry.yaml.tpl), `externalClickhouse`). Helm-hook **Job `sentry-db-check`** ждёт TCP до `externalClickhouse.host:9000` и до Kraft-контроллеров Kafka. Пока ClickHouse не развёрнут, в логах пода будет `nc: getaddrinfo: Name does not resolve` и `... is not available yet` — это нормально только до выполнения **§2** (namespace `clickhouse`, [clickhouse.yaml](clickhouse.yaml), под ClickHouse в статусе `Running`, см. команду `wait` выше). Сначала: **§1.1–1.2** (Elasticsearch), **§2.1–2.2** (ClickHouse), **§3** (репозиторий Helm), затем команда ниже.
+**Порядок зависимостей.** Чарт поднимает PostgreSQL, Redis и Kafka в namespace `sentry`, но **ClickHouse задаётся снаружи** ([values_sentry.yaml.tpl](values_sentry.yaml.tpl), `externalClickhouse`). Для отказоустойчивого ClickHouse в values должны быть `singleNode: false`, `clusterName: sentry-cluster` и `distributedClusterName: sentry-cluster`. Helm-hook **Job `sentry-db-check`** ждёт TCP до `externalClickhouse.host:9000` и до Kraft-контроллеров Kafka. Пока ClickHouse не развёрнут, в логах пода будет `nc: getaddrinfo: Name does not resolve` и `... is not available yet` — это нормально только до выполнения **§2** (namespace `clickhouse`, [clickhouse.yaml](clickhouse.yaml), поды ClickHouse и Keeper в статусе `Running`, см. команды `wait` выше). Сначала: **§1.1–1.2** (Elasticsearch), **§2.1–2.2** (ClickHouse), **§3** (репозиторий Helm), затем команда ниже.
 
 Установка с `values_sentry.yaml` (генерируется из [values_sentry.yaml.tpl](values_sentry.yaml.tpl) через `terraform apply`): в файле уже заданы nodestore в Elasticsearch (`images.sentry`, `config.sentryConfPy`). Перед `helm upgrade` разверните оператор и кластер из **§1.1–1.2** ([elasticsearch.yaml](elasticsearch.yaml)).
 

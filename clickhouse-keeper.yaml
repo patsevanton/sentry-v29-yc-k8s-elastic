@@ -1,0 +1,37 @@
+apiVersion: clickhouse-keeper.altinity.com/v1
+kind: ClickHouseKeeperInstallation
+metadata:
+  name: clickhouse-keeper
+  namespace: clickhouse
+spec:
+  configuration:
+    clusters:
+      - name: keeper-cluster
+        layout:
+          replicasCount: 3
+  defaults:
+    templates:
+      podTemplate: keeper-pod
+      volumeClaimTemplate: keeper-storage
+  templates:
+    podTemplates:
+      - name: keeper-pod
+        spec:
+          containers:
+            - name: clickhouse-keeper
+              image: altinity/clickhouse-keeper:25.3.8.10042.altinitystable
+          affinity:
+            podAntiAffinity:
+              requiredDuringSchedulingIgnoredDuringExecution:
+                - labelSelector:
+                    matchLabels:
+                      clickhouse-keeper.altinity.com/chi: clickhouse-keeper
+                  topologyKey: kubernetes.io/hostname
+    volumeClaimTemplates:
+      - name: keeper-storage
+        spec:
+          accessModes:
+            - ReadWriteOnce
+          resources:
+            requests:
+              storage: 10Gi

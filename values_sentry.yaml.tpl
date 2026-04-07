@@ -64,8 +64,8 @@ config:
     INSTALLED_APPS.append("sentry_nodestore_elastic")
     INSTALLED_APPS = tuple(INSTALLED_APPS)
 
-# Внешний ClickHouse (до helm install Sentry: README §2, иначе Job sentry-db-check
-# зависнет с «getaddrinfo: Name does not resolve»).
+# Внешний отказоустойчивый ClickHouse (до helm install Sentry: README §2,
+# иначе Job sentry-db-check зависнет с «getaddrinfo: Name does not resolve»).
 externalClickhouse:
   host: "${external_clickhouse.host}"
   tcpPort: ${external_clickhouse.tcpPort}
@@ -74,6 +74,8 @@ externalClickhouse:
   password: "${external_clickhouse.password}"
   database: "${external_clickhouse.database}"
   singleNode: ${external_clickhouse.singleNode}
+  clusterName: "${external_clickhouse.clusterName}"
+  distributedClusterName: "${external_clickhouse.distributedClusterName}"
 
 # В кластере: PostgreSQL, Redis, Kafka (Kraft — без Zookeeper)
 postgresql:

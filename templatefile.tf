@@ -61,13 +61,15 @@ locals {
 
     # Внешний ClickHouse (Altinity Operator, namespace clickhouse)
     external_clickhouse = {
-      host       = "chi-sentry-clickhouse-single-node-0-0.clickhouse.svc.cluster.local"
-      tcpPort    = 9000
-      httpPort   = 8123
-      username   = "default"
-      password   = ""
-      database   = "default"
-      singleNode = true
+      host                   = "clickhouse-sentry-clickhouse.clickhouse.svc.cluster.local"
+      tcpPort                = 9000
+      httpPort               = 8123
+      username               = "default"
+      password               = ""
+      database               = "default"
+      singleNode             = false
+      clusterName            = "sentry-cluster"
+      distributedClusterName = "sentry-cluster"
     }
   })
 }
