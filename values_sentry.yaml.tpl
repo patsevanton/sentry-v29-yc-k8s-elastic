@@ -93,16 +93,17 @@ kafka:
 # Filestore: S3-совместимое хранилище (Yandex Object Storage) вместо локальной ФС.
 # При filesystem-бэкенде PVC (RWO) доступен только web-поду; taskworker-ы при
 # assemble debug-файлов не находят blob-ы → FileNotFoundError. S3 доступен всем подам.
-filestore:
-  backend: s3
-  s3:
-    accessKey: "${filestore.s3.accessKey}"
-    secretKey: "${filestore.s3.secretKey}"
-    bucketName: "${filestore.s3.bucketName}"
-    endpointUrl: "https://storage.yandexcloud.net"
-    region_name: "ru-central1"
-    signature_version: "s3v4"
-    default_acl: "private"
+# Временно отключено — проверка влияния на source maps (chart уйдёт на filesystem по умолчанию).
+# filestore:
+#   backend: s3
+#   s3:
+#     accessKey: "${filestore.s3.accessKey}"
+#     secretKey: "${filestore.s3.secretKey}"
+#     bucketName: "${filestore.s3.bucketName}"
+#     endpointUrl: "https://storage.yandexcloud.net"
+#     region_name: "ru-central1"
+#     signature_version: "s3v4"
+#     default_acl: "private"
 
 # Symbolicator: скачивание и кеш debug-символов для native stack traces.
 symbolicator:
