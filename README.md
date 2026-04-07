@@ -192,6 +192,96 @@ kubectl -n clickhouse wait --for=condition=ready pod -l clickhouse.altinity.com/
 kubectl -n clickhouse wait --for=condition=ready pod -l clickhouse-keeper.altinity.com/chki=clickhouse-keeper --timeout=600s
 ```
 
+**2.3. Проверка failover (ClickHouse + Sentry)**
+
+Проверка нужна, чтобы подтвердить, что при падении одной ноды ClickHouse Sentry продолжает читать и писать данные через оставшиеся реплики.
+
+1) Убедитесь, что кластер и Keeper готовы:
+
+```bash
+kubectl -n clickhouse get pods -o wide
+```
+
+2) Проверьте, что в `system.clusters` видны все шарды/реплики:
+
+```bash
+kubectl -n clickhouse exec -it chi-sentry-clickhouse-sentry-cluster-0-0-0 -- \
+  clickhouse-client -q "SELECT cluster, shard_num, replica_num, host_name, host_address FROM system.clusters WHERE cluster='sentry-cluster' ORDER BY shard_num, replica_num"
+```
+
+3) Сымитируйте отказ одной ноды ClickHouse (StatefulSet-под восстановится автоматически):
+
+```bash
+kubectl -n clickhouse delete pod chi-sentry-clickhouse-sentry-cluster-0-0-0
+```
+
+4) Пока под пересоздаётся, отправьте новые события в Sentry (см. demo endpoints в **§9**) и проверьте:
+- в UI Sentry продолжают появляться новые events/issues;
+- `snuba-api` и consumers не уходят в постоянные ошибки подключения к ClickHouse.
+
+```bash
+kubectl -n sentry logs deployment/sentry-snuba-api --tail=100
+kubectl -n sentry logs -l app.kubernetes.io/name=snuba --tail=100 --all-containers=true
+```
+
+5) Дождитесь восстановления удалённого пода и повторно проверьте кластер:
+
+```bash
+kubectl -n clickhouse wait --for=condition=ready pod chi-sentry-clickhouse-sentry-cluster-0-0-0 --timeout=600s
+kubectl -n clickhouse exec -it chi-sentry-clickhouse-sentry-cluster-0-1-0 -- \
+  clickhouse-client -q "SELECT hostName(), sum(rows) AS rows FROM clusterAllReplicas('sentry-cluster', system, parts) WHERE active GROUP BY hostName() ORDER BY hostName()"
+```
+
+6) (Опционально) Проверка отказа Keeper:
+
+```bash
+kubectl -n clickhouse delete pod chi-clickhouse-keeper-keeper-cluster-0-0-0
+kubectl -n clickhouse get pods -l clickhouse-keeper.altinity.com/chki=clickhouse-keeper
+```
+
+При 3 узлах Keeper кворум сохраняется после падения одной ноды, и ClickHouse продолжает работу.
+
+**2.4. Troubleshooting после failover**
+
+- `Replica is readonly`:
+  - обычно реплика потеряла связь с Keeper или не восстановилась после рестарта;
+  - проверьте состояние Keeper и кворум:
+
+```bash
+kubectl -n clickhouse get pods -l clickhouse-keeper.altinity.com/chki=clickhouse-keeper
+kubectl -n clickhouse logs -l clickhouse-keeper.altinity.com/chki=clickhouse-keeper --tail=100
+```
+
+  - проверьте репликацию в ClickHouse:
+
+```bash
+kubectl -n clickhouse exec -it chi-sentry-clickhouse-sentry-cluster-0-1-0 -- \
+  clickhouse-client -q "SELECT database, table, is_readonly, is_session_expired, future_parts, queue_size, absolute_delay FROM system.replicas ORDER BY database, table"
+```
+
+- `All connection tries failed`:
+  - чаще всего проблема DNS/Service/endpoint или сетевой доступ до CH/Keeper;
+  - проверьте сервисы и endpoints:
+
+```bash
+kubectl -n clickhouse get svc,endpoints | rg "clickhouse-sentry-clickhouse|keeper-clickhouse-keeper"
+```
+
+  - проверьте, что Sentry видит ClickHouse-host из `externalClickhouse.host`:
+
+```bash
+kubectl -n sentry get pods
+kubectl -n sentry logs deployment/sentry-snuba-api --tail=120
+kubectl -n sentry logs -l app.kubernetes.io/name=snuba --tail=120 --all-containers=true
+```
+
+Если ошибка не уходит после восстановления подов, перезапустите Snuba-компоненты, чтобы они заново открыли соединения:
+
+```bash
+kubectl -n sentry rollout restart deploy/sentry-snuba-api
+kubectl -n sentry rollout restart deploy/sentry-snuba-consumer
+```
+
 ### 3. Репозиторий Sentry
 
 Подключите Helm-репозиторий чарта Sentry. Namespace `sentry` можно создать заранее или при установке в **§4** флагом `--create-namespace`.

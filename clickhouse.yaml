@@ -9,6 +9,7 @@ metadata:
   namespace: clickhouse
 spec:
   configuration:
+    # ClickHouse Keeper подключается через исторический ключ `zookeeper` в конфиге ClickHouse.
     zookeeper:
       nodes:
         - host: keeper-clickhouse-keeper.clickhouse.svc.cluster.local
