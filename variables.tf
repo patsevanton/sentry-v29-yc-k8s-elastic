@@ -85,7 +85,7 @@ variable "managed_clickhouse_disk_size" {
 variable "managed_clickhouse_database" {
   description = "Managed ClickHouse database for Sentry/Snuba"
   type        = string
-  default     = "default"
+  default     = "sentry"
 }
 
 variable "managed_clickhouse_user" {
