@@ -30,21 +30,24 @@ resource "yandex_mdb_clickhouse_cluster" "managed" {
   }
 
   host {
-    type      = "CLICKHOUSE"
-    zone      = yandex_vpc_subnet.sentry-a.zone
-    subnet_id = yandex_vpc_subnet.sentry-a.id
+    type             = "CLICKHOUSE"
+    zone             = yandex_vpc_subnet.sentry-a.zone
+    subnet_id        = yandex_vpc_subnet.sentry-a.id
+    assign_public_ip = true
   }
 
   host {
-    type      = "CLICKHOUSE"
-    zone      = yandex_vpc_subnet.sentry-b.zone
-    subnet_id = yandex_vpc_subnet.sentry-b.id
+    type             = "CLICKHOUSE"
+    zone             = yandex_vpc_subnet.sentry-b.zone
+    subnet_id        = yandex_vpc_subnet.sentry-b.id
+    assign_public_ip = true
   }
 
   host {
-    type      = "CLICKHOUSE"
-    zone      = yandex_vpc_subnet.sentry-d.zone
-    subnet_id = yandex_vpc_subnet.sentry-d.id
+    type             = "CLICKHOUSE"
+    zone             = yandex_vpc_subnet.sentry-d.zone
+    subnet_id        = yandex_vpc_subnet.sentry-d.id
+    assign_public_ip = true
   }
 
   deletion_protection = false
