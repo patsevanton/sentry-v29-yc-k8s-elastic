@@ -92,6 +92,24 @@ kafka:
     enabled: true
     replicationFactor: 1
 
+# При первом cold start post-upgrade hooks (особенно snuba-migrate) могут идти дольше
+# из-за инициализации ClickHouse/Kafka и большого числа миграций.
+hooks:
+  activeDeadlineSeconds: ${sentry_hooks_active_deadline_seconds}
+
+# Если ClickHouse возвращает short host_name в system.clusters,
+# Snuba migrations могут не резолвить их из namespace sentry.
+# Добавляем search suffix, чтобы short names резолвились штатно через DNS.
+%{ if enable_clickhouse_dns_search ~}
+dnsPolicy: ClusterFirst
+dnsConfig:
+  searches:
+    - sentry.svc.cluster.local
+    - svc.cluster.local
+    - cluster.local
+    - ${clickhouse_dns_search_suffix}
+%{ endif ~}
+
 # Если использовать filesystem-бэкенд, PVC с режимом RWO монтируется только в web-под.
 # Из-за этого taskworker при assemble debug-файлов / artifact bundle не видит blob-ы:
 # в логах deploy/sentry-taskworker-default появляются

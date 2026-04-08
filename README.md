@@ -1,5 +1,5 @@
 # Развёртывание Sentry v29.5.1 в Yandex Cloud на Kubernetes
-https://github.com/patsevanton/sentry-external-kf-ch-pg-rd/blob/2a3ce8f60469ae6720d838ce7c87fb3a9d8c4f69/templatefile.tf#L17
+
 ### 0. NodeLocal DNSCache (опционально)
 
 [NodeLocal DNSCache](https://kubernetes.io/docs/tasks/administer-cluster/nodelocaldns/) — кэш DNS на каждом узле (DaemonSet в `kube-system`), снижает задержки и нагрузку на CoreDNS. В манифесте [k8s/nodelocaldns.yaml](k8s/nodelocaldns.yaml) в блоке `.:53` плейсхолдер `**__SENTRY_INGRESS_IP__**` нужно заменить на текущий внешний IP из `terraform output -raw ingress_public_ip` (тот же адрес, что резервирует [ip-dns.tf](ip-dns.tf) и куда указывают A-записи), чтобы поды резолвили тот же адрес, что и публичный DNS, даже если внешний DNS из кластера недоступен.
@@ -145,149 +145,45 @@ INSTALLED_APPS = tuple(INSTALLED_APPS)
 - Версия образа Sentry должна совпадать с `appVersion` чарта Sentry (`helm show chart sentry/sentry --version <ver>`).
 - Кластер **9.x** и образ с **elasticsearch-py 9.x** согласованы с [elasticsearch.yaml](elasticsearch.yaml) и `Dockerfile.sentry-nodestore`.
 
-### 2. ClickHouse
+### 2. Managed ClickHouse (Yandex Cloud)
 
-**2.1. Установка Altinity ClickHouse Operator**
+ClickHouse используется только как внешний managed-кластер в Yandex Cloud. In-cluster ClickHouse/Altinity в этом репозитории больше не используется.
 
-```bash
-helm repo add altinity https://helm.altinity.com
-helm repo update
-helm upgrade --install clickhouse-operator altinity/altinity-clickhouse-operator \
-  --version 0.26.2 \
-  --namespace clickhouse-operator \
-  --create-namespace \
-  --wait
+Terraform создаёт Managed ClickHouse и автоматически подставляет endpoint/креды в `values_sentry.yaml` (через `values_sentry.yaml.tpl`):
+- кластер: `yandex_mdb_clickhouse_cluster.managed`;
+- база: `yandex_mdb_clickhouse_database.managed_sentry`;
+- пользователь: `yandex_mdb_clickhouse_user.managed_sentry`.
+
+Пароль пользователя managed CH можно задать явно:
+
+```hcl
+managed_clickhouse_user_password = "<SECRET>"
 ```
 
-Оператор через `ClickHouseOperatorConfiguration` будет наблюдать за namespace `clickhouse`.
+Если не задавать `managed_clickhouse_user_password`, Terraform сгенерирует случайный пароль автоматически.
+
+Проверка фактических значений для Helm/Sentry:
 
 ```bash
-kubectl apply -n clickhouse-operator -f clickhouse-operator-config.yaml
+terraform output external_clickhouse_host
+terraform output external_clickhouse_tcp_port
+terraform output external_clickhouse_http_port
+terraform output external_clickhouse_username
+terraform output external_clickhouse_database
+terraform output external_clickhouse_cluster_name
+terraform output external_clickhouse_distributed_cluster_name
+terraform output external_clickhouse_password
+terraform output managed_clickhouse_cluster_id
+terraform output managed_clickhouse_hosts
 ```
 
-Перезапуск оператора, чтобы подхватить `ClickHouseOperatorConfiguration`. Подробнее в [issue #1930](https://github.com/Altinity/clickhouse-operator/issues/1930).
+Перед `helm upgrade` проверьте DNS из pod (если в `system.clusters` есть short hostnames):
 
 ```bash
-kubectl rollout restart deployment/clickhouse-operator-altinity-clickhouse-operator -n clickhouse-operator
+kubectl -n sentry run -it --rm dns-test --image=busybox:1.36 --restart=Never -- nslookup <host_name_из_system.clusters>
 ```
 
-Имя deployment задаёт Helm (release `clickhouse-operator` + chart `altinity-clickhouse-operator`). При другом `--name` релиза смотрите: `kubectl get deploy -n clickhouse-operator`.
-
-**2.2. Создание ClickHouse**
-
-```bash
-kubectl create namespace clickhouse
-kubectl apply -f clickhouse-keeper.yaml
-kubectl apply -f clickhouse.yaml
-```
-
-`clickhouse-keeper.yaml` поднимает 3-нодовый Keeper-кластер, а `clickhouse.yaml` — отказоустойчивый ClickHouse `2 shard x 2 replica` (кластер `sentry-cluster`).
-Убедитесь, что в Kubernetes есть достаточно воркер-нод (минимум 3, лучше 4+), иначе не все реплики поднимутся.
-
-DNS для Sentry задаётся через `externalClickhouse.host` в [values_sentry.yaml.tpl](values_sentry.yaml.tpl): `clickhouse-sentry-clickhouse.clickhouse.svc.cluster.local`.
-Проверка готовности:
-
-```bash
-kubectl -n clickhouse wait --for=condition=ready pod -l clickhouse.altinity.com/chi=sentry-clickhouse --timeout=600s
-kubectl -n clickhouse wait --for=condition=ready pod -l clickhouse-keeper.altinity.com/chki=clickhouse-keeper --timeout=600s
-```
-
-**2.3. Проверка failover (ClickHouse + Sentry)**
-
-Проверка нужна, чтобы подтвердить, что при падении одной ноды ClickHouse Sentry продолжает читать и писать данные через оставшиеся реплики.
-
-1) Убедитесь, что кластер и Keeper готовы:
-
-```bash
-kubectl -n clickhouse get pods -o wide
-```
-
-2) Проверьте, что в `system.clusters` видны все шарды/реплики:
-
-```bash
-kubectl -n clickhouse exec -it chi-sentry-clickhouse-sentry-cluster-0-0-0 -- \
-  clickhouse-client -q "SELECT cluster, shard_num, replica_num, host_name, host_address FROM system.clusters WHERE cluster='sentry-cluster' ORDER BY shard_num, replica_num"
-```
-
-3) Сымитируйте отказ одной ноды ClickHouse (StatefulSet-под восстановится автоматически):
-
-```bash
-kubectl -n clickhouse delete pod chi-sentry-clickhouse-sentry-cluster-0-0-0
-```
-
-4) Пока под пересоздаётся, отправьте новые события в Sentry (см. demo endpoints в **§9**) и проверьте:
-- в UI Sentry продолжают появляться новые events/issues;
-- `snuba-api` и consumers не уходят в постоянные ошибки подключения к ClickHouse.
-
-```bash
-kubectl -n sentry logs deployment/sentry-snuba-api --tail=100
-kubectl -n sentry logs -l app.kubernetes.io/name=snuba --tail=100 --all-containers=true
-```
-
-5) Дождитесь восстановления удалённого пода и повторно проверьте кластер:
-
-```bash
-kubectl -n clickhouse wait --for=condition=ready pod chi-sentry-clickhouse-sentry-cluster-0-0-0 --timeout=600s
-kubectl -n clickhouse exec -it chi-sentry-clickhouse-sentry-cluster-0-1-0 -- \
-  clickhouse-client -q "SELECT hostName(), sum(rows) AS rows FROM clusterAllReplicas('sentry-cluster', system, parts) WHERE active GROUP BY hostName() ORDER BY hostName()"
-```
-
-6) (Опционально) Проверка отказа Keeper:
-
-```bash
-kubectl -n clickhouse delete pod chi-clickhouse-keeper-keeper-cluster-0-0-0
-kubectl -n clickhouse get pods -l clickhouse-keeper.altinity.com/chki=clickhouse-keeper
-```
-
-При 3 узлах Keeper кворум сохраняется после падения одной ноды, и ClickHouse продолжает работу.
-
-**2.4. Troubleshooting после failover**
-
-- `Replica is readonly`:
-  - обычно реплика потеряла связь с Keeper или не восстановилась после рестарта;
-  - проверьте состояние Keeper и кворум:
-
-```bash
-kubectl -n clickhouse get pods -l clickhouse-keeper.altinity.com/chki=clickhouse-keeper
-kubectl -n clickhouse logs -l clickhouse-keeper.altinity.com/chki=clickhouse-keeper --tail=100
-```
-
-  - проверьте репликацию в ClickHouse:
-
-```bash
-kubectl -n clickhouse exec -it chi-sentry-clickhouse-sentry-cluster-0-1-0 -- \
-  clickhouse-client -q "SELECT database, table, is_readonly, is_session_expired, future_parts, queue_size, absolute_delay FROM system.replicas ORDER BY database, table"
-```
-
-- `All connection tries failed`:
-  - чаще всего проблема DNS/Service/endpoint или сетевой доступ до CH/Keeper;
-  - проверьте сервисы и endpoints:
-
-```bash
-kubectl -n clickhouse get svc,endpoints | rg "clickhouse-sentry-clickhouse|keeper-clickhouse-keeper"
-```
-
-  - проверьте, что Sentry видит ClickHouse-host из `externalClickhouse.host`:
-
-```bash
-kubectl -n sentry get pods
-kubectl -n sentry logs deployment/sentry-snuba-api --tail=120
-kubectl -n sentry logs -l app.kubernetes.io/name=snuba --tail=120 --all-containers=true
-```
-
-Если ошибка не уходит после восстановления подов, перезапустите Snuba-компоненты, чтобы они заново открыли соединения:
-
-```bash
-kubectl -n sentry rollout restart deploy/sentry-snuba-api
-kubectl -n sentry rollout restart deploy/sentry-snuba-consumer
-```
-
-**2.5. Мини-чеклист: кластер снова здоров**
-
-- Все pod в `clickhouse` и `sentry` в `Running/Ready`, без `CrashLoopBackOff`.
-- В `system.replicas` для рабочих таблиц `is_readonly=0` и `is_session_expired=0`.
-- В логах `snuba-api`/consumers нет повторяющихся `All connection tries failed`.
-- В UI Sentry появляются новые события после failover-теста (данные читаются и пишутся).
+Если short hostnames не резолвятся, включите в Terraform `enable_clickhouse_dns_search=true`.
 
 ### 3. Репозиторий Sentry
 
@@ -315,9 +211,9 @@ terraform apply
 
 ### 4. Установка Sentry
 
-**Порядок зависимостей.** Чарт поднимает PostgreSQL, Redis и Kafka в namespace `sentry`, но **ClickHouse задаётся снаружи** ([values_sentry.yaml.tpl](values_sentry.yaml.tpl), `externalClickhouse`). Для отказоустойчивого ClickHouse в values должны быть `singleNode: false`, `clusterName: sentry-cluster` и `distributedClusterName: sentry-cluster`. Helm-hook **Job `sentry-db-check`** ждёт TCP до `externalClickhouse.host:9000` и до Kraft-контроллеров Kafka. Пока ClickHouse не развёрнут, в логах пода будет `nc: getaddrinfo: Name does not resolve` и `... is not available yet` — это нормально только до выполнения **§2** (namespace `clickhouse`, [clickhouse.yaml](clickhouse.yaml), поды ClickHouse и Keeper в статусе `Running`, см. команды `wait` выше). Сначала: **§1.1–1.2** (Elasticsearch), **§2.1–2.2** (ClickHouse), **§3** (репозиторий Helm), затем команда ниже.
+**Порядок зависимостей.** Чарт поднимает PostgreSQL, Redis и Kafka в namespace `sentry`, а **ClickHouse задаётся снаружи** (`externalClickhouse` в [values_sentry.yaml.tpl](values_sentry.yaml.tpl)). Сначала выполните **§1.1–1.2** (Elasticsearch), **§2** (Managed ClickHouse через Terraform), **§3** (репозиторий Helm), затем команду ниже.
 
-Установка с `values_sentry.yaml` (генерируется из [values_sentry.yaml.tpl](values_sentry.yaml.tpl) через `terraform apply`): в файле уже заданы nodestore в Elasticsearch (`images.sentry`, `config.sentryConfPy`). Перед `helm upgrade` разверните оператор и кластер из **§1.1–1.2** ([elasticsearch.yaml](elasticsearch.yaml)).
+Установка с `values_sentry.yaml` (генерируется из [values_sentry.yaml.tpl](values_sentry.yaml.tpl) через `terraform apply`): в файле уже заданы nodestore в Elasticsearch (`images.sentry`, `config.sentryConfPy`) и параметры Managed ClickHouse из Terraform outputs.
 
 ```bash
 helm upgrade --install sentry sentry/sentry --version 29.5.1 -n sentry \

@@ -16,6 +16,23 @@ locals {
   # Пароль администратора Sentry
   sentry_admin_password = "admin"
 
+  # Если пароль для managed ClickHouse не передан явно, генерируем его.
+  managed_clickhouse_user_password_effective = var.managed_clickhouse_user_password != "" ? var.managed_clickhouse_user_password : random_password.managed_clickhouse_user_password.result
+
+  # Фактические параметры внешнего ClickHouse для values_sentry.yaml
+  # берутся из ресурсов Managed ClickHouse.
+  external_clickhouse_effective = {
+    host                   = yandex_mdb_clickhouse_cluster.managed.host[0].fqdn
+    tcpPort                = var.external_clickhouse_tcp_port
+    httpPort               = var.external_clickhouse_http_port
+    username               = yandex_mdb_clickhouse_user.managed_sentry.name
+    password               = local.managed_clickhouse_user_password_effective
+    database               = yandex_mdb_clickhouse_database.managed_sentry.name
+    singleNode             = var.external_clickhouse_single_node
+    clusterName            = var.external_clickhouse_cluster_name
+    distributedClusterName = var.external_clickhouse_distributed_cluster_name
+  }
+
   # Локальная переменная с конфигурацией Sentry, генерируемая из шаблона values_sentry.yaml.tpl
   sentry_config = templatefile("values_sentry.yaml.tpl", {
     # Пароль администратора Sentry
@@ -59,17 +76,11 @@ locals {
     redis_enabled      = true
     kafka_enabled      = true
 
-    # Внешний ClickHouse (Altinity Operator, namespace clickhouse)
-    external_clickhouse = {
-      host                   = "clickhouse-sentry-clickhouse.clickhouse.svc.cluster.local"
-      tcpPort                = 9000
-      httpPort               = 8123
-      username               = "default"
-      password               = ""
-      database               = "default"
-      singleNode             = false
-      clusterName            = "sentry-cluster"
-      distributedClusterName = "sentry-cluster"
-    }
+    # Внешний Managed ClickHouse (Yandex Cloud)
+    external_clickhouse = local.external_clickhouse_effective
+
+    sentry_hooks_active_deadline_seconds = var.sentry_hooks_active_deadline_seconds
+    enable_clickhouse_dns_search         = var.enable_clickhouse_dns_search
+    clickhouse_dns_search_suffix         = var.clickhouse_dns_search_suffix
   })
 }
