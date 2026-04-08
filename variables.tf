@@ -102,9 +102,9 @@ variable "managed_clickhouse_user_password" {
 }
 
 variable "managed_clickhouse_sql_user_management_enabled" {
-  description = "Enable SQL user management in Managed ClickHouse (required for SQL GRANT statements)"
+  description = "Enable SQL user management in Managed ClickHouse (requires local DNS/network access to cluster FQDN for clickhousedbops provider)"
   type        = bool
-  default     = true
+  default     = false
 }
 
 variable "managed_clickhouse_admin_password" {
