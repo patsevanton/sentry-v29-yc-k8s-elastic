@@ -4,6 +4,10 @@ terraform {
       source  = "yandex-cloud/yandex"
       version = ">= 0.72.0"
     }
+    clickhousedbops = {
+      source  = "ClickHouse/clickhousedbops"
+      version = "1.10.0-alpha2"
+    }
     helm = {
       source  = "hashicorp/helm"
       version = ">= 3.0.0"

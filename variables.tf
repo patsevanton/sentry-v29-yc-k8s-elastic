@@ -19,7 +19,7 @@ variable "external_clickhouse_http_port" {
 variable "external_clickhouse_single_node" {
   description = "Set true for single-node external ClickHouse, false for replicated/distributed"
   type        = bool
-  default     = false
+  default     = true
 }
 
 variable "external_clickhouse_cluster_name" {
@@ -99,4 +99,23 @@ variable "managed_clickhouse_user_password" {
   type        = string
   default     = ""
   sensitive   = true
+}
+
+variable "managed_clickhouse_sql_user_management_enabled" {
+  description = "Enable SQL user management in Managed ClickHouse (required for SQL GRANT statements)"
+  type        = bool
+  default     = true
+}
+
+variable "managed_clickhouse_admin_password" {
+  description = "Admin password for SQL user management in Managed ClickHouse (if empty, Terraform generates random)"
+  type        = string
+  default     = ""
+  sensitive   = true
+}
+
+variable "managed_clickhouse_grant_create_workload" {
+  description = "Grant CREATE WORKLOAD ON *.* to managed_clickhouse_user via clickhousedbops provider"
+  type        = bool
+  default     = true
 }

@@ -5,13 +5,21 @@ resource "random_password" "managed_clickhouse_user_password" {
   special = false
 }
 
+resource "random_password" "managed_clickhouse_admin_password" {
+  count   = var.managed_clickhouse_sql_user_management_enabled && var.managed_clickhouse_admin_password == "" ? 1 : 0
+  length  = 24
+  special = false
+}
+
 resource "yandex_mdb_clickhouse_cluster" "managed" {
-  folder_id   = local.folder_id
-  name        = var.managed_clickhouse_name
-  description = "Managed ClickHouse for Sentry/Snuba"
-  environment = "PRODUCTION"
-  network_id  = yandex_vpc_network.sentry.id
-  version     = var.managed_clickhouse_version
+  folder_id           = local.folder_id
+  name                = var.managed_clickhouse_name
+  description         = "Managed ClickHouse for Sentry/Snuba"
+  environment         = "PRODUCTION"
+  network_id          = yandex_vpc_network.sentry.id
+  version             = var.managed_clickhouse_version
+  sql_user_management = var.managed_clickhouse_sql_user_management_enabled
+  admin_password      = var.managed_clickhouse_sql_user_management_enabled ? local.managed_clickhouse_admin_password_effective : null
 
   clickhouse {
     resources {
@@ -55,6 +63,7 @@ resource "time_sleep" "managed_sentry_database_ready" {
 }
 
 resource "yandex_mdb_clickhouse_user" "managed_sentry" {
+  count      = var.managed_clickhouse_sql_user_management_enabled ? 0 : 1
   cluster_id = yandex_mdb_clickhouse_cluster.managed.id
   name       = var.managed_clickhouse_user
   password   = local.managed_clickhouse_user_password_effective
@@ -63,6 +72,47 @@ resource "yandex_mdb_clickhouse_user" "managed_sentry" {
   permission {
     database_name = yandex_mdb_clickhouse_database.managed_sentry.name
   }
+}
+
+provider "clickhousedbops" {
+  host     = yandex_mdb_clickhouse_cluster.managed.host[0].fqdn
+  port     = var.external_clickhouse_tcp_port
+  protocol = "native"
+
+  auth_config = {
+    strategy = "password"
+    username = "admin"
+    password = local.managed_clickhouse_admin_password_effective
+  }
+}
+
+resource "clickhousedbops_user" "managed_sentry" {
+  count                = var.managed_clickhouse_sql_user_management_enabled ? 1 : 0
+  name                 = var.managed_clickhouse_user
+  password_sha256_hash = sha256(local.managed_clickhouse_user_password_effective)
+
+  depends_on = [
+    yandex_mdb_clickhouse_cluster.managed,
+    yandex_mdb_clickhouse_database.managed_sentry,
+    time_sleep.managed_sentry_database_ready
+  ]
+}
+
+resource "clickhousedbops_grant_privilege" "managed_sentry_db_all" {
+  count             = var.managed_clickhouse_sql_user_management_enabled ? 1 : 0
+  privilege_name    = "ALL"
+  database_name     = yandex_mdb_clickhouse_database.managed_sentry.name
+  grantee_user_name = clickhousedbops_user.managed_sentry[0].name
+
+  depends_on = [clickhousedbops_user.managed_sentry]
+}
+
+resource "clickhousedbops_grant_privilege" "managed_sentry_create_workload" {
+  count             = var.managed_clickhouse_sql_user_management_enabled && var.managed_clickhouse_grant_create_workload ? 1 : 0
+  privilege_name    = "CREATE WORKLOAD"
+  grantee_user_name = clickhousedbops_user.managed_sentry[0].name
+
+  depends_on = [clickhousedbops_user.managed_sentry]
 }
 
 output "external_clickhouse_host" {
@@ -124,4 +174,10 @@ output "managed_clickhouse_cluster_id" {
 output "managed_clickhouse_hosts" {
   description = "Managed ClickHouse host FQDNs"
   value       = [for h in yandex_mdb_clickhouse_cluster.managed.host : h.fqdn]
+}
+
+output "managed_clickhouse_admin_password" {
+  description = "Admin password for Managed ClickHouse SQL user management"
+  value       = local.managed_clickhouse_admin_password_effective
+  sensitive   = true
 }

@@ -17,7 +17,8 @@ locals {
   sentry_admin_password = "admin"
 
   # Если пароль для managed ClickHouse не передан явно, генерируем его.
-  managed_clickhouse_user_password_effective = var.managed_clickhouse_user_password != "" ? var.managed_clickhouse_user_password : random_password.managed_clickhouse_user_password.result
+  managed_clickhouse_user_password_effective  = var.managed_clickhouse_user_password != "" ? var.managed_clickhouse_user_password : random_password.managed_clickhouse_user_password.result
+  managed_clickhouse_admin_password_effective = var.managed_clickhouse_admin_password != "" ? var.managed_clickhouse_admin_password : one(random_password.managed_clickhouse_admin_password[*].result)
 
   # Фактические параметры внешнего ClickHouse для values_sentry.yaml
   # берутся из ресурсов Managed ClickHouse.
@@ -25,7 +26,7 @@ locals {
     host                   = yandex_mdb_clickhouse_cluster.managed.host[0].fqdn
     tcpPort                = var.external_clickhouse_tcp_port
     httpPort               = var.external_clickhouse_http_port
-    username               = yandex_mdb_clickhouse_user.managed_sentry.name
+    username               = var.managed_clickhouse_sql_user_management_enabled ? clickhousedbops_user.managed_sentry[0].name : yandex_mdb_clickhouse_user.managed_sentry[0].name
     password               = local.managed_clickhouse_user_password_effective
     database               = yandex_mdb_clickhouse_database.managed_sentry.name
     singleNode             = var.external_clickhouse_single_node
