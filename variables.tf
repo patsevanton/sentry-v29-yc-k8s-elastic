@@ -91,7 +91,7 @@ variable "managed_clickhouse_database" {
 variable "managed_clickhouse_user" {
   description = "Managed ClickHouse user for Sentry/Snuba"
   type        = string
-  default     = "default"
+  default     = "sentry"
 }
 
 variable "managed_clickhouse_user_password" {
