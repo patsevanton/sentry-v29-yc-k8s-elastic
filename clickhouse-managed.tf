@@ -47,10 +47,18 @@ resource "yandex_mdb_clickhouse_database" "managed_sentry" {
   name       = var.managed_clickhouse_database
 }
 
+resource "time_sleep" "managed_sentry_database_ready" {
+  depends_on = [yandex_mdb_clickhouse_database.managed_sentry]
+
+  # YC API can return eventual-consistency NotFound for a just-created database.
+  create_duration = "30s"
+}
+
 resource "yandex_mdb_clickhouse_user" "managed_sentry" {
   cluster_id = yandex_mdb_clickhouse_cluster.managed.id
   name       = var.managed_clickhouse_user
   password   = local.managed_clickhouse_user_password_effective
+  depends_on = [time_sleep.managed_sentry_database_ready]
 
   permission {
     database_name = yandex_mdb_clickhouse_database.managed_sentry.name
