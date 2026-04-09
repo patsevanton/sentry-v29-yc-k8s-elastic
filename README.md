@@ -1,5 +1,45 @@
 # Развёртывание Sentry v29.5.1 в Yandex Cloud на Kubernetes
 
+## Двухэтапный apply через Terragrunt (VPC/VPN -> платформа)
+
+Чтобы избежать таймаутов при создании пользователей/грантов в Managed ClickHouse (`clickhousedbops` по TCP 9000), инфраструктура разбита на 2 каталога Terragrunt:
+
+- `terragrunt/01-network-vpn` — VPC, 3 подсети и WireGuard VPN VM.
+- `terragrunt/02-platform` — всё остальное (K8s, ingress, DNS, S3, Managed ClickHouse и т.д.).
+
+Второй этап получает `network_id` и `subnet_*` через `dependency` из первого каталога, поэтому сеть создаётся строго заранее.
+
+Подготовка:
+
+```bash
+export YC_FOLDER_ID="<ваш-folder-id>"
+export TF_VAR_ssh_public_key="$(cat ~/.ssh/id_rsa.pub)"
+```
+
+Этап 1 (сеть + VPN):
+
+```bash
+cd terragrunt/01-network-vpn
+terragrunt init
+terragrunt apply
+```
+
+Забрать клиентский WireGuard-конфиг:
+
+```bash
+eval "$(terragrunt output -raw wireguard_client_config_fetch_command)" > wg-client.conf
+```
+
+Подключитесь к VPN (`wg-quick up ./wg-client.conf`) и убедитесь, что есть маршрут в `10.0.0.0/16`.
+
+Этап 2 (остальная платформа):
+
+```bash
+cd ../02-platform
+terragrunt init
+terragrunt apply
+```
+
 ### 0. NodeLocal DNSCache (опционально)
 
 [NodeLocal DNSCache](https://kubernetes.io/docs/tasks/administer-cluster/nodelocaldns/) — кэш DNS на каждом узле (DaemonSet в `kube-system`), снижает задержки и нагрузку на CoreDNS. В манифесте [k8s/nodelocaldns.yaml](k8s/nodelocaldns.yaml) в блоке `.:53` плейсхолдер `**__SENTRY_INGRESS_IP__**` нужно заменить на текущий внешний IP из `terraform output -raw ingress_public_ip` (тот же адрес, что резервирует [ip-dns.tf](ip-dns.tf) и куда указывают A-записи), чтобы поды резолвили тот же адрес, что и публичный DNS, даже если внешний DNS из кластера недоступен.

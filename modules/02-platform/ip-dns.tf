@@ -3,18 +3,17 @@ resource "yandex_vpc_address" "addr" {
   folder_id = local.folder_id
 
   external_ipv4_address {
-    zone_id = yandex_vpc_subnet.sentry-a.zone
+    zone_id = local.subnet_a_zone
   }
 }
 
 resource "yandex_dns_zone" "apatsev-org-ru" {
   name      = "apatsev-org-ru-zone"
   folder_id = local.folder_id
+  zone      = "apatsev.org.ru."
+  public    = true
 
-  zone   = "apatsev.org.ru."
-  public = true
-
-  private_networks = [yandex_vpc_network.sentry.id]
+  private_networks = [local.network_id]
 }
 
 resource "yandex_dns_recordset" "sentry" {

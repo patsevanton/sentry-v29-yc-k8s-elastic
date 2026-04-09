@@ -1,17 +1,14 @@
-# Создание сервисного аккаунта для управления Kubernetes
 resource "yandex_iam_service_account" "sa_k8s_editor" {
   folder_id = local.folder_id
   name      = "sa-k8s-editor"
 }
 
-# Назначение роли "editor" сервисному аккаунту на уровне папки
 resource "yandex_resourcemanager_folder_iam_member" "sa_k8s_editor_permissions" {
   folder_id = local.folder_id
   role      = "editor"
   member    = "serviceAccount:${yandex_iam_service_account.sa_k8s_editor.id}"
 }
 
-# Пауза, чтобы изменения IAM успели примениться до создания кластера
 resource "time_sleep" "wait_sa" {
   create_duration = "20s"
   depends_on = [
@@ -20,17 +17,16 @@ resource "time_sleep" "wait_sa" {
   ]
 }
 
-# Создание Kubernetes-кластера в Yandex Cloud
 resource "yandex_kubernetes_cluster" "sentry" {
   name       = "sentry"
   folder_id  = local.folder_id
-  network_id = yandex_vpc_network.sentry.id
+  network_id = local.network_id
 
   master {
     version = "1.33"
     zonal {
-      zone      = yandex_vpc_subnet.sentry-a.zone
-      subnet_id = yandex_vpc_subnet.sentry-a.id
+      zone      = local.subnet_a_zone
+      subnet_id = local.subnet_a_id
     }
     public_ip = true
   }
@@ -41,7 +37,6 @@ resource "yandex_kubernetes_cluster" "sentry" {
   depends_on              = [time_sleep.wait_sa]
 }
 
-# Группа узлов для Kubernetes-кластера
 resource "yandex_kubernetes_node_group" "k8s_node_group" {
   description = "Node group for the Managed Service for Kubernetes cluster"
   name        = "k8s-node-group"
@@ -55,9 +50,9 @@ resource "yandex_kubernetes_node_group" "k8s_node_group" {
   }
 
   allocation_policy {
-    location { zone = yandex_vpc_subnet.sentry-a.zone }
-    location { zone = yandex_vpc_subnet.sentry-b.zone }
-    location { zone = yandex_vpc_subnet.sentry-d.zone }
+    location { zone = local.subnet_a_zone }
+    location { zone = local.subnet_b_zone }
+    location { zone = local.subnet_d_zone }
   }
 
   instance_template {
@@ -66,9 +61,9 @@ resource "yandex_kubernetes_node_group" "k8s_node_group" {
     network_interface {
       nat = true
       subnet_ids = [
-        yandex_vpc_subnet.sentry-a.id,
-        yandex_vpc_subnet.sentry-b.id,
-        yandex_vpc_subnet.sentry-d.id
+        local.subnet_a_id,
+        local.subnet_b_id,
+        local.subnet_d_id
       ]
     }
 
@@ -82,19 +77,16 @@ resource "yandex_kubernetes_node_group" "k8s_node_group" {
       size = 128
     }
 
-    # Прерываемые ВМ: дешевле, но могут быть остановлены облаком при нехватке ресурсов
     scheduling_policy {
       preemptible = true
     }
   }
 }
 
-# Настройка провайдера Helm для установки чарта в Kubernetes
 provider "helm" {
   kubernetes = {
     host                   = yandex_kubernetes_cluster.sentry.master[0].external_v4_endpoint
     cluster_ca_certificate = yandex_kubernetes_cluster.sentry.master[0].cluster_ca_certificate
-
     exec = {
       api_version = "client.authentication.k8s.io/v1beta1"
       args        = ["k8s", "create-token"]
@@ -141,6 +133,6 @@ output "k8s_cluster_credentials_command" {
 }
 
 output "ingress_public_ip" {
-  description = "Внешний IP ingress-nginx (yandex_vpc_address + LoadBalancer); для подстановки в k8s/nodelocaldns.yaml"
+  description = "External ingress-nginx IP for nodelocaldns substitution"
   value       = local.ingress_public_ip
 }

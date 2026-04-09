@@ -4,6 +4,70 @@ variable "folder_id" {
   default     = ""
 }
 
+variable "create_network" {
+  description = "Create VPC and subnets in this stack. Set false when network is provisioned by stage 1."
+  type        = bool
+  default     = true
+}
+
+variable "network_id" {
+  description = "Existing VPC network ID (required when create_network=false)"
+  type        = string
+  default     = ""
+  validation {
+    condition     = var.create_network || var.network_id != ""
+    error_message = "network_id must be set when create_network=false."
+  }
+}
+
+variable "subnet_a_id" {
+  description = "Existing subnet ID in ru-central1-a (required when create_network=false)"
+  type        = string
+  default     = ""
+  validation {
+    condition     = var.create_network || var.subnet_a_id != ""
+    error_message = "subnet_a_id must be set when create_network=false."
+  }
+}
+
+variable "subnet_b_id" {
+  description = "Existing subnet ID in ru-central1-b (required when create_network=false)"
+  type        = string
+  default     = ""
+  validation {
+    condition     = var.create_network || var.subnet_b_id != ""
+    error_message = "subnet_b_id must be set when create_network=false."
+  }
+}
+
+variable "subnet_d_id" {
+  description = "Existing subnet ID in ru-central1-d (required when create_network=false)"
+  type        = string
+  default     = ""
+  validation {
+    condition     = var.create_network || var.subnet_d_id != ""
+    error_message = "subnet_d_id must be set when create_network=false."
+  }
+}
+
+variable "subnet_a_zone" {
+  description = "Zone for subnet_a_id (required when create_network=false)"
+  type        = string
+  default     = "ru-central1-a"
+}
+
+variable "subnet_b_zone" {
+  description = "Zone for subnet_b_id (required when create_network=false)"
+  type        = string
+  default     = "ru-central1-b"
+}
+
+variable "subnet_d_zone" {
+  description = "Zone for subnet_d_id (required when create_network=false)"
+  type        = string
+  default     = "ru-central1-d"
+}
+
 variable "external_clickhouse_tcp_port" {
   description = "External ClickHouse native TCP port"
   type        = number
@@ -104,7 +168,7 @@ variable "managed_clickhouse_user_password" {
 variable "managed_clickhouse_sql_user_management_enabled" {
   description = "Enable SQL user management in Managed ClickHouse (requires local DNS/network access to cluster FQDN for clickhousedbops provider)"
   type        = bool
-  default     = true # Needed for Snuba migrations: without SQL user management, CREATE WORKLOAD grant is missing.
+  default     = true
 }
 
 variable "managed_clickhouse_admin_password" {
