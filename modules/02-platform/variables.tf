@@ -179,7 +179,7 @@ variable "managed_clickhouse_admin_password" {
 }
 
 variable "managed_clickhouse_grant_create_workload" {
-  description = "Grant CREATE WORKLOAD ON *.* to managed_clickhouse_user via clickhousedbops provider"
+  description = "Grant CREATE WORKLOAD ON *.* to managed_clickhouse_user via clickhousedbops provider (may require extra GRANT OPTION in managed environments)"
   type        = bool
-  default     = true
+  default     = false
 }
