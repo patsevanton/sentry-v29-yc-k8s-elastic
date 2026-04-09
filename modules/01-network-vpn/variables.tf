@@ -47,8 +47,19 @@ variable "vpn_subnet_id" {
 }
 
 variable "ssh_public_key" {
-  description = "SSH public key for ubuntu user on VPN VM"
+  description = "SSH public key for VPN VM users"
   type        = string
+
+  validation {
+    condition     = trimspace(var.ssh_public_key) != ""
+    error_message = "ssh_public_key must not be empty. Set TF_VAR_ssh_public_key to your public SSH key."
+  }
+}
+
+variable "ssh_username" {
+  description = "Preferred SSH username for connecting to VPN VM"
+  type        = string
+  default     = "yc-user"
 }
 
 variable "ssh_allowed_cidr" {

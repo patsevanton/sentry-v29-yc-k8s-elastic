@@ -7,6 +7,7 @@ data "yandex_compute_image" "ubuntu" {
 locals {
   folder_id               = var.folder_id != "" ? var.folder_id : data.yandex_client_config.client.folder_id
   vpn_subnet_id_effective = var.vpn_subnet_id != "" ? var.vpn_subnet_id : yandex_vpc_subnet.sentry-a.id
+  ssh_metadata_users      = distinct([var.ssh_username, "yc-user", "ubuntu"])
 }
 
 resource "yandex_vpc_network" "sentry" {
@@ -88,7 +89,9 @@ resource "yandex_compute_instance" "wireguard" {
   }
 
   metadata = {
-    ssh-keys = "ubuntu:${var.ssh_public_key}"
+    ssh-keys = join("\n", [
+      for username in local.ssh_metadata_users : "${username}:${trimspace(var.ssh_public_key)}"
+    ])
     user-data = templatefile("${path.module}/cloud-init-wireguard.yaml.tpl", {
       wireguard_server_private_cidr = var.wireguard_server_private_cidr
       wireguard_port                = var.wireguard_port
