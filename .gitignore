@@ -41,3 +41,4 @@ terraform.rc
 .terraform.lock.hcl
 examples/sentry-native-debug-sample/app-linux-debug
 terragrunt/01-network-vpn/.terragrunt-cache
+terragrunt/02-platform/.terragrunt-cache
