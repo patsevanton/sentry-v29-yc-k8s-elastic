@@ -12,19 +12,19 @@
 Подготовка:
 
 ```bash
-export YC_TOKEN="$(yc iam create-token)"
-export YC_CLOUD_ID="$(yc config get cloud-id)"
+export YC_TOKEN=$(yc iam create-token)
+export YC_CLOUD_ID=$(yc config get cloud-id)
 export YC_FOLDER_ID="<ваш-folder-id>"
-export TF_VAR_ssh_public_key="$(cat ~/.ssh/id_ed25519.pub)"
+export TF_VAR_ssh_public_key=$(cat ~/.ssh/id_ed25519.pub)
 ```
 
 Если хотите не экспортировать переменные вручную каждый раз, добавьте в `~/.bashrc`:
 
 ```bash
-export YC_TOKEN="$(yc iam create-token)"
-export YC_CLOUD_ID="$(yc config get cloud-id)"
-export YC_FOLDER_ID="$(yc config get folder-id)"
-export TF_VAR_ssh_public_key="$(cat ~/.ssh/id_ed25519.pub)"
+export YC_TOKEN=$(yc iam create-token)
+export YC_CLOUD_ID=$(yc config get cloud-id)
+export YC_FOLDER_ID=$(yc config get folder-id)
+export TF_VAR_ssh_public_key=$(cat ~/.ssh/id_ed25519.pub)
 ```
 
 Затем перечитайте конфиг shell:
