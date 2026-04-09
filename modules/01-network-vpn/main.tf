@@ -100,3 +100,27 @@ resource "yandex_compute_instance" "wireguard" {
     })
   }
 }
+
+resource "null_resource" "wireguard_ssh_ready" {
+  depends_on = [yandex_compute_instance.wireguard]
+
+  triggers = {
+    instance_id = yandex_compute_instance.wireguard.id
+    public_ip   = yandex_compute_instance.wireguard.network_interface[0].nat_ip_address
+    ssh_user    = var.ssh_username
+  }
+
+  provisioner "local-exec" {
+    command = <<-EOT
+      set -eu
+      for i in $(seq 1 30); do
+        if ssh -o StrictHostKeyChecking=no -o UserKnownHostsFile=/dev/null -o ConnectTimeout=5 -o BatchMode=yes ${var.ssh_username}@${self.triggers.public_ip} "echo ssh-ready" >/dev/null 2>&1; then
+          exit 0
+        fi
+        sleep 10
+      done
+      echo "Timed out waiting for SSH on ${self.triggers.public_ip}" >&2
+      exit 1
+    EOT
+  }
+}
