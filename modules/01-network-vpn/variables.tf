@@ -59,7 +59,7 @@ variable "ssh_public_key" {
 variable "ssh_username" {
   description = "Preferred SSH username for connecting to VPN VM"
   type        = string
-  default     = "yc-user"
+  default     = "ubuntu"
 }
 
 variable "ssh_allowed_cidr" {
