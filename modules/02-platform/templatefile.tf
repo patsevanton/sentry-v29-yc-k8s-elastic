@@ -18,7 +18,7 @@ locals {
     host                   = yandex_mdb_clickhouse_cluster.managed.host[0].fqdn
     tcpPort                = var.external_clickhouse_tcp_port
     httpPort               = var.external_clickhouse_http_port
-    username               = var.managed_clickhouse_sql_user_management_enabled ? clickhousedbops_user.managed_sentry[0].name : yandex_mdb_clickhouse_user.managed_sentry[0].name
+    username               = var.managed_clickhouse_user
     password               = local.managed_clickhouse_user_password_effective
     database               = yandex_mdb_clickhouse_database.managed_sentry.name
     singleNode             = var.external_clickhouse_single_node
