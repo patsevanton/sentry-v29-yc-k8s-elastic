@@ -42,7 +42,7 @@ write_files:
       [Interface]
       PrivateKey = $${CLIENT_PRIV}
       Address = ${wireguard_client_ip}/32
-      DNS = 77.88.8.8
+      DNS = ${wireguard_client_dns}
 
       [Peer]
       PublicKey = $${SERVER_PUB}

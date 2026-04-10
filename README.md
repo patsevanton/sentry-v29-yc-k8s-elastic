@@ -47,6 +47,8 @@ terragrunt apply
 eval "$(terragrunt output -raw wireguard_client_config_fetch_command)" > wg-client.conf
 ```
 
+В `wg-client.conf` выставляется внутренний DNS YC для резолва приватных ресурсов в VPC. DNS можно задать через input `wireguard_client_dns` (в этом репозитории в `terragrunt/01-network-vpn/terragrunt.hcl` установлен `10.0.2.2`).
+
 Подключитесь к VPN (`wg-quick up ./wg-client.conf`) и убедитесь, что есть маршрут в `10.0.0.0/16`.
 
 Этап 2 (остальная платформа):

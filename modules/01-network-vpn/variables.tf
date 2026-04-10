@@ -91,3 +91,9 @@ variable "wireguard_client_allowed_ips" {
   type        = string
   default     = "10.0.0.0/16,10.66.0.0/24"
 }
+
+variable "wireguard_client_dns" {
+  description = "DNS server written to WireGuard client config (empty = auto internal YC DNS)"
+  type        = string
+  default     = ""
+}

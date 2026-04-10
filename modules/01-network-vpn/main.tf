@@ -8,6 +8,10 @@ locals {
   folder_id               = var.folder_id != "" ? var.folder_id : data.yandex_client_config.client.folder_id
   vpn_subnet_id_effective = var.vpn_subnet_id != "" ? var.vpn_subnet_id : yandex_vpc_subnet.sentry-a.id
   ssh_metadata_users      = distinct([var.ssh_username, "yc-user", "ubuntu"])
+  wireguard_client_dns_default = local.vpn_subnet_id_effective == yandex_vpc_subnet.sentry-b.id ? cidrhost(var.subnet_b_cidr, 2) : (
+    local.vpn_subnet_id_effective == yandex_vpc_subnet.sentry-d.id ? cidrhost(var.subnet_d_cidr, 2) : cidrhost(var.subnet_a_cidr, 2)
+  )
+  wireguard_client_dns_effective = trimspace(var.wireguard_client_dns) != "" ? trimspace(var.wireguard_client_dns) : local.wireguard_client_dns_default
 }
 
 resource "yandex_vpc_network" "sentry" {
@@ -97,6 +101,7 @@ resource "yandex_compute_instance" "wireguard" {
       wireguard_port                = var.wireguard_port
       wireguard_client_ip           = var.wireguard_client_ip
       wireguard_client_allowed_ips  = var.wireguard_client_allowed_ips
+      wireguard_client_dns          = local.wireguard_client_dns_effective
     })
   }
 }
@@ -121,6 +126,25 @@ resource "null_resource" "wireguard_ssh_ready" {
       done
       echo "Timed out waiting for SSH on ${self.triggers.public_ip}" >&2
       exit 1
+    EOT
+  }
+}
+
+resource "null_resource" "wireguard_client_dns_sync" {
+  depends_on = [null_resource.wireguard_ssh_ready]
+
+  triggers = {
+    instance_id = yandex_compute_instance.wireguard.id
+    public_ip   = yandex_compute_instance.wireguard.network_interface[0].nat_ip_address
+    ssh_user    = var.ssh_username
+    client_dns  = local.wireguard_client_dns_effective
+  }
+
+  provisioner "local-exec" {
+    command = <<-EOT
+      set -eu
+      ssh -o StrictHostKeyChecking=no -o UserKnownHostsFile=/dev/null ${var.ssh_username}@${self.triggers.public_ip} \
+        "sudo sed -i -E 's/^DNS = .*/DNS = ${self.triggers.client_dns}/' /root/wg-client.conf"
     EOT
   }
 }

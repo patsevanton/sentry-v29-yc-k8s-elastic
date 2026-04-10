@@ -34,6 +34,11 @@ output "vpn_private_ip" {
   value = yandex_compute_instance.wireguard.network_interface[0].ip_address
 }
 
+output "wireguard_client_dns" {
+  description = "DNS server used in generated WireGuard client config"
+  value       = local.wireguard_client_dns_effective
+}
+
 output "wireguard_client_config_fetch_command" {
   description = "Command to fetch generated client config from the VPN VM"
   value       = "ssh ${var.ssh_username}@${yandex_compute_instance.wireguard.network_interface[0].nat_ip_address} 'sudo cat /root/wg-client.conf'"

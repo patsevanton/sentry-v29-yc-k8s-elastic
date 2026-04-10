@@ -10,4 +10,5 @@ terraform {
 inputs = {
   folder_id      = include.root.locals.folder_id
   ssh_public_key = get_env("TF_VAR_ssh_public_key", "")
+  wireguard_client_dns = "10.0.2.2"
 }
