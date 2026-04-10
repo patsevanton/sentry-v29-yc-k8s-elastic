@@ -75,7 +75,7 @@ resource "yandex_mdb_clickhouse_user" "managed_sentry" {
 provider "clickhousedbops" {
   host     = yandex_mdb_clickhouse_cluster.managed.host[0].fqdn
   port     = var.external_clickhouse_tcp_port
-  protocol = "nativesecure"
+  protocol = "native"
 
   auth_config = {
     strategy = "password"

@@ -2,7 +2,7 @@
 
 ## Двухэтапный apply через Terragrunt (VPC/VPN -> платформа)
 
-Чтобы избежать таймаутов при создании пользователей/грантов в Managed ClickHouse (`clickhousedbops` по TLS-native TCP 9440), инфраструктура разбита на 2 каталога Terragrunt:
+Чтобы избежать таймаутов при создании пользователей/грантов в Managed ClickHouse (`clickhousedbops` по native TCP, обычно 9000 во VPC), инфраструктура разбита на 2 каталога Terragrunt:
 
 - `terragrunt/01-network-vpn` — VPC, 3 подсети и WireGuard VPN VM.
 - `terragrunt/02-platform` — всё остальное (K8s, ingress, DNS, S3, Managed ClickHouse и т.д.).
@@ -243,15 +243,6 @@ kubectl -n sentry run -it --rm dns-test --image=busybox:1.36 --restart=Never -- 
 ```
 
 Если short hostnames не резолвятся, включите в Terraform `enable_clickhouse_dns_search=true`.
-
-Если при `terragrunt apply/destroy` для ресурсов `clickhousedbops_*` появляется ошибка TLS `x509: certificate signed by unknown authority`, добавьте CA-сертификат Yandex Cloud в системное хранилище сертификатов на машине, где запускается Terraform:
-
-```bash
-sudo mkdir -p /usr/local/share/ca-certificates/yandex
-sudo curl -fsSL https://storage.yandexcloud.net/cloud-certs/CA.pem \
-  -o /usr/local/share/ca-certificates/yandex/yandex-cloud-ca.crt
-sudo update-ca-certificates
-```
 
 ### 3. Репозиторий Sentry
 
