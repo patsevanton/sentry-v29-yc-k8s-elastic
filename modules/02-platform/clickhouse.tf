@@ -27,6 +27,10 @@ resource "yandex_mdb_clickhouse_cluster" "managed" {
     }
   }
 
+  database {
+    name = var.managed_clickhouse_database
+  }
+
   host {
     type             = "CLICKHOUSE"
     zone             = local.subnet_a_zone
@@ -51,13 +55,8 @@ resource "yandex_mdb_clickhouse_cluster" "managed" {
   deletion_protection = false
 }
 
-resource "yandex_mdb_clickhouse_database" "managed_sentry" {
-  cluster_id = yandex_mdb_clickhouse_cluster.managed.id
-  name       = var.managed_clickhouse_database
-}
-
 resource "time_sleep" "managed_sentry_database_ready" {
-  depends_on      = [yandex_mdb_clickhouse_database.managed_sentry]
+  depends_on      = [yandex_mdb_clickhouse_cluster.managed]
   create_duration = "30s"
 }
 
@@ -69,7 +68,7 @@ resource "yandex_mdb_clickhouse_user" "managed_sentry" {
   depends_on = [time_sleep.managed_sentry_database_ready]
 
   permission {
-    database_name = yandex_mdb_clickhouse_database.managed_sentry.name
+    database_name = var.managed_clickhouse_database
   }
 }
 
@@ -92,7 +91,6 @@ resource "clickhousedbops_user" "managed_sentry" {
 
   depends_on = [
     yandex_mdb_clickhouse_cluster.managed,
-    yandex_mdb_clickhouse_database.managed_sentry,
     time_sleep.managed_sentry_database_ready
   ]
 }
@@ -142,7 +140,7 @@ resource "clickhousedbops_grant_privilege" "managed_sentry_db_privileges" {
   for_each = var.managed_clickhouse_sql_user_management_enabled ? local.managed_clickhouse_sentry_db_privileges : toset([])
 
   privilege_name    = each.value
-  database_name     = yandex_mdb_clickhouse_database.managed_sentry.name
+  database_name     = var.managed_clickhouse_database
   grantee_user_name = clickhousedbops_user.managed_sentry[0].name
   depends_on        = [clickhousedbops_user.managed_sentry]
 }

@@ -20,7 +20,7 @@ locals {
     httpPort               = var.external_clickhouse_http_port
     username               = var.managed_clickhouse_user
     password               = local.managed_clickhouse_user_password_effective
-    database               = yandex_mdb_clickhouse_database.managed_sentry.name
+    database               = var.managed_clickhouse_database
     singleNode             = var.external_clickhouse_single_node
     clusterName            = var.external_clickhouse_cluster_name
     distributedClusterName = var.external_clickhouse_distributed_cluster_name
