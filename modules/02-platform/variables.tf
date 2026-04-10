@@ -116,6 +116,12 @@ variable "clickhouse_dns_search_suffix" {
   default     = "clickhouse.svc.cluster.local"
 }
 
+variable "sentry_values_output_path" {
+  description = "Path to generated values_sentry.yaml file used by Helm"
+  type        = string
+  default     = "values_sentry.yaml"
+}
+
 variable "managed_clickhouse_name" {
   description = "Managed ClickHouse cluster name"
   type        = string

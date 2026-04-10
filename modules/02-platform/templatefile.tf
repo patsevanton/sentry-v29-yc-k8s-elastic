@@ -1,10 +1,16 @@
 resource "null_resource" "write_sentry_config" {
   provisioner "local-exec" {
-    command = "echo '${local.sentry_config}' > values_sentry.yaml"
+    command = <<-EOT
+      mkdir -p "$(dirname "${var.sentry_values_output_path}")"
+      cat > "${var.sentry_values_output_path}" <<'EOF'
+      ${local.sentry_config}
+      EOF
+    EOT
   }
 
   triggers = {
-    sentry_config = local.sentry_config
+    sentry_config             = local.sentry_config
+    sentry_values_output_path = var.sentry_values_output_path
   }
 }
 

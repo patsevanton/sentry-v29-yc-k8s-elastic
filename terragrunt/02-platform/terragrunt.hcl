@@ -24,6 +24,7 @@ terraform {
 inputs = {
   folder_id      = include.root.locals.folder_id
   create_network = false
+  sentry_values_output_path = "${get_terragrunt_dir()}/values_sentry.yaml"
 
   network_id    = dependency.network_vpn.outputs.network_id
   subnet_a_id   = dependency.network_vpn.outputs.subnet_a_id

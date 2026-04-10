@@ -149,7 +149,7 @@ curl -s "http://sentry-nodestore-es-http.elasticsearch.svc.cluster.local:9200/_i
 
 **1.4. Образ Sentry с nodestore**
 
-В этом репозитории образ **уже собран** и публикуется в GHCR; для установки по примеру из README достаточно указать его в Helm values — см. [modules/02-platform/values_sentry.yaml.tpl](modules/02-platform/values_sentry.yaml.tpl) (`images.sentry.repository` и `images.sentry.tag`). Файл `values_sentry.yaml` генерируется автоматически из шаблона через Terraform (см. [modules/02-platform/templatefile.tf](modules/02-platform/templatefile.tf)).
+В этом репозитории образ **уже собран** и публикуется в GHCR; для установки по примеру из README достаточно указать его в Helm values — см. [modules/02-platform/values_sentry.yaml.tpl](modules/02-platform/values_sentry.yaml.tpl) (`images.sentry.repository` и `images.sentry.tag`). Файл `terragrunt/02-platform/values_sentry.yaml` генерируется автоматически из шаблона через Terraform (см. [modules/02-platform/templatefile.tf](modules/02-platform/templatefile.tf)).
 
 Если вы **сами** собираете образ (другой реестр, свои правки в `Dockerfile.sentry-nodestore` или обновление под новый релиз чарта), делайте так:
 
@@ -196,7 +196,7 @@ INSTALLED_APPS.append("sentry_nodestore_elastic")
 INSTALLED_APPS = tuple(INSTALLED_APPS)
 ```
 
-Установка или обновление релиза с nodestore — один values-файл с образом и `config.sentryConfPy` (`values_sentry.yaml`, генерируется из [modules/02-platform/values_sentry.yaml.tpl](modules/02-platform/values_sentry.yaml.tpl)). Саму команду `helm upgrade` и инициализацию nodestore выполняйте один раз после **§2** (ClickHouse) и **§3** (репозиторий Helm) — см. **§4**.
+Установка или обновление релиза с nodestore — один values-файл с образом и `config.sentryConfPy` (`terragrunt/02-platform/values_sentry.yaml`, генерируется из [modules/02-platform/values_sentry.yaml.tpl](modules/02-platform/values_sentry.yaml.tpl)). Саму команду `helm upgrade` и инициализацию nodestore выполняйте один раз после **§2** (ClickHouse) и **§3** (репозиторий Helm) — см. **§4**.
 
 **1.6. TLS и версии**
 
@@ -208,7 +208,7 @@ INSTALLED_APPS = tuple(INSTALLED_APPS)
 
 ClickHouse используется только как внешний managed-кластер в Yandex Cloud. In-cluster ClickHouse/Altinity в этом репозитории больше не используется.
 
-Terraform создаёт Managed ClickHouse и автоматически подставляет endpoint/креды в `values_sentry.yaml` (через `values_sentry.yaml.tpl`):
+Terraform создаёт Managed ClickHouse и автоматически подставляет endpoint/креды в `terragrunt/02-platform/values_sentry.yaml` (через `values_sentry.yaml.tpl`):
 - кластер: `yandex_mdb_clickhouse_cluster.managed`;
 - база: `yandex_mdb_clickhouse_database.managed_sentry`;
 - пользователь: `yandex_mdb_clickhouse_user.managed_sentry`.
@@ -275,17 +275,17 @@ Terraform-файл [modules/02-platform/s3.tf](modules/02-platform/s3.tf) соз
 terraform apply
 ```
 
-После apply файл `values_sentry.yaml` генерируется автоматически из шаблона [modules/02-platform/values_sentry.yaml.tpl](modules/02-platform/values_sentry.yaml.tpl) через Terraform (см. [modules/02-platform/templatefile.tf](modules/02-platform/templatefile.tf)) — ключи S3 подставляются из ресурсов Terraform, ручная подстановка не нужна.
+После apply файл `terragrunt/02-platform/values_sentry.yaml` генерируется автоматически из шаблона [modules/02-platform/values_sentry.yaml.tpl](modules/02-platform/values_sentry.yaml.tpl) через Terraform (см. [modules/02-platform/templatefile.tf](modules/02-platform/templatefile.tf)) — ключи S3 подставляются из ресурсов Terraform, ручная подстановка не нужна.
 
 ### 4. Установка Sentry
 
 **Порядок зависимостей.** Чарт поднимает PostgreSQL, Redis и Kafka в namespace `sentry`, а **ClickHouse задаётся снаружи** (`externalClickhouse` в [modules/02-platform/values_sentry.yaml.tpl](modules/02-platform/values_sentry.yaml.tpl)). Сначала выполните **§1.1–1.2** (Elasticsearch), **§2** (Managed ClickHouse через Terraform), **§3** (репозиторий Helm), затем команду ниже.
 
-Установка с `values_sentry.yaml` (генерируется из [modules/02-platform/values_sentry.yaml.tpl](modules/02-platform/values_sentry.yaml.tpl) через `terraform apply`): в файле уже заданы nodestore в Elasticsearch (`images.sentry`, `config.sentryConfPy`) и параметры Managed ClickHouse из Terraform outputs.
+Установка с `terragrunt/02-platform/values_sentry.yaml` (генерируется из [modules/02-platform/values_sentry.yaml.tpl](modules/02-platform/values_sentry.yaml.tpl) через `terraform apply`): в файле уже заданы nodestore в Elasticsearch (`images.sentry`, `config.sentryConfPy`) и параметры Managed ClickHouse из Terraform outputs.
 
 ```bash
 helm upgrade --install sentry sentry/sentry --version 29.5.1 -n sentry \
-  -f values_sentry.yaml --timeout=900s --create-namespace
+  -f terragrunt/02-platform/values_sentry.yaml --timeout=900s --create-namespace
 ```
 
 После первого подключения к Elasticsearch инициализируйте шаблон индекса nodestore:
