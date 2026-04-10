@@ -144,7 +144,17 @@ resource "null_resource" "wireguard_client_dns_sync" {
     command = <<-EOT
       set -eu
       ssh -o StrictHostKeyChecking=no -o UserKnownHostsFile=/dev/null ${var.ssh_username}@${self.triggers.public_ip} \
-        "sudo sed -i -E 's/^DNS = .*/DNS = ${self.triggers.client_dns}/' /root/wg-client.conf"
+        "set -eu
+        for i in \$(seq 1 30); do
+          if sudo test -f /root/wg-client.conf; then
+            sudo sed -i -E 's/^DNS = .*/DNS = ${self.triggers.client_dns}/' /root/wg-client.conf
+            exit 0
+          fi
+          sleep 5
+        done
+        echo 'Timed out waiting for /root/wg-client.conf' >&2
+        sudo cloud-init status --long || true
+        exit 1"
     EOT
   }
 }
