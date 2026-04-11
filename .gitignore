@@ -44,3 +44,4 @@ examples/sentry-native-debug-sample/app-linux-debug
 terragrunt/01-network-vpn/.terragrunt-cache
 terragrunt/02-platform/.terragrunt-cache
 terragrunt/01-network-vpn/terraform.log
+terragrunt/01-network-vpn/wg-client.conf
