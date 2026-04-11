@@ -67,15 +67,16 @@ terragrunt apply
 **Установка** (опционально). Нужен настроенный `kubectl` на кластер. Подставляется ClusterIP сервиса кластерного DNS (`kube-dns`), затем манифест применяется через `kubectl apply -f -`. Режим **iptables** у kube-proxy — типичный случай.
 
 ```bash
+repo_root=$(git rev-parse --show-toplevel)
 kubedns=$(kubectl get svc kube-dns -n kube-system -o jsonpath='{.spec.clusterIP}')
 domain=cluster.local
 localdns=169.254.20.10
-ingress_ip=$(terragrunt output -raw ingress_public_ip)
+ingress_ip=$(terragrunt --terragrunt-working-dir "${repo_root}/terragrunt/02-platform" output -raw ingress_public_ip)
 sed -e "s/__PILLAR__LOCAL__DNS__/${localdns}/g" \
     -e "s/__PILLAR__DNS__DOMAIN__/${domain}/g" \
     -e "s/__PILLAR__DNS__SERVER__/${kubedns}/g" \
     -e "s/__SENTRY_INGRESS_IP__/${ingress_ip}/g" \
-    k8s/nodelocaldns.yaml | kubectl apply -f -
+    "${repo_root}/k8s/nodelocaldns.yaml" | kubectl apply -f -
 ```
 
 Если kube-proxy в режиме **IPVS**, используйте подстановку из [документации](https://kubernetes.io/docs/tasks/administer-cluster/nodelocaldns/) (в т.ч. удаление `,__PILLAR__DNS__SERVER__` из `bind` и замена `__PILLAR__CLUSTER__DNS__`); для IPVS обычно меняют `--cluster-dns` у kubelet на адрес NodeLocal (`169.254.20.10`).
