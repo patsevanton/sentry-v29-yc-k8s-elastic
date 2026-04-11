@@ -37,7 +37,6 @@ source ~/.bashrc
 
 ```bash
 cd terragrunt/01-network-vpn
-terragrunt init
 terragrunt apply
 ```
 
@@ -58,7 +57,6 @@ eval "$(
 
 ```bash
 cd ../02-platform
-terragrunt init
 terragrunt apply
 ```
 
