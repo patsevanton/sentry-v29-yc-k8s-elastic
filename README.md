@@ -44,7 +44,10 @@ terragrunt apply
 Забрать клиентский WireGuard-конфиг:
 
 ```bash
-eval "$(terragrunt output -raw wireguard_client_config_fetch_command)" > wg-client.conf
+eval "$(
+  terragrunt output -raw wireguard_client_config_fetch_command \
+  | sed -E 's/^(ssh|scp) /\1 -o StrictHostKeyChecking=accept-new /'
+)" > wg-client.conf
 ```
 
 В `wg-client.conf` выставляется внутренний DNS YC для резолва приватных ресурсов в VPC. DNS можно задать через input `wireguard_client_dns` (в этом репозитории в `terragrunt/01-network-vpn/terragrunt.hcl` установлен `10.0.2.2`).
