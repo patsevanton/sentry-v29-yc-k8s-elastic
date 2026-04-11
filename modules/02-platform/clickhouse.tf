@@ -35,21 +35,21 @@ resource "yandex_mdb_clickhouse_cluster" "managed" {
     type             = "CLICKHOUSE"
     zone             = local.subnet_a_zone
     subnet_id        = local.subnet_a_id
-    assign_public_ip = true
+    assign_public_ip = false
   }
 
   host {
     type             = "CLICKHOUSE"
     zone             = local.subnet_b_zone
     subnet_id        = local.subnet_b_id
-    assign_public_ip = true
+    assign_public_ip = false
   }
 
   host {
     type             = "CLICKHOUSE"
     zone             = local.subnet_d_zone
     subnet_id        = local.subnet_d_id
-    assign_public_ip = true
+    assign_public_ip = false
   }
 
   deletion_protection = false
