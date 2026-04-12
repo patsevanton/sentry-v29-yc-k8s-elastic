@@ -1,0 +1,15 @@
+.cursorignore
+.git
+.github
+.gitignore
+.terraform
+.terraform.lock.hcl
+Dockerfile.sentry-nodestore
+Dockerfile.snuba-nodestore
+LICENSE
+README.md
+elasticsearch.yaml
+index-lifecycle-policy-delete.yaml
+terraform.tfstate
+terraform.tfstate.backup
+todo.md
