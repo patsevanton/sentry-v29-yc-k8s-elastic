@@ -246,6 +246,24 @@ kubectl -n sentry run -it --rm dns-test --image=busybox:1.36 --restart=Never -- 
 
 Если short hostnames не резолвятся, включите в Terraform `enable_clickhouse_dns_search=true`.
 
+**Важно про distributed + non-TLS (вывод из проверки `system.clusters`).**
+
+На текущем Yandex Managed ClickHouse в `system.clusters` для `clusterName=default` опубликован только порт `9440` (TLS):
+
+```
+┌─cluster─┬─host_name─────────────────────────────────┬─port─┬─shard_num─┬─replica_num─┐
+│ default │ rc1a-3s788r2f9setaa1o.mdb.yandexcloud.net │ 9440 │         1 │           1 │
+│ default │ rc1b-j5i5388j1nhdhuc5.mdb.yandexcloud.net │ 9440 │         1 │           2 │
+│ default │ rc1d-rbcg9hhifci2e797.mdb.yandexcloud.net │ 9440 │         1 │           3 │
+└─────────┴───────────────────────────────────────────┴──────┴───────────┴─────────────┘
+```
+
+Это означает:
+- при `external_clickhouse_single_node=false` Snuba использует `system.clusters` для distributed-операций;
+- комбинация `single_node=false` + `tcpPort=9000` + **NO TLS** с этим MCH не работает;
+- чтобы сохранить distributed (HA), нужен TLS/`9440`;
+- чтобы сохранить NO TLS/`9000`, нужен `single_node=true` или другой ClickHouse, где `system.clusters` отдаёт `9000`.
+
 ### 3. Репозиторий Sentry
 
 Подключите Helm-репозиторий чарта Sentry. Namespace `sentry` можно создать заранее или при установке в **§4** флагом `--create-namespace`.
