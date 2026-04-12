@@ -19,11 +19,6 @@ dependency "network_vpn" {
 
 terraform {
   source = "../../modules/02-platform"
-
-  extra_arguments "destroy_parallelism_1" {
-    commands  = ["destroy"]
-    arguments = ["-parallelism=1"]
-  }
 }
 
 inputs = {

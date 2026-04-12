@@ -109,29 +109,12 @@ resource "clickhousedbops_database" "managed_sentry" {
   ]
 }
 
-# NOTE FOR FUTURE DEBUGGING:
 # In Yandex Managed ClickHouse, admin often cannot delegate every privilege from ALL ON <db>.*.
 # Terraform then fails with ClickHouse code 497 ("Not enough privileges", missing WITH GRANT OPTION).
 # Grant an explicit subset that admin can delegate instead of ALL.
-locals {
-  managed_clickhouse_sentry_db_privileges = toset([
-    "CHECK",
-    "SHOW",
-    "SELECT",
-    "INSERT",
-    "ALTER",
-    "CREATE TABLE",
-    "CREATE VIEW",
-    "DROP TABLE",
-    "DROP VIEW",
-    "TRUNCATE"
-  ])
-}
-
-resource "clickhousedbops_grant_privilege" "managed_sentry_db_privileges" {
-  for_each = var.managed_clickhouse_sql_user_management_enabled ? local.managed_clickhouse_sentry_db_privileges : toset([])
-
-  privilege_name    = each.value
+resource "clickhousedbops_grant_privilege" "managed_sentry_db_privilege_check" {
+  count             = var.managed_clickhouse_sql_user_management_enabled ? 1 : 0
+  privilege_name    = "CHECK"
   database_name     = var.managed_clickhouse_database
   grantee_user_name = clickhousedbops_user.managed_sentry[0].name
   depends_on = [
@@ -140,18 +123,93 @@ resource "clickhousedbops_grant_privilege" "managed_sentry_db_privileges" {
   ]
 }
 
+resource "clickhousedbops_grant_privilege" "managed_sentry_db_privilege_show" {
+  count             = var.managed_clickhouse_sql_user_management_enabled ? 1 : 0
+  privilege_name    = "SHOW"
+  database_name     = var.managed_clickhouse_database
+  grantee_user_name = clickhousedbops_user.managed_sentry[0].name
+  depends_on        = [clickhousedbops_grant_privilege.managed_sentry_db_privilege_check]
+}
+
+resource "clickhousedbops_grant_privilege" "managed_sentry_db_privilege_select" {
+  count             = var.managed_clickhouse_sql_user_management_enabled ? 1 : 0
+  privilege_name    = "SELECT"
+  database_name     = var.managed_clickhouse_database
+  grantee_user_name = clickhousedbops_user.managed_sentry[0].name
+  depends_on        = [clickhousedbops_grant_privilege.managed_sentry_db_privilege_show]
+}
+
+resource "clickhousedbops_grant_privilege" "managed_sentry_db_privilege_insert" {
+  count             = var.managed_clickhouse_sql_user_management_enabled ? 1 : 0
+  privilege_name    = "INSERT"
+  database_name     = var.managed_clickhouse_database
+  grantee_user_name = clickhousedbops_user.managed_sentry[0].name
+  depends_on        = [clickhousedbops_grant_privilege.managed_sentry_db_privilege_select]
+}
+
+resource "clickhousedbops_grant_privilege" "managed_sentry_db_privilege_alter" {
+  count             = var.managed_clickhouse_sql_user_management_enabled ? 1 : 0
+  privilege_name    = "ALTER"
+  database_name     = var.managed_clickhouse_database
+  grantee_user_name = clickhousedbops_user.managed_sentry[0].name
+  depends_on        = [clickhousedbops_grant_privilege.managed_sentry_db_privilege_insert]
+}
+
+resource "clickhousedbops_grant_privilege" "managed_sentry_db_privilege_create_table" {
+  count             = var.managed_clickhouse_sql_user_management_enabled ? 1 : 0
+  privilege_name    = "CREATE TABLE"
+  database_name     = var.managed_clickhouse_database
+  grantee_user_name = clickhousedbops_user.managed_sentry[0].name
+  depends_on        = [clickhousedbops_grant_privilege.managed_sentry_db_privilege_alter]
+}
+
+resource "clickhousedbops_grant_privilege" "managed_sentry_db_privilege_create_view" {
+  count             = var.managed_clickhouse_sql_user_management_enabled ? 1 : 0
+  privilege_name    = "CREATE VIEW"
+  database_name     = var.managed_clickhouse_database
+  grantee_user_name = clickhousedbops_user.managed_sentry[0].name
+  depends_on        = [clickhousedbops_grant_privilege.managed_sentry_db_privilege_create_table]
+}
+
+resource "clickhousedbops_grant_privilege" "managed_sentry_db_privilege_drop_table" {
+  count             = var.managed_clickhouse_sql_user_management_enabled ? 1 : 0
+  privilege_name    = "DROP TABLE"
+  database_name     = var.managed_clickhouse_database
+  grantee_user_name = clickhousedbops_user.managed_sentry[0].name
+  depends_on        = [clickhousedbops_grant_privilege.managed_sentry_db_privilege_create_view]
+}
+
+resource "clickhousedbops_grant_privilege" "managed_sentry_db_privilege_drop_view" {
+  count             = var.managed_clickhouse_sql_user_management_enabled ? 1 : 0
+  privilege_name    = "DROP VIEW"
+  database_name     = var.managed_clickhouse_database
+  grantee_user_name = clickhousedbops_user.managed_sentry[0].name
+  depends_on        = [clickhousedbops_grant_privilege.managed_sentry_db_privilege_drop_table]
+}
+
+resource "clickhousedbops_grant_privilege" "managed_sentry_db_privilege_truncate" {
+  count             = var.managed_clickhouse_sql_user_management_enabled ? 1 : 0
+  privilege_name    = "TRUNCATE"
+  database_name     = var.managed_clickhouse_database
+  grantee_user_name = clickhousedbops_user.managed_sentry[0].name
+  depends_on        = [clickhousedbops_grant_privilege.managed_sentry_db_privilege_drop_view]
+}
+
 resource "clickhousedbops_grant_privilege" "managed_sentry_create_workload" {
   count             = var.managed_clickhouse_sql_user_management_enabled && var.managed_clickhouse_grant_create_workload ? 1 : 0
   privilege_name    = "CREATE WORKLOAD"
   grantee_user_name = clickhousedbops_user.managed_sentry[0].name
-  depends_on        = [clickhousedbops_user.managed_sentry]
+  depends_on = [
+    clickhousedbops_user.managed_sentry,
+    clickhousedbops_grant_privilege.managed_sentry_db_privilege_truncate
+  ]
 }
 
 resource "clickhousedbops_grant_privilege" "managed_sentry_drop_workload" {
   count             = var.managed_clickhouse_sql_user_management_enabled && var.managed_clickhouse_grant_create_workload ? 1 : 0
   privilege_name    = "DROP WORKLOAD"
   grantee_user_name = clickhousedbops_user.managed_sentry[0].name
-  depends_on        = [clickhousedbops_user.managed_sentry]
+  depends_on        = [clickhousedbops_grant_privilege.managed_sentry_create_workload]
 }
 
 output "external_clickhouse_host" {
