@@ -86,14 +86,20 @@ variable "external_clickhouse_single_node" {
   default     = true
 }
 
+variable "managed_clickhouse_clickhouse_cluster_name" {
+  description = "ClickHouse logical cluster name as in system.clusters.cluster (Yandex MCH: typically \"default\"). Used for Snuba when external_clickhouse_cluster_name is empty."
+  type        = string
+  default     = "default"
+}
+
 variable "external_clickhouse_cluster_name" {
-  description = "Snuba clusterName; must match system.clusters.cluster. Leave empty to use the Yandex MDB cluster name (yandex_mdb_clickhouse_cluster.managed.name) — required for distributed Snuba on Managed ClickHouse."
+  description = "Snuba clusterName; must match system.clusters.cluster. Leave empty to use managed_clickhouse_clickhouse_cluster_name (default \"default\" on Yandex MCH)."
   type        = string
   default     = ""
 }
 
 variable "external_clickhouse_distributed_cluster_name" {
-  description = "Snuba distributedClusterName; usually the same as clusterName on Yandex MCH. Leave empty to use the managed cluster name."
+  description = "Snuba distributedClusterName; usually the same as clusterName. Leave empty to use managed_clickhouse_clickhouse_cluster_name."
   type        = string
   default     = ""
 }

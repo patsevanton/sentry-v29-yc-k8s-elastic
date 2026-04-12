@@ -20,16 +20,17 @@ locals {
   managed_clickhouse_user_password_effective  = var.managed_clickhouse_user_password != "" ? var.managed_clickhouse_user_password : random_password.managed_clickhouse_user_password.result
   managed_clickhouse_admin_password_effective = var.managed_clickhouse_admin_password != "" ? var.managed_clickhouse_admin_password : one(random_password.managed_clickhouse_admin_password[*].result)
 
-  # Yandex MCH: system.clusters.cluster matches the cloud API cluster name, not an arbitrary label.
+  # Yandex MCH: Snuba ON CLUSTER must match system.clusters.cluster. In Yandex Cloud that name is
+  # typically "default", not yandex_mdb_clickhouse_cluster.<name> (API resource name).
   external_clickhouse_cluster_name_effective = (
     var.external_clickhouse_cluster_name != "" ?
     var.external_clickhouse_cluster_name :
-    yandex_mdb_clickhouse_cluster.managed.name
+    var.managed_clickhouse_clickhouse_cluster_name
   )
   external_clickhouse_distributed_cluster_name_effective = (
     var.external_clickhouse_distributed_cluster_name != "" ?
     var.external_clickhouse_distributed_cluster_name :
-    yandex_mdb_clickhouse_cluster.managed.name
+    var.managed_clickhouse_clickhouse_cluster_name
   )
 
   external_clickhouse_effective = {
