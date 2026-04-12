@@ -10,14 +10,15 @@ resource "random_password" "managed_clickhouse_admin_password" {
 }
 
 resource "yandex_mdb_clickhouse_cluster" "managed" {
-  folder_id           = local.folder_id
-  name                = var.managed_clickhouse_name
-  description         = "Managed ClickHouse for Sentry/Snuba"
-  environment         = "PRODUCTION"
-  network_id          = local.network_id
-  version             = var.managed_clickhouse_version
-  sql_user_management = var.managed_clickhouse_sql_user_management_enabled
-  admin_password      = var.managed_clickhouse_sql_user_management_enabled ? local.managed_clickhouse_admin_password_effective : null
+  folder_id               = local.folder_id
+  name                    = var.managed_clickhouse_name
+  description             = "Managed ClickHouse for Sentry/Snuba"
+  environment             = "PRODUCTION"
+  network_id              = local.network_id
+  version                 = var.managed_clickhouse_version
+  sql_database_management = var.managed_clickhouse_sql_user_management_enabled
+  sql_user_management     = var.managed_clickhouse_sql_user_management_enabled
+  admin_password          = var.managed_clickhouse_sql_user_management_enabled ? local.managed_clickhouse_admin_password_effective : null
 
   clickhouse {
     resources {
@@ -27,8 +28,11 @@ resource "yandex_mdb_clickhouse_cluster" "managed" {
     }
   }
 
-  database {
-    name = var.managed_clickhouse_database
+  dynamic "database" {
+    for_each = var.managed_clickhouse_sql_user_management_enabled ? [] : [var.managed_clickhouse_database]
+    content {
+      name = database.value
+    }
   }
 
   host {
@@ -95,6 +99,16 @@ resource "clickhousedbops_user" "managed_sentry" {
   ]
 }
 
+resource "clickhousedbops_database" "managed_sentry" {
+  count = var.managed_clickhouse_sql_user_management_enabled ? 1 : 0
+  name  = var.managed_clickhouse_database
+
+  depends_on = [
+    yandex_mdb_clickhouse_cluster.managed,
+    time_sleep.managed_sentry_database_ready
+  ]
+}
+
 # NOTE FOR FUTURE DEBUGGING:
 # In Yandex Managed ClickHouse, admin often cannot delegate every privilege from ALL ON <db>.*.
 # Terraform then fails with ClickHouse code 497 ("Not enough privileges", missing WITH GRANT OPTION).
@@ -142,7 +156,10 @@ resource "clickhousedbops_grant_privilege" "managed_sentry_db_privileges" {
   privilege_name    = each.value
   database_name     = var.managed_clickhouse_database
   grantee_user_name = clickhousedbops_user.managed_sentry[0].name
-  depends_on        = [clickhousedbops_user.managed_sentry]
+  depends_on = [
+    clickhousedbops_user.managed_sentry,
+    clickhousedbops_database.managed_sentry
+  ]
 }
 
 resource "clickhousedbops_grant_privilege" "managed_sentry_create_workload" {
