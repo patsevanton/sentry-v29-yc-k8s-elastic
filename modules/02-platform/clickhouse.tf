@@ -238,11 +238,18 @@ output "external_clickhouse_database" {
 }
 
 output "external_clickhouse_cluster_name" {
-  value = var.external_clickhouse_cluster_name
+  description = "Effective Snuba clusterName (matches system.clusters on MCH when using defaults)"
+  value         = local.external_clickhouse_cluster_name_effective
 }
 
 output "external_clickhouse_distributed_cluster_name" {
-  value = var.external_clickhouse_distributed_cluster_name
+  description = "Effective Snuba distributedClusterName"
+  value         = local.external_clickhouse_distributed_cluster_name_effective
+}
+
+output "managed_clickhouse_name" {
+  description = "Yandex API name of the MDB cluster; same as system.clusters.cluster when using default Snuba cluster settings"
+  value       = yandex_mdb_clickhouse_cluster.managed.name
 }
 
 output "enable_clickhouse_dns_search" {

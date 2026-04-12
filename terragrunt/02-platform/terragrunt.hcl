@@ -25,6 +25,7 @@ inputs = {
   folder_id                                = include.root.locals.folder_id
   create_network                           = false
   managed_clickhouse_grant_create_workload = true
+  external_clickhouse_single_node          = false
   sentry_values_output_path                = "${get_terragrunt_dir()}/values_sentry.yaml"
 
   network_id    = dependency.network_vpn.outputs.network_id

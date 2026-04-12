@@ -20,6 +20,18 @@ locals {
   managed_clickhouse_user_password_effective  = var.managed_clickhouse_user_password != "" ? var.managed_clickhouse_user_password : random_password.managed_clickhouse_user_password.result
   managed_clickhouse_admin_password_effective = var.managed_clickhouse_admin_password != "" ? var.managed_clickhouse_admin_password : one(random_password.managed_clickhouse_admin_password[*].result)
 
+  # Yandex MCH: system.clusters.cluster matches the cloud API cluster name, not an arbitrary label.
+  external_clickhouse_cluster_name_effective = (
+    var.external_clickhouse_cluster_name != "" ?
+    var.external_clickhouse_cluster_name :
+    yandex_mdb_clickhouse_cluster.managed.name
+  )
+  external_clickhouse_distributed_cluster_name_effective = (
+    var.external_clickhouse_distributed_cluster_name != "" ?
+    var.external_clickhouse_distributed_cluster_name :
+    yandex_mdb_clickhouse_cluster.managed.name
+  )
+
   external_clickhouse_effective = {
     host                   = yandex_mdb_clickhouse_cluster.managed.host[0].fqdn
     tcpPort                = var.external_clickhouse_tcp_port
@@ -28,8 +40,8 @@ locals {
     password               = local.managed_clickhouse_user_password_effective
     database               = var.managed_clickhouse_database
     singleNode             = var.external_clickhouse_single_node
-    clusterName            = var.external_clickhouse_cluster_name
-    distributedClusterName = var.external_clickhouse_distributed_cluster_name
+    clusterName            = local.external_clickhouse_cluster_name_effective
+    distributedClusterName = local.external_clickhouse_distributed_cluster_name_effective
   }
 
   sentry_config = templatefile("${path.module}/values_sentry.yaml.tpl", {

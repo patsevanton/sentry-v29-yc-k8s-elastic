@@ -87,15 +87,15 @@ variable "external_clickhouse_single_node" {
 }
 
 variable "external_clickhouse_cluster_name" {
-  description = "External ClickHouse clusterName for Snuba distributed queries"
+  description = "Snuba clusterName; must match system.clusters.cluster. Leave empty to use the Yandex MDB cluster name (yandex_mdb_clickhouse_cluster.managed.name) — required for distributed Snuba on Managed ClickHouse."
   type        = string
-  default     = "sentry-cluster"
+  default     = ""
 }
 
 variable "external_clickhouse_distributed_cluster_name" {
-  description = "External ClickHouse distributedClusterName for Snuba"
+  description = "Snuba distributedClusterName; usually the same as clusterName on Yandex MCH. Leave empty to use the managed cluster name."
   type        = string
-  default     = "sentry-cluster"
+  default     = ""
 }
 
 variable "sentry_hooks_active_deadline_seconds" {
