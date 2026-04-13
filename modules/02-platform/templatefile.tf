@@ -43,6 +43,7 @@ locals {
     singleNode             = var.external_clickhouse_single_node
     clusterName            = local.external_clickhouse_cluster_name_effective
     distributedClusterName = local.external_clickhouse_distributed_cluster_name_effective
+    secure                 = true
   }
 
   sentry_config = templatefile("${path.module}/values_sentry.yaml.tpl", {

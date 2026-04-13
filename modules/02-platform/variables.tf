@@ -69,15 +69,15 @@ variable "subnet_d_zone" {
 }
 
 variable "external_clickhouse_tcp_port" {
-  description = "ClickHouse native TCP (plaintext), обычно 9000 во VPC"
+  description = "ClickHouse native TCP over TLS, обычно 9440 во VPC"
   type        = number
-  default     = 9000
+  default     = 9440
 }
 
 variable "external_clickhouse_http_port" {
-  description = "ClickHouse HTTP (plaintext), обычно 8123 во VPC"
+  description = "ClickHouse HTTPS port, обычно 8443 во VPC"
   type        = number
-  default     = 8123
+  default     = 8443
 }
 
 variable "external_clickhouse_single_node" {

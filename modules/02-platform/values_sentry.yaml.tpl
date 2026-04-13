@@ -49,6 +49,7 @@ config:
 externalClickhouse:
   host: "${external_clickhouse.host}"
   tcpPort: ${external_clickhouse.tcpPort}
+  secure: ${external_clickhouse.secure}
   httpPort: ${external_clickhouse.httpPort}
   username: "${external_clickhouse.username}"
   password: "${external_clickhouse.password}"
