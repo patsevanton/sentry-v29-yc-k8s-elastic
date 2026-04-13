@@ -102,6 +102,9 @@ resource "clickhousedbops_user" "managed_sentry" {
 resource "clickhousedbops_database" "managed_sentry" {
   count = var.managed_clickhouse_sql_user_management_enabled ? 1 : 0
   name  = var.managed_clickhouse_database
+  # Without cluster_name, CREATE DATABASE runs on one node only; Snuba HA then fails on other
+  # replicas ("Database sentry does not exist"). Same logical name as Snuba clusterName.
+  cluster_name = var.external_clickhouse_single_node ? null : local.external_clickhouse_cluster_name_effective
 
   depends_on = [
     yandex_mdb_clickhouse_cluster.managed,
@@ -195,13 +198,20 @@ resource "clickhousedbops_grant_privilege" "managed_sentry_db_privilege_truncate
   depends_on        = [clickhousedbops_grant_privilege.managed_sentry_db_privilege_drop_view]
 }
 
+resource "clickhousedbops_grant_privilege" "managed_sentry_remote" {
+  count             = var.managed_clickhouse_sql_user_management_enabled ? 1 : 0
+  privilege_name    = "REMOTE"
+  grantee_user_name = clickhousedbops_user.managed_sentry[0].name
+  depends_on        = [clickhousedbops_grant_privilege.managed_sentry_db_privilege_truncate]
+}
+
 resource "clickhousedbops_grant_privilege" "managed_sentry_create_workload" {
   count             = var.managed_clickhouse_sql_user_management_enabled && var.managed_clickhouse_grant_create_workload ? 1 : 0
   privilege_name    = "CREATE WORKLOAD"
   grantee_user_name = clickhousedbops_user.managed_sentry[0].name
   depends_on = [
     clickhousedbops_user.managed_sentry,
-    clickhousedbops_grant_privilege.managed_sentry_db_privilege_truncate
+    clickhousedbops_grant_privilege.managed_sentry_remote
   ]
 }
 
