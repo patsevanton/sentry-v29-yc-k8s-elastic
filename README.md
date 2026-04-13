@@ -299,6 +299,17 @@ helm upgrade --install sentry sentry/sentry --version 29.5.1 -n sentry \
   -f terragrunt/02-platform/values_sentry.yaml --timeout=900s --create-namespace
 ```
 
+**Устанавливается долго:** первый `helm upgrade --install` часто занимает десятки минут — последовательно выполняются Job’ы (проверка/инициализация БД, provisioning Kafka, Snuba и миграции). Смотрите `kubectl -n sentry get jobs` и логи подов Job при зависаниях. Пример строк (реальный прогон; в k9s колонка **AGE** часто отсортирована по возрастанию — значок **↑**):
+
+| NAMESPACE | NAME | COMPLETIONS | DURATION | AGE |
+|-----------|------|-------------|----------|-----|
+| sentry | sentry-user-create | 1/1 | 14s | 18s |
+| sentry | sentry-db-init | 1/1 | 2m2s | 2m21s |
+| sentry | sentry-snuba-db-init | 1/1 | 6s | 16m |
+| sentry | sentry-snuba-migrate | 1/1 | 13m | 16m |
+| sentry | sentry-kafka-provisioning | 1/1 | 10m | 26m |
+| sentry | sentry-db-check | 1/1 | 2m50s | 29m |
+
 После первого подключения к Elasticsearch инициализируйте шаблон индекса nodestore:
 
 ```bash
