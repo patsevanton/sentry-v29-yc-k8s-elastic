@@ -39,21 +39,21 @@ resource "yandex_mdb_clickhouse_cluster" "managed" {
     type             = "CLICKHOUSE"
     zone             = local.subnet_a_zone
     subnet_id        = local.subnet_a_id
-    assign_public_ip = false
+    assign_public_ip = true
   }
 
   host {
     type             = "CLICKHOUSE"
     zone             = local.subnet_b_zone
     subnet_id        = local.subnet_b_id
-    assign_public_ip = false
+    assign_public_ip = true
   }
 
   host {
     type             = "CLICKHOUSE"
     zone             = local.subnet_d_zone
     subnet_id        = local.subnet_d_id
-    assign_public_ip = false
+    assign_public_ip = true
   }
 
   deletion_protection = false
@@ -249,12 +249,12 @@ output "external_clickhouse_database" {
 
 output "external_clickhouse_cluster_name" {
   description = "Effective Snuba clusterName (matches system.clusters on MCH when using defaults)"
-  value         = local.external_clickhouse_cluster_name_effective
+  value       = local.external_clickhouse_cluster_name_effective
 }
 
 output "external_clickhouse_distributed_cluster_name" {
   description = "Effective Snuba distributedClusterName"
-  value         = local.external_clickhouse_distributed_cluster_name_effective
+  value       = local.external_clickhouse_distributed_cluster_name_effective
 }
 
 output "managed_clickhouse_name" {

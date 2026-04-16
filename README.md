@@ -1,13 +1,8 @@
 # Развёртывание Sentry v29.5.1 в Yandex Cloud на Kubernetes
 
-## Двухэтапный apply через Terragrunt (VPC/VPN -> платформа)
+## Применение через Terraform (корень репозитория)
 
-Чтобы избежать таймаутов при создании пользователей/грантов в Managed ClickHouse (`clickhousedbops` по native TCP, обычно 9000 во VPC), инфраструктура разбита на 2 каталога Terragrunt:
-
-- `terragrunt/01-network-vpn` — VPC, 3 подсети и WireGuard VPN VM.
-- `terragrunt/02-platform` — всё остальное (K8s, ingress, DNS, S3, Managed ClickHouse и т.д.).
-
-Второй этап получает `network_id` и `subnet_*` через `dependency` из первого каталога, поэтому сеть создаётся строго заранее.
+Инфраструктура применяется одним root Terraform-стеком из корня репозитория (`*.tf` в root).
 
 Подготовка:
 
@@ -15,7 +10,6 @@
 export YC_TOKEN=$(yc iam create-token)
 export YC_CLOUD_ID=$(yc config get cloud-id)
 export YC_FOLDER_ID="<ваш-folder-id>"
-export TF_VAR_ssh_public_key=$(cat ~/.ssh/id_ed25519.pub)
 ```
 
 Если хотите не экспортировать переменные вручную каждый раз, добавьте в `~/.bashrc`:
@@ -24,7 +18,6 @@ export TF_VAR_ssh_public_key=$(cat ~/.ssh/id_ed25519.pub)
 export YC_TOKEN=$(yc iam create-token)
 export YC_CLOUD_ID=$(yc config get cloud-id)
 export YC_FOLDER_ID=$(yc config get folder-id)
-export TF_VAR_ssh_public_key=$(cat ~/.ssh/id_ed25519.pub)
 ```
 
 Затем перечитайте конфиг shell:
@@ -33,36 +26,16 @@ export TF_VAR_ssh_public_key=$(cat ~/.ssh/id_ed25519.pub)
 source ~/.bashrc
 ```
 
-Этап 1 (сеть + VPN):
+Применение инфраструктуры:
 
 ```bash
-cd terragrunt/01-network-vpn
-terragrunt apply
-```
-
-Забрать клиентский WireGuard-конфиг:
-
-```bash
-eval "$(
-  terragrunt output -raw wireguard_client_config_fetch_command \
-  | sed -E 's/^(ssh|scp) /\1 -o StrictHostKeyChecking=accept-new /'
-)" > wg-client.conf
-```
-
-В `wg-client.conf` выставляется внутренний DNS YC для резолва приватных ресурсов в VPC. DNS можно задать через input `wireguard_client_dns` (в этом репозитории в `terragrunt/01-network-vpn/terragrunt.hcl` установлен `10.0.2.2`).
-
-Подключитесь к VPN (`wg-quick up ./wg-client.conf`) и убедитесь, что есть маршрут в `10.0.0.0/16`.
-
-Этап 2 (остальная платформа):
-
-```bash
-cd ../02-platform
-terragrunt apply
+terraform init
+terraform apply
 ```
 
 ### 0. NodeLocal DNSCache (опционально)
 
-[NodeLocal DNSCache](https://kubernetes.io/docs/tasks/administer-cluster/nodelocaldns/) — кэш DNS на каждом узле (DaemonSet в `kube-system`), снижает задержки и нагрузку на CoreDNS. В манифесте [k8s/nodelocaldns.yaml](k8s/nodelocaldns.yaml) в блоке `.:53` плейсхолдер `**__SENTRY_INGRESS_IP__**` нужно заменить на текущий внешний IP из `terragrunt output -raw ingress_public_ip` (тот же адрес, что резервирует [modules/02-platform/ip-dns.tf](modules/02-platform/ip-dns.tf) и куда указывают A-записи), чтобы поды резолвили тот же адрес, что и публичный DNS, даже если внешний DNS из кластера недоступен.
+[NodeLocal DNSCache](https://kubernetes.io/docs/tasks/administer-cluster/nodelocaldns/) — кэш DNS на каждом узле (DaemonSet в `kube-system`), снижает задержки и нагрузку на CoreDNS. В манифесте [k8s/nodelocaldns.yaml](k8s/nodelocaldns.yaml) в блоке `.:53` плейсхолдер `**__SENTRY_INGRESS_IP__**` нужно заменить на текущий внешний IP из `terraform output -raw ingress_public_ip` (тот же адрес, что резервирует [ip-dns.tf](ip-dns.tf) и куда указывают A-записи), чтобы поды резолвили тот же адрес, что и публичный DNS, даже если внешний DNS из кластера недоступен.
 
 **Установка** (опционально). Нужен настроенный `kubectl` на кластер. Подставляется ClusterIP сервиса кластерного DNS (`kube-dns`), затем манифест применяется через `kubectl apply -f -`. Режим **iptables** у kube-proxy — типичный случай.
 
@@ -71,7 +44,7 @@ repo_root=$(git rev-parse --show-toplevel)
 kubedns=$(kubectl get svc kube-dns -n kube-system -o jsonpath='{.spec.clusterIP}')
 domain=cluster.local
 localdns=169.254.20.10
-ingress_ip=$(terragrunt --terragrunt-working-dir "${repo_root}/terragrunt/02-platform" output -raw ingress_public_ip)
+ingress_ip=$(terraform -chdir="${repo_root}" output -raw ingress_public_ip)
 sed -e "s/__PILLAR__LOCAL__DNS__/${localdns}/g" \
     -e "s/__PILLAR__DNS__DOMAIN__/${domain}/g" \
     -e "s/__PILLAR__DNS__SERVER__/${kubedns}/g" \
@@ -85,7 +58,7 @@ sed -e "s/__PILLAR__LOCAL__DNS__/${localdns}/g" \
 
 ```bash
 kubectl run -it --rm dns-test --image=busybox:1.36 --restart=Never -- nslookup sentry.apatsev.org.ru
-# ожидается IP из: terragrunt output -raw ingress_public_ip
+# ожидается IP из: terraform output -raw ingress_public_ip
 ```
 
 ### 1. Elasticsearch (nodestore) и оператор ECK
@@ -151,7 +124,7 @@ curl -s "http://sentry-nodestore-es-http.elasticsearch.svc.cluster.local:9200/_i
 
 **1.4. Образ Sentry с nodestore**
 
-В этом репозитории образ **уже собран** и публикуется в GHCR; для установки по примеру из README достаточно указать его в Helm values — см. [modules/02-platform/values_sentry.yaml.tpl](modules/02-platform/values_sentry.yaml.tpl) (`images.sentry.repository` и `images.sentry.tag`). Файл `terragrunt/02-platform/values_sentry.yaml` генерируется автоматически из шаблона через Terraform (см. [modules/02-platform/templatefile.tf](modules/02-platform/templatefile.tf)).
+В этом репозитории образ **уже собран** и публикуется в GHCR; для установки по примеру из README достаточно указать его в Helm values — см. [values_sentry.yaml.tpl](values_sentry.yaml.tpl) (`images.sentry.repository` и `images.sentry.tag`). Файл `values_sentry.yaml` генерируется автоматически из шаблона через Terraform (см. [templatefile.tf](templatefile.tf)).
 
 Если вы **сами** собираете образ (другой реестр, свои правки в `Dockerfile.sentry-nodestore` или обновление под новый релиз чарта), делайте так:
 
@@ -171,7 +144,7 @@ images:
 
 **1.5. Интеграция nodestore в Sentry**
 
-В `config.sentryConfPy` в [modules/02-platform/values_sentry.yaml.tpl](modules/02-platform/values_sentry.yaml.tpl) (или в своём values поверх него) задайте клиент и приложение Django, например для HTTP без TLS (как в манифесте ECK выше). Готовый пример — тот же файл:
+В `config.sentryConfPy` в [values_sentry.yaml.tpl](values_sentry.yaml.tpl) (или в своём values поверх него) задайте клиент и приложение Django, например для HTTP без TLS (как в манифесте ECK выше). Готовый пример — тот же файл:
 
 ```python
 # Не импортируйте sentry.conf.server здесь: фрагмент дописывается в конец sentry.conf.py
@@ -198,7 +171,7 @@ INSTALLED_APPS.append("sentry_nodestore_elastic")
 INSTALLED_APPS = tuple(INSTALLED_APPS)
 ```
 
-Установка или обновление релиза с nodestore — один values-файл с образом и `config.sentryConfPy` (`terragrunt/02-platform/values_sentry.yaml`, генерируется из [modules/02-platform/values_sentry.yaml.tpl](modules/02-platform/values_sentry.yaml.tpl)). Саму команду `helm upgrade` и инициализацию nodestore выполняйте один раз после **§2** (ClickHouse) и **§3** (репозиторий Helm) — см. **§4**.
+Установка или обновление релиза с nodestore — один values-файл с образом и `config.sentryConfPy` (`values_sentry.yaml`, генерируется из [values_sentry.yaml.tpl](values_sentry.yaml.tpl)). Саму команду `helm upgrade` и инициализацию nodestore выполняйте один раз после **§2** (ClickHouse) и **§3** (репозиторий Helm) — см. **§4**.
 
 **1.6. TLS и версии**
 
@@ -210,10 +183,10 @@ INSTALLED_APPS = tuple(INSTALLED_APPS)
 
 ClickHouse используется только как внешний managed-кластер в Yandex Cloud. In-cluster ClickHouse/Altinity в этом репозитории больше не используется.
 
-Terraform создаёт Managed ClickHouse и автоматически подставляет endpoint/креды в `terragrunt/02-platform/values_sentry.yaml` (через `values_sentry.yaml.tpl`):
+Terraform создаёт Managed ClickHouse и автоматически подставляет endpoint/креды в `values_sentry.yaml` (через `values_sentry.yaml.tpl`):
 - кластер: `yandex_mdb_clickhouse_cluster.managed`;
-- база: `yandex_mdb_clickhouse_database.managed_sentry`;
-- пользователь: `yandex_mdb_clickhouse_user.managed_sentry`.
+- база: `clickhousedbops_database.managed_sentry` (при SQL user management);
+- пользователь: `clickhousedbops_user.managed_sentry` или `yandex_mdb_clickhouse_user.managed_sentry` (в зависимости от режима SQL user management).
 
 Пароль пользователя managed CH можно задать явно:
 
@@ -226,16 +199,16 @@ managed_clickhouse_user_password = "<SECRET>"
 Проверка фактических значений для Helm/Sentry:
 
 ```bash
-terragrunt output external_clickhouse_host
-terragrunt output external_clickhouse_tcp_port
-terragrunt output external_clickhouse_http_port
-terragrunt output external_clickhouse_username
-terragrunt output external_clickhouse_database
-terragrunt output external_clickhouse_cluster_name
-terragrunt output external_clickhouse_distributed_cluster_name
-terragrunt output external_clickhouse_password
-terragrunt output managed_clickhouse_cluster_id
-terragrunt output managed_clickhouse_hosts
+terraform output external_clickhouse_host
+terraform output external_clickhouse_tcp_port
+terraform output external_clickhouse_http_port
+terraform output external_clickhouse_username
+terraform output external_clickhouse_database
+terraform output external_clickhouse_cluster_name
+terraform output external_clickhouse_distributed_cluster_name
+terraform output external_clickhouse_password
+terraform output managed_clickhouse_cluster_id
+terraform output managed_clickhouse_hosts
 ```
 
 Перед `helm upgrade` проверьте DNS из pod (если в `system.clusters` есть short hostnames):
@@ -280,23 +253,23 @@ helm repo update
 
 По умолчанию чарт Sentry хранит артефакты (debug-символы, source maps, blob-ы загрузок) на локальной ФС (`/var/lib/sentry/files`) с PVC в режиме **RWO** (ReadWriteOnce). RWO-том доступен только одному поду (обычно `sentry-web`); taskworker-ы при сборке (`assemble`) debug-файлов не находят blob-ы → `FileNotFoundError` / `internal server error` в UI. S3-бэкенд доступен всем подам одновременно.
 
-Terraform-файл [modules/02-platform/s3.tf](modules/02-platform/s3.tf) создаёт сервисный аккаунт, статический ключ и бакет в Yandex Object Storage:
+Terraform-файл [s3.tf](s3.tf) создаёт сервисный аккаунт, статический ключ и бакет в Yandex Object Storage:
 
 ```bash
 terraform apply
 ```
 
-После apply файл `terragrunt/02-platform/values_sentry.yaml` генерируется автоматически из шаблона [modules/02-platform/values_sentry.yaml.tpl](modules/02-platform/values_sentry.yaml.tpl) через Terraform (см. [modules/02-platform/templatefile.tf](modules/02-platform/templatefile.tf)) — ключи S3 подставляются из ресурсов Terraform, ручная подстановка не нужна.
+После apply файл `values_sentry.yaml` генерируется автоматически из шаблона [values_sentry.yaml.tpl](values_sentry.yaml.tpl) через Terraform (см. [templatefile.tf](templatefile.tf)) — ключи S3 подставляются из ресурсов Terraform, ручная подстановка не нужна.
 
 ### 4. Установка Sentry
 
-**Порядок зависимостей.** Чарт поднимает PostgreSQL, Redis и Kafka в namespace `sentry`, а **ClickHouse задаётся снаружи** (`externalClickhouse` в [modules/02-platform/values_sentry.yaml.tpl](modules/02-platform/values_sentry.yaml.tpl)). Сначала выполните **§1.1–1.2** (Elasticsearch), **§2** (Managed ClickHouse через Terraform), **§3** (репозиторий Helm), затем команду ниже.
+**Порядок зависимостей.** Чарт поднимает PostgreSQL, Redis и Kafka в namespace `sentry`, а **ClickHouse задаётся снаружи** (`externalClickhouse` в [values_sentry.yaml.tpl](values_sentry.yaml.tpl)). Сначала выполните **§1.1–1.2** (Elasticsearch), **§2** (Managed ClickHouse через Terraform), **§3** (репозиторий Helm), затем команду ниже.
 
-Установка с `terragrunt/02-platform/values_sentry.yaml` (генерируется из [modules/02-platform/values_sentry.yaml.tpl](modules/02-platform/values_sentry.yaml.tpl) через `terraform apply`): в файле уже заданы nodestore в Elasticsearch (`images.sentry`, `config.sentryConfPy`) и параметры Managed ClickHouse из Terraform outputs.
+Установка с `values_sentry.yaml` (генерируется из [values_sentry.yaml.tpl](values_sentry.yaml.tpl) через `terraform apply`): в файле уже заданы nodestore в Elasticsearch (`images.sentry`, `config.sentryConfPy`) и параметры Managed ClickHouse из Terraform outputs.
 
 ```bash
 helm upgrade --install sentry sentry/sentry --version 29.5.1 -n sentry \
-  -f terragrunt/02-platform/values_sentry.yaml --timeout=900s --create-namespace
+  -f values_sentry.yaml --timeout=900s --create-namespace
 ```
 
 **Устанавливается долго:** первый `helm upgrade --install` часто занимает десятки минут — последовательно выполняются Job’ы (проверка/инициализация БД, provisioning Kafka, Snuba и миграции). Смотрите `kubectl -n sentry get jobs` и логи подов Job при зависаниях. Пример строк (реальный прогон; в k9s колонка **AGE** часто отсортирована по возрастанию — значок **↑**):
@@ -343,7 +316,7 @@ kubectl -n sentry logs deployment/sentry-web --tail=20
 
 Стек [VictoriaMetrics K8s Stack](https://docs.victoriametrics.com/helm/victoria-metrics-k8s-stack/) поднимает оператор VictoriaMetrics, **VMSingle**, **VMAgent**, **Grafana**, **vmalert**, Alertmanager, **node-exporter** и **kube-state-metrics**. Готовые значения — [vmks-values.yaml](vmks-values.yaml) (Ingress для UI хранилища и Grafana).
 
-Нужен уже установленный **ingress-nginx** с классом `nginx` (в этом репозитории — Helm-релиз в [modules/02-platform/k8s.tf](modules/02-platform/k8s.tf)).
+Нужен уже установленный **ingress-nginx** с классом `nginx` (в этом репозитории — Helm-релиз в [k8s.tf](k8s.tf)).
 
 ```bash
 helm repo add vm https://victoriametrics.github.io/helm-charts/
@@ -365,7 +338,7 @@ echo
 
 Логин по умолчанию — `**admin**` (его можно прочитать из ключа `admin-user` того же Secret). Если вы установили стек под другим именем релиза, замените `vmks-grafana` на `<ваш-релиз>-grafana`.
 
-Для имён из `vmks-values.yaml` (`vmsingle.apatsev.org.ru`, `grafana.apatsev.org.ru`) добавьте **A-записи** на тот же внешний IP, что у ingress (см. [modules/02-platform/ip-dns.tf](modules/02-platform/ip-dns.tf) для `sentry.apatsev.org.ru`).
+Для имён из `vmks-values.yaml` (`vmsingle.apatsev.org.ru`, `grafana.apatsev.org.ru`) добавьте **A-записи** на тот же внешний IP, что у ingress (см. [ip-dns.tf](ip-dns.tf) для `sentry.apatsev.org.ru`).
 
 Интеграция с экспортёром Sentry — шаг 4 в **§7** и манифест [k8s/vmscrape-sentry-prometheus-exporter.yaml](k8s/vmscrape-sentry-prometheus-exporter.yaml).
 

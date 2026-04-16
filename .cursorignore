@@ -7,7 +7,6 @@
 Dockerfile.sentry-nodestore
 Dockerfile.snuba-nodestore
 LICENSE
-README.md
 elasticsearch.yaml
 index-lifecycle-policy-delete.yaml
 terraform.tfstate
