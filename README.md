@@ -1,4 +1,4 @@
-# Развёртывание Sentry v29.5.1 в Yandex Cloud на Kubernetes
+# Развёртывание Sentry v30.1.0 в Yandex Cloud на Kubernetes
 
 ## Применение через Terraform (корень репозитория)
 
@@ -268,7 +268,7 @@ terraform apply
 Установка с `values_sentry.yaml` (генерируется из [values_sentry.yaml.tpl](values_sentry.yaml.tpl) через `terraform apply`): в файле уже заданы nodestore в Elasticsearch (`images.sentry`, `config.sentryConfPy`) и параметры Managed ClickHouse из Terraform outputs.
 
 ```bash
-helm upgrade --install sentry sentry/sentry --version 29.5.1 -n sentry \
+helm upgrade --install sentry sentry/sentry --version 30.1.0 -n sentry \
   -f values_sentry.yaml --timeout=900s --create-namespace
 ```
 
