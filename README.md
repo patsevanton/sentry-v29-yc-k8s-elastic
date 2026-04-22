@@ -404,6 +404,24 @@ kubectl -n ingress-nginx get svc
 1. В UI Sentry создайте проекты (часто отдельно для Node и для Python) и скопируйте DSN для каждого. В Kubernetes — два Secret (`sentry-dsn-node`, `sentry-dsn-python`); значения могут отличаться или совпадать, если используете один и тот же проект Sentry для обоих SDK.
 2. Скопируйте DSN каждого проекта (**Settings → Client Keys**). Для подов в кластере DSN должен указывать на **доступный из кластера** хост Sentry (часто тот же URL, что в браузере, или внутренний Ingress). Если события не доходят, проверьте DNS и сетевую связность до Relay/Ingress.
 
+#### Автоматическое создание проектов и DSN (demo/examples)
+
+Чтобы не создавать проекты вручную в UI, можно один раз выполнить скрипт ниже. Он:
+
+- создаёт (или переиспользует) проекты для `demo` и `examples`;
+- создаёт (или переиспользует) Client Key и берёт `dsn.public`;
+- обновляет Kubernetes Secret'ы `sentry-dsn-node` и `sentry-dsn-python` в namespace `demo-sentry`.
+
+Нужны: `curl`, `jq`, `kubectl` и токен Internal Integration с scope не уже, чем `org:read`, `project:read`, `project:write`.
+
+```bash
+export SENTRY_URL="http://sentry.apatsev.org.ru"
+export SENTRY_ORG="sentry"              # slug организации
+export SENTRY_TEAM="sentry"             # slug команды
+export SENTRY_AUTH_TOKEN="<SENTRY_AUTH_TOKEN>"
+bash scripts/bootstrap-sentry-projects.sh
+```
+
 #### Запуск в Kubernetes
 
 Из корня репозитория:

@@ -11,4 +11,3 @@ elasticsearch.yaml
 index-lifecycle-policy-delete.yaml
 terraform.tfstate
 terraform.tfstate.backup
-todo.md
