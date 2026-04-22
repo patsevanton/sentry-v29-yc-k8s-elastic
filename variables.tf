@@ -83,7 +83,7 @@ variable "external_clickhouse_http_port" {
 variable "external_clickhouse_single_node" {
   description = "Set true for single-node external ClickHouse, false for replicated/distributed"
   type        = bool
-  default     = true
+  default     = false
 }
 
 variable "managed_clickhouse_clickhouse_cluster_name" {
