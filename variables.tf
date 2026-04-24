@@ -195,3 +195,106 @@ variable "managed_clickhouse_grant_create_workload" {
   type        = bool
   default     = true
 }
+
+variable "sentry_incluster_kafka_enabled" {
+  description = "Use in-chart Kafka instead of external managed Kafka"
+  type        = bool
+  default     = false
+}
+
+variable "managed_kafka_name" {
+  description = "Managed Kafka cluster name"
+  type        = string
+  default     = "sentry-kafka-managed"
+}
+
+variable "managed_kafka_version" {
+  description = "Managed Kafka version (KRaft generation)"
+  type        = string
+  default     = "4.0"
+}
+
+variable "managed_kafka_brokers_count" {
+  description = "Number of brokers per zone in managed Kafka"
+  type        = number
+  default     = 1
+}
+
+variable "managed_kafka_assign_public_ip" {
+  description = "Assign public IP addresses to managed Kafka brokers"
+  type        = bool
+  default     = false
+}
+
+variable "managed_kafka_resource_preset_id" {
+  description = "Managed Kafka host resource preset"
+  type        = string
+  default     = "s2.micro"
+}
+
+variable "managed_kafka_disk_type_id" {
+  description = "Managed Kafka disk type"
+  type        = string
+  default     = "network-ssd"
+}
+
+variable "managed_kafka_disk_size" {
+  description = "Managed Kafka disk size in GiB"
+  type        = number
+  default     = 32
+}
+
+variable "managed_kafka_port" {
+  description = "Managed Kafka broker port used by Sentry externalKafka settings"
+  type        = number
+  default     = 9092
+}
+
+variable "managed_kafka_user" {
+  description = "Managed Kafka username for Sentry"
+  type        = string
+  default     = "sentry"
+}
+
+variable "managed_kafka_user_password" {
+  description = "Managed Kafka password for Sentry (if empty, Terraform generates random)"
+  type        = string
+  default     = ""
+  sensitive   = true
+}
+
+variable "managed_kafka_sasl_mechanism" {
+  description = "SASL mechanism for Sentry externalKafka"
+  type        = string
+  default     = "SCRAM-SHA-512"
+}
+
+variable "managed_kafka_security_protocol" {
+  description = "Kafka security protocol for Sentry externalKafka"
+  type        = string
+  default     = "SASL_PLAINTEXT"
+}
+
+variable "managed_kafka_auto_create_topics_enable" {
+  description = "Enable broker auto topic creation in managed Kafka"
+  type        = bool
+  default     = true
+}
+
+variable "external_kafka_provisioning_enabled" {
+  description = "Enable Sentry Helm externalKafka topic provisioning job"
+  type        = bool
+  default     = true
+}
+
+variable "external_kafka_provisioning_replication_factor" {
+  description = "Replication factor for Sentry externalKafka provisioning"
+  type        = number
+  default     = 3
+}
+
+variable "external_kafka_provisioning_num_partitions" {
+  description = "Default partitions for Sentry externalKafka provisioning"
+  type        = number
+  default     = 1
+}

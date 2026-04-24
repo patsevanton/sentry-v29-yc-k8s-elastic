@@ -19,6 +19,7 @@ locals {
 
   managed_clickhouse_user_password_effective  = var.managed_clickhouse_user_password != "" ? var.managed_clickhouse_user_password : random_password.managed_clickhouse_user_password.result
   managed_clickhouse_admin_password_effective = var.managed_clickhouse_admin_password != "" ? var.managed_clickhouse_admin_password : one(random_password.managed_clickhouse_admin_password[*].result)
+  managed_kafka_user_password_effective       = var.managed_kafka_user_password != "" ? var.managed_kafka_user_password : random_password.managed_kafka_user_password.result
 
   # Yandex MCH: Snuba ON CLUSTER must match system.clusters.cluster. In Yandex Cloud that name is
   # typically "default", not yandex_mdb_clickhouse_cluster.<name> (API resource name).
@@ -46,6 +47,27 @@ locals {
     secure                 = true
   }
 
+  managed_kafka_broker_hosts = sort([for h in yandex_mdb_kafka_cluster.managed.host : h.name])
+  external_kafka_effective = {
+    cluster = [for host in local.managed_kafka_broker_hosts : {
+      host = host
+      port = var.managed_kafka_port
+    }]
+    sasl = {
+      mechanism = var.managed_kafka_sasl_mechanism
+      username  = var.managed_kafka_user
+      password  = local.managed_kafka_user_password_effective
+    }
+    security = {
+      protocol = var.managed_kafka_security_protocol
+    }
+    provisioning = {
+      enabled           = var.external_kafka_provisioning_enabled
+      replicationFactor = var.external_kafka_provisioning_replication_factor
+      numPartitions     = var.external_kafka_provisioning_num_partitions
+    }
+  }
+
   sentry_config = templatefile("${path.module}/values_sentry.yaml.tpl", {
     sentry_admin_password = local.sentry_admin_password
     user_email            = "admin@sentry.local"
@@ -71,7 +93,8 @@ locals {
 
     postgresql_enabled = true
     redis_enabled      = true
-    kafka_enabled      = true
+    kafka_enabled      = var.sentry_incluster_kafka_enabled
+    external_kafka     = local.external_kafka_effective
 
     external_clickhouse                  = local.external_clickhouse_effective
     sentry_hooks_active_deadline_seconds = var.sentry_hooks_active_deadline_seconds

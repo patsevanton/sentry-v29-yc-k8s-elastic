@@ -72,6 +72,53 @@ kafka:
     enabled: true
     replicationFactor: 1
 
+# Used when kafka.enabled = false (external Kafka).
+externalKafka:
+%{ if length(external_kafka.cluster) > 0 ~}
+  cluster:
+%{ for broker in external_kafka.cluster ~}
+    - host: "${broker.host}"
+      port: ${broker.port}
+%{ endfor ~}
+%{ endif ~}
+  sasl:
+    mechanism: "${external_kafka.sasl.mechanism}"
+    username: "${external_kafka.sasl.username}"
+    password: "${external_kafka.sasl.password}"
+  security:
+    protocol: "${external_kafka.security.protocol}"
+  provisioning:
+    enabled: ${external_kafka.provisioning.enabled}
+    replicationFactor: ${external_kafka.provisioning.replicationFactor}
+    numPartitions: ${external_kafka.provisioning.numPartitions}
+
+sentry:
+  # Taskbroker does not inherit externalKafka.sasl/security automatically in this chart.
+  # Explicit env vars are required for managed Kafka with SASL, otherwise taskbroker pods
+  # connect as plaintext and fail with BrokerTransportFailure / SASL auth errors.
+  taskBroker:
+    env:
+      - name: TASKBROKER_KAFKA_SECURITY_PROTOCOL
+        value: "${external_kafka.security.protocol}"
+      - name: TASKBROKER_KAFKA_SASL_MECHANISM
+        value: "${external_kafka.sasl.mechanism}"
+      - name: TASKBROKER_KAFKA_SASL_USERNAME
+        value: "${external_kafka.sasl.username}"
+      - name: TASKBROKER_KAFKA_SASL_PASSWORD
+        value: "${external_kafka.sasl.password}"
+      - name: TASKBROKER_KAFKA_DEADLETTER_CLUSTER
+        value: "${join(",", [for broker in external_kafka.cluster : "${broker.host}:${broker.port}"])}"
+      - name: TASKBROKER_KAFKA_DEADLETTER_TOPIC
+        value: "taskworker-dlq"
+      - name: TASKBROKER_KAFKA_DEADLETTER_SECURITY_PROTOCOL
+        value: "${external_kafka.security.protocol}"
+      - name: TASKBROKER_KAFKA_DEADLETTER_SASL_MECHANISM
+        value: "${external_kafka.sasl.mechanism}"
+      - name: TASKBROKER_KAFKA_DEADLETTER_SASL_USERNAME
+        value: "${external_kafka.sasl.username}"
+      - name: TASKBROKER_KAFKA_DEADLETTER_SASL_PASSWORD
+        value: "${external_kafka.sasl.password}"
+
 hooks:
   activeDeadlineSeconds: ${sentry_hooks_active_deadline_seconds}
 
