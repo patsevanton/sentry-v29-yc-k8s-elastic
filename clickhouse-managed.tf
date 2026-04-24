@@ -26,6 +26,9 @@ resource "yandex_mdb_clickhouse_cluster" "managed" {
       disk_type_id       = var.managed_clickhouse_disk_type_id
       disk_size          = var.managed_clickhouse_disk_size
     }
+    config {
+      timezone = "UTC"
+    }
   }
 
   dynamic "database" {
