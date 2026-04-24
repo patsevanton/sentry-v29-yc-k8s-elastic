@@ -268,6 +268,29 @@ terraform apply
 
 После apply файл `values_sentry.yaml` генерируется автоматически из шаблона [values_sentry.yaml.tpl](values_sentry.yaml.tpl) через Terraform (см. [templatefile.tf](templatefile.tf)) — ключи S3 подставляются из ресурсов Terraform, ручная подстановка не нужна.
 
+### 3.2. KEDA (автоскейлинг по Kafka lag)
+
+Для автоскейлинга воркеров Sentry по глубине Kafka-очередей установите [KEDA](https://keda.sh/) в отдельный namespace.
+
+```bash
+helm repo add kedacore https://kedacore.github.io/charts
+helm repo update
+kubectl create namespace keda
+helm upgrade --install keda kedacore/keda \
+  --version 2.16.1 \
+  -n keda \
+  --wait --timeout=10m
+```
+
+Проверка:
+
+```bash
+kubectl -n keda get pods
+kubectl get crd | rg "keda.sh"
+```
+
+После установки можно добавлять `ScaledObject` для нужных deployment/statefulset (например, ingest-consumer-ов), с триггером Kafka lag.
+
 ### 4. Установка Sentry
 
 **Порядок зависимостей.** Чарт поднимает PostgreSQL, Redis и Kafka в namespace `sentry`, а **ClickHouse задаётся снаружи** (`externalClickhouse` в [values_sentry.yaml.tpl](values_sentry.yaml.tpl)). Сначала выполните **§1.1–1.2** (Elasticsearch), **§2** (Managed ClickHouse через Terraform), **§3** (репозиторий Helm), затем команду ниже.
