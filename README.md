@@ -392,6 +392,36 @@ kubectl apply -f k8s/sentry-prometheus-exporter.yaml
 
 4. Подключите scrape через `VMServiceScrape`: [k8s/vmscrape-sentry-prometheus-exporter.yaml](k8s/vmscrape-sentry-prometheus-exporter.yaml) (`kubectl apply -f k8s/vmscrape-sentry-prometheus-exporter.yaml`). Манифест создаёт ресурс в namespace **`vmks`** (где работает `VMAgent` из §6) и указывает на Service в **`sentry`**; если положить `VMServiceScrape` только в `sentry`, vmagent его не подхватит. В нём же заданы `scrape_interval` / `scrapeTimeout` побольше: экспортёр отвечает медленно (запросы к API Sentry), иначе цель в vmagent будет **down** по таймауту. Либо укажите цель вручную, например `http://sentry-prometheus-exporter.sentry.svc.cluster.local:9790/metrics/`.
 
+### 7.1. Мониторинг Yandex Managed Kafka в Grafana
+
+Для Managed Kafka в Yandex Cloud метрики берутся напрямую из Yandex Monitoring endpoint `https://monitoring.api.cloud.yandex.net/monitoring/v2/prometheusMetrics` c параметрами `folderId` и `service=managed-kafka` (официальный export в формате Prometheus).
+
+1. Создайте API key сервисного аккаунта с ролью `monitoring.viewer` на нужную папку в Yandex Cloud.
+2. Создайте Kubernetes Secret в namespace `vmks`:
+
+```bash
+kubectl -n vmks create secret generic yc-monitoring-api-key \
+  --from-literal=bearer='<YC_MONITORING_API_KEY>'
+```
+
+Либо используйте пример [k8s/secret-yc-monitoring-api-key.example.yaml](k8s/secret-yc-monitoring-api-key.example.yaml).
+
+3. В манифесте [k8s/vmstaticscrape-yc-managed-kafka.yaml](k8s/vmstaticscrape-yc-managed-kafka.yaml) замените `__YC_FOLDER_ID__` на ID вашей папки (например, `yc config get folder-id`).
+4. Примените манифест:
+
+```bash
+kubectl apply -f k8s/vmstaticscrape-yc-managed-kafka.yaml
+```
+
+5. Проверьте, что vmagent видит target:
+
+```bash
+kubectl -n vmks get vmstaticscrape yc-managed-kafka
+kubectl -n vmks get pods
+```
+
+6. Импортируйте дашборд [dashboard/yc-managed-kafka-overview.json](dashboard/yc-managed-kafka-overview.json) в Grafana (`Dashboards -> New -> Import`) и выберите datasource Prometheus/VictoriaMetrics.
+
 ### 8. Доступ к Sentry
 
 Sentry доступен по адресу **[http://sentry.apatsev.org.ru](http://sentry.apatsev.org.ru)** через [ingress-nginx](https://kubernetes.github.io/ingress-nginx/) (стандартный `Ingress`).

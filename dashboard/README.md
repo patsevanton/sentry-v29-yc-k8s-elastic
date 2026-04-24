@@ -1,6 +1,9 @@
 # Шаблоны дашбордов
 
-Файл `sentry-issues-events-overview.json` — переносимый шаблон Grafana-дэшборда для метрик Sentry.
+Файлы:
+
+- `sentry-issues-events-overview.json` — переносимый шаблон Grafana-дэшборда для метрик Sentry.
+- `yc-managed-kafka-overview.json` — дашборд для мониторинга Yandex Cloud Managed Kafka через метрики из Yandex Monitoring (`service=managed-kafka`).
 
 ## Почему шаблон переносимый
 
@@ -11,6 +14,6 @@
 ## Импорт
 
 1. Откройте Grafana: `Dashboards` -> `New` -> `Import`.
-2. Загрузите `dashboard/sentry-issues-events-overview.json`.
+2. Загрузите нужный JSON из каталога `dashboard/`.
 3. Выберите ваш datasource Prometheus/VictoriaMetrics, когда Grafana запросит `DS_PROMETHEUS`.
 4. Сохраните дашборд.

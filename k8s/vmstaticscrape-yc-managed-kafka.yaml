@@ -1,0 +1,26 @@
+apiVersion: operator.victoriametrics.com/v1beta1
+kind: VMStaticScrape
+metadata:
+  name: yc-managed-kafka
+  namespace: vmks
+spec:
+  jobName: yc-managed-kafka
+  targetEndpoints:
+    - targets:
+        - monitoring.api.cloud.yandex.net
+      scheme: https
+      path: /monitoring/v2/prometheusMetrics
+      interval: 60s
+      scrapeTimeout: 60s
+      params:
+        folderId:
+          - "__YC_FOLDER_ID__"
+        service:
+          - "managed-kafka"
+      authorization:
+        bearer:
+          name: yc-monitoring-api-key
+          key: bearer
+      labels:
+        cloud: yandex
+        service: managed-kafka
