@@ -79,7 +79,7 @@ locals {
     sentry_image_repository = "ghcr.io/patsevanton/sentry-v29-yc-k8s-elastic"
     sentry_image_tag        = "sentry-1.3.0"
     snuba_image_repository  = "ghcr.io/patsevanton/sentry-v29-yc-k8s-elastic"
-    snuba_image_tag         = "snuba-1.3.0"
+    snuba_image_tag         = "1.24.0"
 
     elasticsearch_url = "http://sentry-nodestore-es-http.elasticsearch.svc.cluster.local:9200"
 
