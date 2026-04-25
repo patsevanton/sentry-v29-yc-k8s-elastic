@@ -339,7 +339,7 @@
       "targets": [
         {
           "editorMode": "code",
-          "expr": "sum by (host) (kafka_server_BrokerTopicMetrics_MessagesIn{resource_id=~\"$cluster\",host=~\"$host\"})",
+          "expr": "sum by (host) (rate(kafka_server_BrokerTopicMetrics_MessagesIn{resource_id=~\"$cluster\",host=~\"$host\"}[5m]))",
           "legendFormat": "{{host}}",
           "range": true,
           "refId": "A"
@@ -389,14 +389,14 @@
       "targets": [
         {
           "editorMode": "code",
-          "expr": "sum by (host) (kafka_server_BrokerTopicMetrics_BytesIn{resource_id=~\"$cluster\",host=~\"$host\"})",
+          "expr": "sum by (host) (rate(kafka_server_BrokerTopicMetrics_BytesIn{resource_id=~\"$cluster\",host=~\"$host\"}[5m]))",
           "legendFormat": "{{host}} in",
           "range": true,
           "refId": "A"
         },
         {
           "editorMode": "code",
-          "expr": "sum by (host) (kafka_server_BrokerTopicMetrics_BytesOut{resource_id=~\"$cluster\",host=~\"$host\"})",
+          "expr": "sum by (host) (rate(kafka_server_BrokerTopicMetrics_BytesOut{resource_id=~\"$cluster\",host=~\"$host\"}[5m]))",
           "legendFormat": "{{host}} out",
           "range": true,
           "refId": "B"

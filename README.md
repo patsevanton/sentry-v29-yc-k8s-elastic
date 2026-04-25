@@ -373,7 +373,7 @@ kubectl apply -f k8s/sentry-prometheus-exporter.yaml
 
 Для Managed Kafka в Yandex Cloud метрики берутся напрямую из Yandex Monitoring endpoint `https://monitoring.api.cloud.yandex.net/monitoring/v2/prometheusMetrics` c параметрами `folderId` и `service=managed-kafka` (официальный export в формате Prometheus).
 
-Terraform автоматически создаёт сервисный аккаунт `monitoring-viewer-sa` с ролью `monitoring.viewer`, генерирует API-ключ и рендерит манифест [k8s/vmstaticscrape-yc-managed-kafka.yaml](k8s/vmstaticscrape-yc-managed-kafka.yaml) из шаблона [k8s/vmstaticscrape-yc-managed-kafka.yaml.tpl](k8s/vmstaticscrape-yc-managed-kafka.yaml.tpl) с подставленным `folder_id` (см. [monitoring.tf](monitoring.tf)).
+Terraform автоматически создаёт сервисный аккаунт `monitoring-viewer-sa` с ролью `monitoring.viewer`, генерирует API-ключ и рендерит манифест [k8s/vmstaticscrape-yc-managed-kafka.yaml](k8s/vmstaticscrape-yc-managed-kafka.yaml) из шаблона [k8s/vmstaticscrape-yc-managed-kafka.yaml.tpl](k8s/vmstaticscrape-yc-managed-kafka.yaml.tpl) с подставленным `folder_id` (см. [monitoring.tf](monitoring.tf)). Почему используется авторизованный ключ вместо статического IAM-токена — см. [docs/yc-monitoring-auth.md](docs/yc-monitoring-auth.md).
 
 1. Получите значение API-ключа из Terraform output:
 
