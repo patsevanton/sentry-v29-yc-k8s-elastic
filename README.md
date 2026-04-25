@@ -258,15 +258,14 @@ helm repo update
 
 ### 3.2. S3 filestore (Yandex Object Storage)
 
-По умолчанию чарт Sentry хранит артефакты (debug-символы, source maps, blob-ы загрузок) на локальной ФС (`/var/lib/sentry/files`) с PVC в режиме **RWO** (ReadWriteOnce). RWO-том доступен только одному поду (обычно `sentry-web`); taskworker-ы при сборке (`assemble`) debug-файлов не находят blob-ы → `FileNotFoundError` / `internal server error` в UI. S3-бэкенд доступен всем подам одновременно.
+Для хранения артефактов (debug-символы, source maps, blob-ы загрузок) в `values_sentry.yaml` должен быть указан S3-бэкенд:
 
-Terraform-файл [s3.tf](s3.tf) создаёт сервисный аккаунт, статический ключ и бакет в Yandex Object Storage:
-
-```bash
-terraform apply
+```yaml
+filestore:
+  backend: s3
 ```
 
-После apply файл `values_sentry.yaml` генерируется автоматически из шаблона [values_sentry.yaml.tpl](values_sentry.yaml.tpl) через Terraform (см. [templatefile.tf](templatefile.tf)) — ключи S3 подставляются из ресурсов Terraform, ручная подстановка не нужна.
+По умолчанию чарт Sentry хранит артефакты на локальной ФС (`/var/lib/sentry/files`) с PVC в режиме **RWO** (ReadWriteOnce). RWO-том доступен только одному поду (обычно `sentry-web`); taskworker-ы при сборке (`assemble`) debug-файлов не находят blob-ы → `FileNotFoundError` / `internal server error` в UI. S3-бэкенд доступен всем подам одновременно и решает эту проблему.
 
 ### 4. Установка Sentry
 
