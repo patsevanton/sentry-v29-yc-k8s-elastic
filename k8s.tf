@@ -37,18 +37,105 @@ resource "yandex_kubernetes_cluster" "sentry" {
   depends_on              = [time_sleep.wait_sa]
 }
 
-# todo сделать 3 зоны
-resource "yandex_kubernetes_node_group" "k8s_node_group" {
-  description = "Node group for the Managed Service for Kubernetes cluster"
-  name        = "k8s-node-group"
+resource "yandex_kubernetes_node_group" "k8s_node_group_a" {
+  description = "Node group for the Managed Service for Kubernetes cluster in zone A"
+  name        = "k8s-node-group-a"
   cluster_id  = yandex_kubernetes_cluster.sentry.id
   version     = "1.33"
 
   scale_policy {
     auto_scale {
-      min     = 2
-      max     = 6
-      initial = 2
+      min     = 1
+      max     = 3
+      initial = 1
+    }
+  }
+
+  allocation_policy {
+    location { zone = local.subnet_a_zone }
+  }
+
+  instance_template {
+    platform_id = "standard-v2"
+
+    network_interface {
+      nat = true
+      subnet_ids = [
+        local.subnet_a_id
+      ]
+    }
+
+    resources {
+      memory = 20
+      cores  = 4
+    }
+
+    boot_disk {
+      type = "network-hdd"
+      size = 65
+    }
+
+    scheduling_policy {
+      preemptible = true
+    }
+  }
+}
+
+resource "yandex_kubernetes_node_group" "k8s_node_group_b" {
+  description = "Node group for the Managed Service for Kubernetes cluster in zone B"
+  name        = "k8s-node-group-b"
+  cluster_id  = yandex_kubernetes_cluster.sentry.id
+  version     = "1.33"
+
+  scale_policy {
+    auto_scale {
+      min     = 1
+      max     = 3
+      initial = 1
+    }
+  }
+
+  allocation_policy {
+    location { zone = local.subnet_b_zone }
+  }
+
+  instance_template {
+    platform_id = "standard-v2"
+
+    network_interface {
+      nat = true
+      subnet_ids = [
+        local.subnet_b_id
+      ]
+    }
+
+    resources {
+      memory = 20
+      cores  = 4
+    }
+
+    boot_disk {
+      type = "network-hdd"
+      size = 65
+    }
+
+    scheduling_policy {
+      preemptible = true
+    }
+  }
+}
+
+resource "yandex_kubernetes_node_group" "k8s_node_group_d" {
+  description = "Node group for the Managed Service for Kubernetes cluster in zone D"
+  name        = "k8s-node-group-d"
+  cluster_id  = yandex_kubernetes_cluster.sentry.id
+  version     = "1.33"
+
+  scale_policy {
+    auto_scale {
+      min     = 1
+      max     = 3
+      initial = 1
     }
   }
 
@@ -103,7 +190,9 @@ resource "helm_release" "ingress_nginx" {
 
   depends_on = [
     yandex_kubernetes_cluster.sentry,
-    yandex_kubernetes_node_group.k8s_node_group
+    yandex_kubernetes_node_group.k8s_node_group_a,
+    yandex_kubernetes_node_group.k8s_node_group_b,
+    yandex_kubernetes_node_group.k8s_node_group_d
   ]
 
   values = [
