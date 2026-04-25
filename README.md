@@ -373,7 +373,14 @@ kubectl apply -f k8s/sentry-prometheus-exporter.yaml
 Для Managed Kafka в Yandex Cloud метрики берутся напрямую из Yandex Monitoring endpoint `https://monitoring.api.cloud.yandex.net/monitoring/v2/prometheusMetrics` c параметрами `folderId` и `service=managed-kafka` (официальный export в формате Prometheus).
 
 1. Создайте API key сервисного аккаунта с ролью `monitoring.viewer` на нужную папку в Yandex Cloud.
-2. Создайте Kubernetes Secret в namespace `vmks`:
+2. Получите значения переменных:
+
+```bash
+export FOLDER_ID=$(yc config get folder-id)
+export MONITORING_API_KEY=$(yc iam create-key --service-account-name <имя-сервисного-аккаунта> --folder-id $FOLDER_ID --format json | jq -r '.secret')
+```
+
+3. Создайте Kubernetes Secret в namespace `vmks`:
 
 ```bash
 kubectl -n vmks create secret generic yc-monitoring-api-key \
@@ -409,7 +416,7 @@ spec:
 EOF
 ```
 
-3. Примените сгенерированные манифесты:
+4. Примените сгенерированные манифесты:
 
 ```bash
 kubectl apply -f vmstaticscrape-yc-managed-kafka.yaml
