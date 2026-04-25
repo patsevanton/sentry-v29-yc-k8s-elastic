@@ -49,21 +49,6 @@ managed_clickhouse_user_password = "<SECRET>"
 
 Если не задавать `managed_clickhouse_user_password`, Terraform сгенерирует случайный пароль автоматически.
 
-Проверка фактических значений для Helm/Sentry:
-
-```bash
-terraform output external_clickhouse_host
-terraform output external_clickhouse_tcp_port
-terraform output external_clickhouse_http_port
-terraform output external_clickhouse_username
-terraform output external_clickhouse_database
-terraform output external_clickhouse_cluster_name
-terraform output external_clickhouse_distributed_cluster_name
-terraform output external_clickhouse_password
-terraform output managed_clickhouse_cluster_id
-terraform output managed_clickhouse_hosts
-```
-
 Перед `helm upgrade` проверьте DNS из pod (если в `system.clusters` есть short hostnames):
 
 ```bash
