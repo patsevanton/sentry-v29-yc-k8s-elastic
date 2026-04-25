@@ -52,8 +52,6 @@ resource "yandex_kubernetes_node_group" "k8s_node_group" {
   }
 
   allocation_policy {
-    location { zone = local.subnet_a_zone }
-    location { zone = local.subnet_b_zone }
     location { zone = local.subnet_d_zone }
   }
 
@@ -63,8 +61,6 @@ resource "yandex_kubernetes_node_group" "k8s_node_group" {
     network_interface {
       nat = true
       subnet_ids = [
-        local.subnet_a_id,
-        local.subnet_b_id,
         local.subnet_d_id
       ]
     }
@@ -75,7 +71,7 @@ resource "yandex_kubernetes_node_group" "k8s_node_group" {
     }
 
     boot_disk {
-      type = "network-ssd"
+      type = "network-ssd" # поменять на hdd
       size = 128
     }
 
