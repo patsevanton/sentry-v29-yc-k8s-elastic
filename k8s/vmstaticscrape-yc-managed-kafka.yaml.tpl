@@ -17,10 +17,9 @@ spec:
           - "${folder_id}"
         service:
           - "managed-kafka"
-      authorization:
-        bearer:
-          name: yc-monitoring-api-key
-          key: bearer
+      bearerTokenSecret:
+        name: yc-monitoring-api-key
+        key: bearer
       labels:
         cloud: yandex
         service: managed-kafka
