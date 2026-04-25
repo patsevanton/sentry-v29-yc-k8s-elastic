@@ -1,11 +1,15 @@
 # Развёртывание Sentry v30.1.0 в Yandex Cloud на Kubernetes
 
-## Цель и плюс конфигурации ClickHouse
+## Цели статьи
 
-В текущей конфигурации Managed ClickHouse (`externalClickhouse.singleNode=false`, `clusterName=default`) кластер работает как `1 shard + 3 replicas`.
+Статья описывает процесс развёртывания Sentry v30.1.0 в Yandex Cloud на кластере Kubernetes. Будет развёрнуто:
 
-- Данные в `Replicated*` таблицах хранятся в копиях на всех трёх репликах (не шардируются между несколькими shard).
-- Это даёт отказоустойчивость: при недоступности одной ноды сервис продолжает работать на оставшихся репликах.
+- Инфраструктура через Terraform (Managed ClickHouse, Managed PostgreSQL, Object Storage, VPC).
+- Elasticsearch 9.x через ECK Operator для nodestore.
+- Sentry в Kubernetes через Helm-чарт.
+- Дополнительные компоненты: NodeLocal DNSCache, VictorOps (webhooks для алертинга).
+- Загрузка source maps для JavaScript-проектов.
+- Рекомендация по производительности: не более 5 000 событий в секунду на ноду Sentry.
 
 ## Применение через Terraform (корень репозитория)
 
