@@ -1,17 +1,7 @@
-resource "null_resource" "write_sentry_config" {
-  provisioner "local-exec" {
-    command = <<-EOT
-      mkdir -p "$(dirname "${var.sentry_values_output_path}")"
-      cat > "${var.sentry_values_output_path}" <<'EOF'
-      ${local.sentry_config}
-      EOF
-    EOT
-  }
-
-  triggers = {
-    sentry_config             = local.sentry_config
-    sentry_values_output_path = var.sentry_values_output_path
-  }
+resource "local_file" "write_sentry_config" {
+  content         = local.sentry_config
+  filename        = var.sentry_values_output_path
+  file_permission = "0644"
 }
 
 locals {
