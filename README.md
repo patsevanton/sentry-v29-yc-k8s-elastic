@@ -345,6 +345,8 @@ kubectl -n vmks get secret vmks-grafana -o jsonpath='{.data.admin-password}' | b
 
 Для имён из `vmks-values.yaml` (`vmsingle.apatsev.org.ru`, `grafana.apatsev.org.ru`) добавьте **A-записи** на тот же внешний IP, что у ingress (см. [ip-dns.tf](ip-dns.tf) для `sentry.apatsev.org.ru`).
 
+Веб-интерфейс Grafana доступен по адресу **[http://grafana.apatsev.org.ru](http://grafana.apatsev.org.ru)**.
+
 Интеграция с экспортёром Sentry — шаг 4 в **§7** и манифест [k8s/vmscrape-sentry-prometheus-exporter.yaml](k8s/vmscrape-sentry-prometheus-exporter.yaml).
 
 ### 7. Мониторинг Sentry (Prometheus exporter)
@@ -396,7 +398,6 @@ kubectl apply -f k8s/vmstaticscrape-yc-managed-kafka.yaml
 
 ```bash
 kubectl -n vmks get vmstaticscrape yc-managed-kafka
-kubectl -n vmks get pods
 ```
 
 5. Импортируйте дашборд [dashboard/yc-managed-kafka-overview.json](dashboard/yc-managed-kafka-overview.json) в Grafana (`Dashboards -> New -> Import`) и выберите datasource Prometheus/VictoriaMetrics.
@@ -444,9 +445,9 @@ kubectl -n ingress-nginx get svc
 kubectl apply -f demo/k8s/namespace.yaml
 # DSN (по одному Secret на Node и Python):
 kubectl create secret generic sentry-dsn-node -n demo-sentry \
-  --from-literal=dsn='http://043383a541f6f3f5d43e6e1f080d3352@sentry.apatsev.org.ru/2'
+  --from-literal=dsn='http://a1351d49005b24cbee5bf79f69443209@sentry.apatsev.org.ru/3'
 kubectl create secret generic sentry-dsn-python -n demo-sentry \
-  --from-literal=dsn='http://709abdcff0f35b84e5d8d1e422454a68@sentry.apatsev.org.ru/3'
+  --from-literal=dsn='http://409383939ff86276d93cf709cf6dfa2e@sentry.apatsev.org.ru/2'
 # либо подставить dsn в demo/k8s/secret-sentry-dsn-*.yaml и:
 # kubectl apply -f demo/k8s/secret-sentry-dsn-node.yaml -f demo/k8s/secret-sentry-dsn-python.yaml
 
