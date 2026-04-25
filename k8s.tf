@@ -45,9 +45,9 @@ resource "yandex_kubernetes_node_group" "k8s_node_group" {
 
   scale_policy {
     auto_scale {
-      min     = 1
-      max     = 3
-      initial = 1
+      min     = 3
+      max     = 6
+      initial = 3
     }
   }
 
