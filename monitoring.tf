@@ -28,3 +28,17 @@ locals {
     folder_id = local.folder_id
   })
 }
+
+resource "null_resource" "write_vmstaticscrape_kafka_config" {
+  provisioner "local-exec" {
+    command = <<-EOT
+      cat > "${path.module}/k8s/vmstaticscrape-yc-managed-kafka.yaml" <<'EOF'
+      ${local.vmstaticscrape_kafka_config}
+      EOF
+    EOT
+  }
+
+  triggers = {
+    vmstaticscrape_kafka_config = local.vmstaticscrape_kafka_config
+  }
+}
