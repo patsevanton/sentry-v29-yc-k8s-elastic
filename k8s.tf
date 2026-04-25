@@ -44,8 +44,10 @@ resource "yandex_kubernetes_node_group" "k8s_node_group" {
   version     = "1.33"
 
   scale_policy {
-    fixed_scale {
-      size = 3
+    auto_scale {
+      min     = 1
+      max     = 3
+      initial = 1
     }
   }
 

@@ -32,7 +32,7 @@ resource "yandex_mdb_kafka_cluster" "managed" {
         # в кластере (например snuba-lw-deletions-eap-items=50000000), потому
         # что в multi-node Kafka replica.fetch.max.bytes должен быть >= размера
         # сообщения, иначе API YC отклоняет операции с кластером
-        replica_fetch_max_bytes   = 67108864
+        replica_fetch_max_bytes = 67108864
       }
     }
   }
