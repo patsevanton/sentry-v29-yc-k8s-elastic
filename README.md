@@ -174,9 +174,7 @@ INSTALLED_APPS = tuple(INSTALLED_APPS)
 
 ### 2. Managed ClickHouse (Yandex Cloud)
 
-ClickHouse используется только как внешний managed-кластер в Yandex Cloud. In-cluster ClickHouse/Altinity в этом репозитории больше не используется.
-
-Terraform создаёт Managed ClickHouse и автоматически подставляет endpoint/креды в `values_sentry.yaml` (через `values_sentry.yaml.tpl`):
+ClickHouse используется только как внешний managed-кластер в Yandex Cloud. Terraform создаёт Managed ClickHouse и автоматически подставляет endpoint/креды в `values_sentry.yaml` (через `values_sentry.yaml.tpl`):
 - кластер: `yandex_mdb_clickhouse_cluster.managed`;
 - база: `clickhousedbops_database.managed_sentry` (при SQL user management);
 - пользователь: `clickhousedbops_user.managed_sentry` или `yandex_mdb_clickhouse_user.managed_sentry` (в зависимости от режима SQL user management).
