@@ -221,19 +221,7 @@ INSTALLED_APPS = tuple(INSTALLED_APPS)
 - Версия образа Sentry должна совпадать с `appVersion` чарта Sentry (`helm show chart sentry/sentry --version <ver>`).
 - Кластер **9.x** и образ с **elasticsearch-py 9.x** согласованы с [elasticsearch.yaml](elasticsearch.yaml) и `Dockerfile.sentry-nodestore`.
 
-### 3. Репозиторий Sentry
-
-Подключите Helm-репозиторий чарта Sentry. Namespace `sentry` можно создать заранее или при установке в **§4** флагом `--create-namespace`.
-
-```bash
-kubectl create namespace sentry
-helm repo add sentry https://sentry-kubernetes.github.io/charts
-helm repo update
-```
-
-Если namespace уже есть, `kubectl create namespace sentry` завершится ошибкой — это нормально. Либо опустите эту строку и полагайтесь только на `--create-namespace` у Helm.
-
-### 3.1. KEDA (автоскейлинг по Kafka lag)
+### 3. KEDA (автоскейлинг по Kafka lag)
 
 Для автоскейлинга воркеров Sentry по накоплению сообщений в Kafka-очередях установите [KEDA](https://keda.sh/) в отдельный namespace.
 
@@ -255,6 +243,18 @@ kubectl get crd | rg "keda.sh"
 ```
 
 После установки можно добавлять `ScaledObject` для нужных deployment/statefulset (например, ingest-consumer-ов), с триггером Kafka lag.
+
+### 3.1. Репозиторий Sentry
+
+Подключите Helm-репозиторий чарта Sentry. Namespace `sentry` можно создать заранее или при установке в **§4** флагом `--create-namespace`.
+
+```bash
+kubectl create namespace sentry
+helm repo add sentry https://sentry-kubernetes.github.io/charts
+helm repo update
+```
+
+Если namespace уже есть, `kubectl create namespace sentry` завершится ошибкой — это нормально. Либо опустите эту строку и полагайтесь только на `--create-namespace` у Helm.
 
 ### 3.2. S3 filestore (Yandex Object Storage)
 
