@@ -369,6 +369,8 @@ kubectl apply -f k8s/sentry-prometheus-exporter.yaml
 
 4. Подключите scrape через `VMServiceScrape`: [k8s/vmscrape-sentry-prometheus-exporter.yaml](k8s/vmscrape-sentry-prometheus-exporter.yaml) (`kubectl apply -f k8s/vmscrape-sentry-prometheus-exporter.yaml`). Манифест создаёт ресурс в namespace **`vmks`** (где работает `VMAgent` из §6) и указывает на Service в **`sentry`**; если положить `VMServiceScrape` только в `sentry`, vmagent его не подхватит. В нём же заданы `scrape_interval` / `scrapeTimeout` побольше: экспортёр отвечает медленно (запросы к API Sentry), иначе цель в vmagent будет **down** по таймауту. Либо укажите цель вручную, например `http://sentry-prometheus-exporter.sentry.svc.cluster.local:9790/metrics/`.
 
+5. Импортируйте дашборд [dashboard/sentry-issues-events-overview.json](dashboard/sentry-issues-events-overview.json) в Grafana (`Dashboards -> New -> Import`) и выберите datasource Prometheus/VictoriaMetrics.
+
 ### 7.1. Мониторинг Yandex Managed Kafka в Grafana
 
 Для Managed Kafka в Yandex Cloud метрики берутся напрямую из Yandex Monitoring endpoint `https://monitoring.api.cloud.yandex.net/monitoring/v2/prometheusMetrics` c параметрами `folderId` и `service=managed-kafka` (официальный export в формате Prometheus).
