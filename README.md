@@ -230,7 +230,7 @@ kubectl -n sentry run -it --rm dns-test --image=busybox:1.36 --restart=Never -- 
 - при `external_clickhouse_single_node=false` Snuba использует `system.clusters` для distributed-операций;
 - комбинация `single_node=false` + `tcpPort=9000` + **NO TLS** с этим MCH не работает;
 - чтобы сохранить distributed (HA), нужен TLS/`9440`;
-- чтобы сохранить NO TLS/`9000`, нужен `single_node=true` или другой ClickHouse, где `system.clusters` отдаёт `9000`.
+- чтобы использовать NO TLS/`9000` в distributed-режиме, нужно использовать [ClickHouse Operator](https://github.com/Altinity/clickhouse-operator) в k8s, где `system.clusters` отдаёт порт `9000`.
 
 ### 3. Репозиторий Sentry
 
