@@ -19,20 +19,6 @@ export YC_CLOUD_ID=$(yc config get cloud-id)
 export YC_FOLDER_ID="<ваш-folder-id>"
 ```
 
-Если хотите не экспортировать переменные вручную каждый раз, добавьте в `~/.bashrc`:
-
-```bash
-export YC_TOKEN=$(yc iam create-token)
-export YC_CLOUD_ID=$(yc config get cloud-id)
-export YC_FOLDER_ID=$(yc config get folder-id)
-```
-
-Затем перечитайте конфиг shell:
-
-```bash
-source ~/.bashrc
-```
-
 Применение инфраструктуры:
 
 ```bash
