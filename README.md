@@ -372,54 +372,26 @@ kubectl apply -f k8s/sentry-prometheus-exporter.yaml
 
 Для Managed Kafka в Yandex Cloud метрики берутся напрямую из Yandex Monitoring endpoint `https://monitoring.api.cloud.yandex.net/monitoring/v2/prometheusMetrics` c параметрами `folderId` и `service=managed-kafka` (официальный export в формате Prometheus).
 
-1. Создайте API key сервисного аккаунта с ролью `monitoring.viewer` на нужную папку в Yandex Cloud.
-2. Получите значения переменных:
+Terraform автоматически создаёт сервисный аккаунт `monitoring-viewer-sa` с ролью `monitoring.viewer` и генерирует API-ключ (см. [monitoring.tf](monitoring.tf)).
+
+1. Получите значения переменных из Terraform output:
 
 ```bash
-export FOLDER_ID=$(yc config get folder-id)
-export MONITORING_API_KEY=$(yc iam create-key --service-account-name <имя-сервисного-аккаунта> --folder-id $FOLDER_ID --format json | jq -r '.secret')
+export FOLDER_ID=$(terraform output -raw folder_id)
+export MONITORING_API_KEY=$(terraform output -raw monitoring_api_key)
 ```
 
-3. Создайте Kubernetes Secret в namespace `vmks`:
+2. Создайте Kubernetes Secret в namespace `vmks`:
 
 ```bash
 kubectl -n vmks create secret generic yc-monitoring-api-key \
   --from-literal=bearer="$MONITORING_API_KEY"
-
-cat > vmstaticscrape-yc-managed-kafka.yaml << EOF
-apiVersion: operator.victoriametrics.com/v1beta1
-kind: VMStaticScrape
-metadata:
-  name: yc-managed-kafka
-  namespace: vmks
-spec:
-  jobName: yc-managed-kafka
-  targetEndpoints:
-    - targets:
-        - monitoring.api.cloud.yandex.net
-      scheme: https
-      path: /monitoring/v2/prometheusMetrics
-      interval: 60s
-      scrapeTimeout: 60s
-      params:
-        folderId:
-          - "$FOLDER_ID"
-        service:
-          - "managed-kafka"
-      authorization:
-        bearer:
-          name: yc-monitoring-api-key
-          key: bearer
-      labels:
-        cloud: yandex
-        service: managed-kafka
-EOF
 ```
 
-4. Примените сгенерированные манифесты:
+3. Подставьте `folder_id` в манифест и примените его:
 
 ```bash
-kubectl apply -f vmstaticscrape-yc-managed-kafka.yaml
+sed "s/__YC_FOLDER_ID__/$FOLDER_ID/g" k8s/vmstaticscrape-yc-managed-kafka.yaml | kubectl apply -f -
 ```
 
 4. Проверьте, что vmagent видит target:
@@ -430,15 +402,6 @@ kubectl -n vmks get pods
 ```
 
 5. Импортируйте дашборд [dashboard/yc-managed-kafka-overview.json](dashboard/yc-managed-kafka-overview.json) в Grafana (`Dashboards -> New -> Import`) и выберите datasource Prometheus/VictoriaMetrics.
-
-5. Проверьте, что vmagent видит target:
-
-```bash
-kubectl -n vmks get vmstaticscrape yc-managed-kafka
-kubectl -n vmks get pods
-```
-
-6. Импортируйте дашборд [dashboard/yc-managed-kafka-overview.json](dashboard/yc-managed-kafka-overview.json) в Grafana (`Dashboards -> New -> Import`) и выберите datasource Prometheus/VictoriaMetrics.
 
 ### 8. Доступ к Sentry
 
