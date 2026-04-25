@@ -4,7 +4,7 @@
 
 Статья описывает процесс развёртывания Sentry v30.1.0 в Yandex Cloud на кластере Kubernetes. Будет развёрнуто:
 
-- Инфраструктура через Terraform (Managed ClickHouse, Managed PostgreSQL, Object Storage, VPC).
+- Инфраструктура через Terraform (K8S, ClickHouse, PostgreSQL, Object Storage, VPC).
 - Elasticsearch 9.x через ECK Operator для nodestore.
 - Sentry в Kubernetes через Helm-чарт.
 - Дополнительные компоненты: NodeLocal DNSCache, VictorOps (webhooks для алертинга).
