@@ -387,19 +387,53 @@ kubectl apply -f k8s/sentry-prometheus-exporter.yaml
 1. Создайте API key сервисного аккаунта с ролью `monitoring.viewer` на нужную папку в Yandex Cloud.
 2. Создайте Kubernetes Secret в namespace `vmks`:
 
-```bash
 kubectl -n vmks create secret generic yc-monitoring-api-key \
-  --from-literal=bearer='<YC_MONITORING_API_KEY>'
+  --from-literal=bearer="$MONITORING_API_KEY"
+
+cat > vmstaticscrape-yc-managed-kafka.yaml << EOF
+apiVersion: operator.victoriametrics.com/v1beta1
+kind: VMStaticScrape
+metadata:
+  name: yc-managed-kafka
+  namespace: vmks
+spec:
+  jobName: yc-managed-kafka
+  targetEndpoints:
+    - targets:
+        - monitoring.api.cloud.yandex.net
+      scheme: https
+      path: /monitoring/v2/prometheusMetrics
+      interval: 60s
+      scrapeTimeout: 60s
+      params:
+        folderId:
+          - "$FOLDER_ID"
+        service:
+          - "managed-kafka"
+      authorization:
+        bearer:
+          name: yc-monitoring-api-key
+          key: bearer
+      labels:
+        cloud: yandex
+        service: managed-kafka
+EOF
 ```
 
-Либо используйте пример [k8s/secret-yc-monitoring-api-key.example.yaml](k8s/secret-yc-monitoring-api-key.example.yaml).
-
-3. В манифесте [k8s/vmstaticscrape-yc-managed-kafka.yaml](k8s/vmstaticscrape-yc-managed-kafka.yaml) замените `__YC_FOLDER_ID__` на ID вашей папки (например, `yc config get folder-id`).
-4. Примените манифест:
+3. Примените сгенерированные манифесты:
 
 ```bash
-kubectl apply -f k8s/vmstaticscrape-yc-managed-kafka.yaml
+kubectl apply -f vmstaticscrape-yc-managed-kafka.yaml
 ```
+
+4. Проверьте, что vmagent видит target:
+
+```bash
+kubectl -n vmks get vmstaticscrape yc-managed-kafka
+kubectl -n vmks get pods
+```
+
+5. Импортируйте дашборд [dashboard/yc-managed-kafka-overview.json](dashboard/yc-managed-kafka-overview.json) в Grafana (`Dashboards -> New -> Import`) и выберите datasource Prometheus/VictoriaMetrics.
 
 5. Проверьте, что vmagent видит target:
 
