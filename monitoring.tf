@@ -22,3 +22,9 @@ output "monitoring_api_key" {
   value     = yandex_iam_service_account_key.monitoring_viewer_key.private_key
   sensitive = true
 }
+
+locals {
+  vmstaticscrape_kafka_config = templatefile("${path.module}/k8s/vmstaticscrape-yc-managed-kafka.yaml.tpl", {
+    folder_id = local.folder_id
+  })
+}

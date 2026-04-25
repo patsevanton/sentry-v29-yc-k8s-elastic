@@ -372,12 +372,11 @@ kubectl apply -f k8s/sentry-prometheus-exporter.yaml
 
 Для Managed Kafka в Yandex Cloud метрики берутся напрямую из Yandex Monitoring endpoint `https://monitoring.api.cloud.yandex.net/monitoring/v2/prometheusMetrics` c параметрами `folderId` и `service=managed-kafka` (официальный export в формате Prometheus).
 
-Terraform автоматически создаёт сервисный аккаунт `monitoring-viewer-sa` с ролью `monitoring.viewer` и генерирует API-ключ (см. [monitoring.tf](monitoring.tf)).
+Terraform автоматически создаёт сервисный аккаунт `monitoring-viewer-sa` с ролью `monitoring.viewer`, генерирует API-ключ и рендерит манифест [k8s/vmstaticscrape-yc-managed-kafka.yaml](k8s/vmstaticscrape-yc-managed-kafka.yaml) из шаблона [k8s/vmstaticscrape-yc-managed-kafka.yaml.tpl](k8s/vmstaticscrape-yc-managed-kafka.yaml.tpl) с подставленным `folder_id` (см. [monitoring.tf](monitoring.tf)).
 
-1. Получите значения переменных из Terraform output:
+1. Получите значение API-ключа из Terraform output:
 
 ```bash
-export FOLDER_ID=$(terraform output -raw folder_id)
 export MONITORING_API_KEY=$(terraform output -raw monitoring_api_key)
 ```
 
@@ -388,10 +387,10 @@ kubectl -n vmks create secret generic yc-monitoring-api-key \
   --from-literal=bearer="$MONITORING_API_KEY"
 ```
 
-3. Подставьте `folder_id` в манифест и примените его:
+3. Примените манифест (он уже содержит `folder_id` после `terraform apply`):
 
 ```bash
-sed "s/__YC_FOLDER_ID__/$FOLDER_ID/g" k8s/vmstaticscrape-yc-managed-kafka.yaml | kubectl apply -f -
+kubectl apply -f k8s/vmstaticscrape-yc-managed-kafka.yaml
 ```
 
 4. Проверьте, что vmagent видит target:
