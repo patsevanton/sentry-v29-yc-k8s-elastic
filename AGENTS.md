@@ -121,6 +121,6 @@
 
 ## References / Полезные ссылки
 
-- Спецификация метрик Yandex Managed Kafka: https://yandex.cloud/ru/docs/monitoring/metrics-ref/managed-kafka-ref
-- Спецификация метрик Yandex Managed ClickHouse: https://yandex.cloud/ru/docs/monitoring/metrics-ref/managed-clickhouse-ref
-- Спецификация метрик Yandex Managed Kubernetes: https://yandex.cloud/ru/docs/monitoring/metrics-ref/managed-kubernetes-ref
+- Спецификация метрик Yandex Managed Kafka: https://github.com/yandex-cloud/docs/blob/master/ru/_includes/monitoring/metrics-ref/managed-kafka.md
+- Спецификация метрик Yandex Managed ClickHouse: https://github.com/yandex-cloud/docs/blob/master/ru/_includes/monitoring/metrics-ref/managed-clickhouse.md
+- Спецификация метрик Yandex Managed Kubernetes: https://github.com/yandex-cloud/docs/blob/master/ru/_includes/monitoring/metrics-ref/managed-kubernetes.md
