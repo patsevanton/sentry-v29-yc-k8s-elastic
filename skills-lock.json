@@ -1,0 +1,20 @@
+{
+  "version": 1,
+  "skills": {
+    "deployment-rollout-debug": {
+      "source": "scitix/siclaw",
+      "sourceType": "github",
+      "computedHash": "0a8ab09d4660648b4f2e7e265486f68afaddd473a5dd0fe1da86bbdcac99857f"
+    },
+    "pod-crash-debug": {
+      "source": "scitix/siclaw",
+      "sourceType": "github",
+      "computedHash": "b598c4e0a35c60b56861845d17b11fc3aaa9682f84b55e01c631ce8e69087fd6"
+    },
+    "setup-dev": {
+      "source": "getsentry/sentry",
+      "sourceType": "github",
+      "computedHash": "751619720c2b34d4e90bf0ff8f5ce58c1c8863e0d759aafa0157b1d38c7901c4"
+    }
+  }
+}
