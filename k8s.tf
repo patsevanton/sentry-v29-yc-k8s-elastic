@@ -37,6 +37,7 @@ resource "yandex_kubernetes_cluster" "sentry" {
   depends_on              = [time_sleep.wait_sa]
 }
 
+# todo сделать 3 зоны
 resource "yandex_kubernetes_node_group" "k8s_node_group" {
   description = "Node group for the Managed Service for Kubernetes cluster"
   name        = "k8s-node-group"
@@ -72,7 +73,7 @@ resource "yandex_kubernetes_node_group" "k8s_node_group" {
 
     boot_disk {
       type = "network-ssd" # поменять на hdd
-      size = 128
+      size = 128 # сделать меньше
     }
 
     scheduling_policy {
