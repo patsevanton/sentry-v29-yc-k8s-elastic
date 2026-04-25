@@ -44,7 +44,7 @@
 | `ip-dns.tf` | DNS-записи и IP ingress | При изменении сетевой доступности |
 | `*.tf` (остальные) | Terraform-ресурсы (VPC, K8S, MDB, S3) | При изменении инфраструктуры |
 | `k8s/` | Kubernetes-манифесты (мониторинг, DNS, exporters, ECK) | При изменении объектов вне Helm |
-| `dashboard/` | Дашборды Grafana | При обновлении визуализаций |
+| `dashboard/` | Дашборды Grafana (`sentry-issues-events-overview.json`) | При обновлении визуализаций; импортируется в Grafana после установки VMKS |
 | `demo/` | Демо-клиенты (Python, Node.js) | При изменении примеров интеграции |
 | `examples/` | Примеры интеграции (native C, source maps) | При добавлении примеров |
 | `scripts/` | Вспомогательные скрипты | При изменении служебных скриптов |
@@ -116,4 +116,5 @@
 5. `helm upgrade --install sentry` (с values из Terraform)
 6. VictoriaMetrics K8s Stack
 7. Мониторинг (Prometheus exporter, VMServiceScrape)
-8. Демо-клиенты
+8. Импорт дашборда `dashboard/sentry-issues-events-overview.json` в Grafana
+9. Демо-клиенты
