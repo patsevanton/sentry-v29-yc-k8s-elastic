@@ -339,8 +339,7 @@ helm upgrade --install vmks vm/victoria-metrics-k8s-stack \
 **Пароль Grafana.** Подчарт Grafana создаёт Secret с учётными данными администратора: имя вида `**<имя Helm-релиза>-grafana`**. Для команды выше (релиз `vmks`, namespace `vmks`) это `**vmks-grafana**`. Пароль:
 
 ```bash
-kubectl -n vmks get secret vmks-grafana -o jsonpath='{.data.admin-password}' | base64 -d
-echo
+kubectl -n vmks get secret vmks-grafana -o jsonpath='{.data.admin-password}' | base64 -d && echo
 ```
 
 Логин по умолчанию — `**admin**` (его можно прочитать из ключа `admin-user` того же Secret). Если вы установили стек под другим именем релиза, замените `vmks-grafana` на `<ваш-релиз>-grafana`.
