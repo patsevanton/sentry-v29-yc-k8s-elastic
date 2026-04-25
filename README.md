@@ -299,10 +299,10 @@ kubectl get crd | rg "keda.sh"
 
 ```bash
 helm upgrade --install sentry sentry/sentry --version 30.1.0 -n sentry \
-  -f values_sentry.yaml --timeout=900s --create-namespace
+  -f values_sentry.yaml --timeout=3600s --create-namespace
 ```
 
-**Устанавливается долго:** первый `helm upgrade --install` часто занимает десятки минут — последовательно выполняются Job’ы (проверка/инициализация БД, provisioning Kafka, Snuba и миграции). Смотрите `kubectl -n sentry get jobs` и логи подов Job при зависаниях. Пример строк (реальный прогон; в k9s колонка **AGE** часто отсортирована по возрастанию — значок **↑**):
+**Устанавливается долго:** первый `helm upgrade --install` часто занимает 20–40 минут и более — последовательно выполняются Job’ы (проверка/инициализация БД, provisioning Kafka, Snuba и миграции). Увеличенный timeout (`3600s` = 1 час) позволяет избежать прерывания установки при длительном выполнении Job. Смотрите `kubectl -n sentry get jobs` и логи подов Job при зависаниях. Пример строк (реальный прогон; в k9s колонка **AGE** часто отсортирована по возрастанию — значок **↑**):
 
 | NAMESPACE | NAME | COMPLETIONS | DURATION | AGE |
 |-----------|------|-------------|----------|-----|
