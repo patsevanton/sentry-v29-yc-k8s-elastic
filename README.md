@@ -7,9 +7,13 @@
 - Инфраструктура через Terraform (K8S, ClickHouse, PostgreSQL, Object Storage, VPC).
 - Elasticsearch 9.x через ECK Operator для nodestore.
 - Sentry в Kubernetes через Helm-чарт.
-- Дополнительные компоненты: NodeLocal DNSCache, VictorOps (webhooks для алертинга).
-- Загрузка source maps для JavaScript-проектов.
-- Рекомендация по производительности: не более 5 000 событий в секунду на ноду Sentry.
+- S3 filestore (Yandex Object Storage) для артефактов Sentry.
+- KEDA — автоскейлинг воркеров Sentry по глубине Kafka-очередей.
+- VictoriaMetrics K8s Stack (VMSingle, VMAgent, Grafana, vmalert, node-exporter, kube-state-metrics).
+- Мониторинг Sentry через Prometheus exporter и VMServiceScrape.
+- Мониторинг Yandex Managed Kafka в Grafana (VMStaticScrape + дашборд).
+- NodeLocal DNSCache (опционально) для снижения DNS-задержек.
+- Демо-клиенты Sentry (Python/FastAPI, Node.js/Express, нативный C) и загрузка source maps.
 
 ## Применение через Terraform (корень репозитория)
 
