@@ -118,3 +118,9 @@
 7. Мониторинг (Prometheus exporter, VMServiceScrape)
 8. Импорт дашборда `dashboard/sentry-issues-events-overview.json` в Grafana
 9. Демо-клиенты
+
+## References / Полезные ссылки
+
+- Спецификация метрик Yandex Managed Kafka: https://yandex.cloud/ru/docs/monitoring/metrics-ref/managed-kafka-ref
+- Спецификация метрик Yandex Managed ClickHouse: https://yandex.cloud/ru/docs/monitoring/metrics-ref/managed-clickhouse-ref
+- Спецификация метрик Yandex Managed Kubernetes: https://yandex.cloud/ru/docs/monitoring/metrics-ref/managed-kubernetes-ref
