@@ -416,6 +416,8 @@ kubectl -n ingress-nginx get svc
 
 Два HTTP-сервиса (Python / FastAPI и Node.js / Express) с одинаковыми маршрутами для проверки self-hosted Sentry: исключения, сообщения, транзакции, breadcrumbs, контекст.
 
+> 📋 Полная сводка возможностей Sentry v30 и их реализации в проекте — в [docs/sentry-capabilities.md](docs/sentry-capabilities.md). Там же — рекомендуемый порядок внедрения новых фич.
+
 #### Маршруты
 
 

@@ -18,7 +18,20 @@ output "folder_id" {
   value = local.folder_id
 }
 
-output "monitoring_api_key" {
+# ВНИМАНИЕ: Это НЕ IAM-токен, а авторизованный ключ (RSA private key).
+# VMAgent не умеет сам генерировать IAM-токен из него.
+# Для получения IAM-токена используйте: scripts/get-yc-iam-token.py
+output "monitoring_sa_key_id" {
+  value     = yandex_iam_service_account_key.monitoring_viewer_key.id
+  sensitive = false
+}
+
+output "monitoring_sa_service_account_id" {
+  value     = yandex_iam_service_account.monitoring_viewer.id
+  sensitive = false
+}
+
+output "monitoring_sa_private_key" {
   value     = yandex_iam_service_account_key.monitoring_viewer_key.private_key
   sensitive = true
 }
