@@ -194,6 +194,8 @@ sentry:
         cpu: 1000m
         memory: 2Gi
   taskWorker:
+    livenessProbe:
+      initialDelaySeconds: 30
     resources:
       requests:
         cpu: 200m
