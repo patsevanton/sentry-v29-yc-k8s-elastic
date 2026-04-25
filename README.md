@@ -4,13 +4,13 @@
 
 Статья описывает процесс развёртывания Sentry v30.1.0 в Yandex Cloud на кластере Kubernetes. Будет развёрнуто:
 
-- Инфраструктура через Terraform (K8S, ClickHouse, PostgreSQL, Object Storage, VPC).
+- Инфраструктура через Terraform (K8S, ClickHouse, Kafka, PostgreSQL, Object Storage, VPC).
 - Elasticsearch 9.x через ECK Operator для nodestore.
 - Sentry в Kubernetes через Helm-чарт.
-- S3 filestore (Yandex Object Storage) для артефактов Sentry.
-- KEDA — автоскейлинг воркеров Sentry по глубине Kafka-очередей.
+- S3 filestore (Yandex Object Storage) для артефактов Sentry (debug-символы, source maps).
+- KEDA — автоскейлинг воркеров Sentry по накоплению сообщений в Kafka-очередях.
 - VictoriaMetrics K8s Stack (VMSingle, VMAgent, Grafana, vmalert, node-exporter, kube-state-metrics).
-- Мониторинг Sentry через Prometheus exporter и VMServiceScrape.
+- Мониторинг Sentry через Prometheus exporter.
 - Мониторинг Yandex Managed Kafka в Grafana (VMStaticScrape + дашборд).
 - NodeLocal DNSCache (опционально) для снижения DNS-задержек.
 - Демо-клиенты Sentry (Python/FastAPI, Node.js/Express, нативный C) и загрузка source maps.
@@ -235,7 +235,7 @@ helm repo update
 
 ### 3.1. KEDA (автоскейлинг по Kafka lag)
 
-Для автоскейлинга воркеров Sentry по глубине Kafka-очередей установите [KEDA](https://keda.sh/) в отдельный namespace.
+Для автоскейлинга воркеров Sentry по накоплению сообщений в Kafka-очередях установите [KEDA](https://keda.sh/) в отдельный namespace.
 
 ```bash
 helm repo add kedacore https://kedacore.github.io/charts
