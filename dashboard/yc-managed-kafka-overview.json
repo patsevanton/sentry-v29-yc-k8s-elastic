@@ -1354,6 +1354,56 @@
       ],
       "title": "Produce / Fetch latency p99",
       "type": "timeseries"
+    },
+    {
+      "datasource": {
+        "type": "prometheus",
+        "uid": "${DS_PROMETHEUS}"
+      },
+      "fieldConfig": {
+        "defaults": {
+          "custom": {
+            "drawStyle": "line",
+            "lineInterpolation": "linear",
+            "lineWidth": 1,
+            "pointSize": 4,
+            "showPoints": "never",
+            "spanNulls": false
+          },
+          "unit": "short"
+        },
+        "overrides": []
+      },
+      "gridPos": {
+        "h": 8,
+        "w": 24,
+        "x": 0,
+        "y": 74
+      },
+      "id": 24,
+      "options": {
+        "legend": {
+          "calcs": [],
+          "displayMode": "list",
+          "placement": "bottom",
+          "showLegend": true
+        },
+        "tooltip": {
+          "mode": "single",
+          "sort": "none"
+        }
+      },
+      "targets": [
+        {
+          "editorMode": "code",
+          "expr": "sum by (topic, group) (kafka_consumergroup_lag{resource_id=~\"$cluster\"})",
+          "legendFormat": "{{topic}} / {{group}}",
+          "range": true,
+          "refId": "A"
+        }
+      ],
+      "title": "Consumer lag by topic",
+      "type": "timeseries"
     }
   ],
   "refresh": "1m",
