@@ -244,19 +244,7 @@ helm repo update
 
 Если namespace уже есть, `kubectl create namespace sentry` завершится ошибкой — это нормально. Либо опустите эту строку и полагайтесь только на `--create-namespace` у Helm.
 
-### 3.1. S3 filestore (Yandex Object Storage)
-
-По умолчанию чарт Sentry хранит артефакты (debug-символы, source maps, blob-ы загрузок) на локальной ФС (`/var/lib/sentry/files`) с PVC в режиме **RWO** (ReadWriteOnce). RWO-том доступен только одному поду (обычно `sentry-web`); taskworker-ы при сборке (`assemble`) debug-файлов не находят blob-ы → `FileNotFoundError` / `internal server error` в UI. S3-бэкенд доступен всем подам одновременно.
-
-Terraform-файл [s3.tf](s3.tf) создаёт сервисный аккаунт, статический ключ и бакет в Yandex Object Storage:
-
-```bash
-terraform apply
-```
-
-После apply файл `values_sentry.yaml` генерируется автоматически из шаблона [values_sentry.yaml.tpl](values_sentry.yaml.tpl) через Terraform (см. [templatefile.tf](templatefile.tf)) — ключи S3 подставляются из ресурсов Terraform, ручная подстановка не нужна.
-
-### 3.2. KEDA (автоскейлинг по Kafka lag)
+### 3.1. KEDA (автоскейлинг по Kafka lag)
 
 Для автоскейлинга воркеров Sentry по глубине Kafka-очередей установите [KEDA](https://keda.sh/) в отдельный namespace.
 
@@ -278,6 +266,18 @@ kubectl get crd | rg "keda.sh"
 ```
 
 После установки можно добавлять `ScaledObject` для нужных deployment/statefulset (например, ingest-consumer-ов), с триггером Kafka lag.
+
+### 3.2. S3 filestore (Yandex Object Storage)
+
+По умолчанию чарт Sentry хранит артефакты (debug-символы, source maps, blob-ы загрузок) на локальной ФС (`/var/lib/sentry/files`) с PVC в режиме **RWO** (ReadWriteOnce). RWO-том доступен только одному поду (обычно `sentry-web`); taskworker-ы при сборке (`assemble`) debug-файлов не находят blob-ы → `FileNotFoundError` / `internal server error` в UI. S3-бэкенд доступен всем подам одновременно.
+
+Terraform-файл [s3.tf](s3.tf) создаёт сервисный аккаунт, статический ключ и бакет в Yandex Object Storage:
+
+```bash
+terraform apply
+```
+
+После apply файл `values_sentry.yaml` генерируется автоматически из шаблона [values_sentry.yaml.tpl](values_sentry.yaml.tpl) через Terraform (см. [templatefile.tf](templatefile.tf)) — ключи S3 подставляются из ресурсов Terraform, ручная подстановка не нужна.
 
 ### 4. Установка Sentry
 
@@ -544,7 +544,7 @@ export SENTRY_PROJECT="native"
 bash examples/sentry-native-debug-sample/upload-releases.sh
 ```
 
-Если получили `internal server error` при загрузке debug-файлов, а в логах taskworker `FileNotFoundError: ... /var/lib/sentry/files/...` — filestore в режиме `filesystem` (PVC RWO) доступен только web-поду. Переключите на S3-бэкенд (Yandex Object Storage), см. **§3.1**.
+Если получили `internal server error` при загрузке debug-файлов, а в логах taskworker `FileNotFoundError: ... /var/lib/sentry/files/...` — filestore в режиме `filesystem` (PVC RWO) доступен только web-поду. Переключите на S3-бэкенд (Yandex Object Storage), см. **§3.2**.
 
 Для нативного примера: после успешного выполнения файлы видны в **Project Settings → Debug Information Files**; имена релизов — в разделе **Releases**. Нативные DIF в Sentry сопоставляются с событием по **debug id** (build-id), а не по имени релиза; подробности — в комментариях в начале скрипта.
 
