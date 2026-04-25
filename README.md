@@ -375,6 +375,7 @@ kubectl apply -f k8s/sentry-prometheus-exporter.yaml
 1. Создайте API key сервисного аккаунта с ролью `monitoring.viewer` на нужную папку в Yandex Cloud.
 2. Создайте Kubernetes Secret в namespace `vmks`:
 
+```bash
 kubectl -n vmks create secret generic yc-monitoring-api-key \
   --from-literal=bearer="$MONITORING_API_KEY"
 
