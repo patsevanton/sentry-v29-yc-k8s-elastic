@@ -6,6 +6,11 @@
       "sourceType": "github",
       "computedHash": "0a8ab09d4660648b4f2e7e265486f68afaddd473a5dd0fe1da86bbdcac99857f"
     },
+    "kafka-development": {
+      "source": "mindrally/skills",
+      "sourceType": "github",
+      "computedHash": "6ec77b8b4ac8624083b5f63e14cbaacdc682118ea0c61390b57bcaba159cfa69"
+    },
     "pod-crash-debug": {
       "source": "scitix/siclaw",
       "sourceType": "github",
