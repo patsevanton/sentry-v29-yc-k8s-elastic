@@ -15,6 +15,11 @@
       "source": "getsentry/sentry",
       "sourceType": "github",
       "computedHash": "751619720c2b34d4e90bf0ff8f5ce58c1c8863e0d759aafa0157b1d38c7901c4"
+    },
+    "yandex-cloud-cli": {
+      "source": "elsvv/yandex-cloud-cli-skill",
+      "sourceType": "github",
+      "computedHash": "a7bef796fe647877955bc98c82edadbd446d6f0cbe426708f7ef9e62e33cf8fa"
     }
   }
 }
