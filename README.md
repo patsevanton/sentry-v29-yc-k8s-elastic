@@ -1,8 +1,8 @@
-# Развёртывание Sentry v30.1.0 в Yandex Cloud на Kubernetes
+# Развёртывание Sentry v30.3.0 в Yandex Cloud на Kubernetes
 
 ## Цели статьи
 
-Статья описывает процесс развёртывания Sentry v30.1.0 в Yandex Cloud на кластере Kubernetes. Будет развёрнуто:
+Статья описывает процесс развёртывания Sentry v30.3.0 в Yandex Cloud на кластере Kubernetes. Будет развёрнуто:
 
 - Инфраструктура через Terraform (K8S, ClickHouse, Kafka, PostgreSQL, Object Storage, VPC).
 - Elasticsearch 9.x через ECK Operator для nodestore.
@@ -274,7 +274,7 @@ filestore:
 Установка с `values_sentry.yaml` (генерируется из [values_sentry.yaml.tpl](https://github.com/patsevanton/sentry-v29-yc-k8s-elastic/blob/master/values_sentry.yaml.tpl) через `terraform apply`): в файле уже заданы nodestore в Elasticsearch (`images.sentry`, `config.sentryConfPy`) и параметры Managed ClickHouse из Terraform outputs.
 
 ```bash
-helm upgrade --install sentry sentry/sentry --version 30.1.0 -n sentry \
+helm upgrade --install sentry sentry/sentry --version 30.3.0 -n sentry \
   -f values_sentry.yaml --timeout=3600s --create-namespace
 ```
 

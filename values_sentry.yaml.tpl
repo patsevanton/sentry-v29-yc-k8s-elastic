@@ -153,9 +153,6 @@ pgbouncer:
       memory: 1Gi
 
 sentry:
-  # Taskbroker does not inherit externalKafka.sasl/security automatically in this chart.
-  # Explicit env vars are required for managed Kafka with SASL, otherwise taskbroker pods
-  # connect as plaintext and fail with BrokerTransportFailure / SASL auth errors.
   taskBroker:
     resources:
       requests:
@@ -164,27 +161,6 @@ sentry:
       limits:
         cpu: 500m
         memory: 1Gi
-    env:
-      - name: TASKBROKER_KAFKA_SECURITY_PROTOCOL
-        value: "${external_kafka.security.protocol}"
-      - name: TASKBROKER_KAFKA_SASL_MECHANISM
-        value: "${external_kafka.sasl.mechanism}"
-      - name: TASKBROKER_KAFKA_SASL_USERNAME
-        value: "${external_kafka.sasl.username}"
-      - name: TASKBROKER_KAFKA_SASL_PASSWORD
-        value: "${external_kafka.sasl.password}"
-      - name: TASKBROKER_KAFKA_DEADLETTER_CLUSTER
-        value: "${join(",", [for broker in external_kafka.cluster : "${broker.host}:${broker.port}"])}"
-      - name: TASKBROKER_KAFKA_DEADLETTER_TOPIC
-        value: "taskworker-dlq"
-      - name: TASKBROKER_KAFKA_DEADLETTER_SECURITY_PROTOCOL
-        value: "${external_kafka.security.protocol}"
-      - name: TASKBROKER_KAFKA_DEADLETTER_SASL_MECHANISM
-        value: "${external_kafka.sasl.mechanism}"
-      - name: TASKBROKER_KAFKA_DEADLETTER_SASL_USERNAME
-        value: "${external_kafka.sasl.username}"
-      - name: TASKBROKER_KAFKA_DEADLETTER_SASL_PASSWORD
-        value: "${external_kafka.sasl.password}"
   web:
     resources:
       requests:
