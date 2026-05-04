@@ -1,4 +1,4 @@
-# Sentry v30.3.0 в Yandex Cloud на Kubernetes
+# Sentry v30.4.0 в Yandex Cloud на Kubernetes
 
 > **Контекстный уровень: Level 1 (Project Details).**
 > Перед любым изменением кода или инфраструктуры используй эту карту для навигации.
@@ -8,7 +8,7 @@
 
 | Компонент | Технология | Где управляется | Namespace |
 |-----------|-----------|-----------------|-----------|
-| Sentry App | Helm chart `sentry/sentry` v30.3.0 | `values_sentry.yaml.tpl`, `templatefile.tf` | `sentry` |
+| Sentry App | Helm chart `sentry/sentry` v30.4.0 | `values_sentry.yaml.tpl`, `templatefile.tf` | `sentry` |
 | PostgreSQL | Встроенный в Helm Sentry | `values_sentry.yaml.tpl` | `sentry` |
 | ClickHouse | Yandex Managed ClickHouse | Terraform (*.tf) | — (внешний) |
 | Kafka | Yandex Managed Kafka | Terraform (*.tf) | — (внешний) |
@@ -23,7 +23,7 @@
 
 - **Infrastructure as Code**: Terraform (Yandex Cloud provider)
 - **Orchestration**: Kubernetes (Yandex Managed Kubernetes)
-- **Application**: Sentry v30.3.0 через Helm-чарт `sentry/sentry`
+- **Application**: Sentry v30.4.0 через Helm-чарт `sentry/sentry`
 - **Database**: PostgreSQL (через Helm чарт Sentry)
 - **Analytics DB**: ClickHouse (Yandex Managed ClickHouse)
 - **Message Broker**: Kafka (Yandex Managed Kafka)
@@ -56,7 +56,7 @@
 - `terraform apply` — применение инфраструктуры
 - `terraform output -raw ingress_public_ip` — получить внешний IP ingress
 - `terraform output -raw monitoring_api_key` — получить API-ключ мониторинга
-- `helm upgrade --install sentry sentry/sentry --version 30.3.0 -n sentry -f values_sentry.yaml --timeout=3600s --create-namespace` — установка/обновление Sentry
+- `helm upgrade --install sentry sentry/sentry --version 30.4.0 -n sentry -f values_sentry.yaml --timeout=3600s --create-namespace` — установка/обновление Sentry
 - `helm upgrade --install vmks vm/victoria-metrics-k8s-stack --version 0.72.6 -n vmks -f vmks-values.yaml --wait --timeout=15m` — установка VictoriaMetrics
 - `helm upgrade --install keda kedacore/keda --version 2.16.1 -n keda --wait --timeout=10m` — установка KEDA
 - `kubectl -n sentry get pods` — проверка подов Sentry
