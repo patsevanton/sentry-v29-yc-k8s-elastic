@@ -5,16 +5,14 @@ metadata:
   namespace: clickhouse
 spec:
   configuration:
+    users:
+      default/networks/ip:
+        - "0.0.0.0/0"
     clusters:
       - name: single-node
         layout:
           shardsCount: 1
           replicasCount: 1
-    databases:
-      - name: sentry
-    users:
-      default/networks/ip:
-        - "0.0.0.0/0"
   templates:
     podTemplates:
       - name: clickhouse-single-node
