@@ -20,6 +20,18 @@ spec:
           containers:
             - name: clickhouse
               image: altinity/clickhouse-server:25.3.6.10034.altinitystable
+              lifecycle:
+                postStart:
+                  exec:
+                    command:
+                      - /bin/bash
+                      - -c
+                      - |
+                        for i in $(seq 1 30); do
+                          clickhouse-client -q "CREATE DATABASE IF NOT EXISTS sentry" && exit 0
+                          sleep 2
+                        done
+                        exit 1
   defaults:
     templates:
       podTemplate: clickhouse-single-node

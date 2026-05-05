@@ -15,5 +15,5 @@ spec:
       app: clickhouse-operator
   endpoints:
     - port: http-metrics
-      scrapeInterval: 30s
+      scrape_interval: 30s
       scrapeTimeout: 25s
