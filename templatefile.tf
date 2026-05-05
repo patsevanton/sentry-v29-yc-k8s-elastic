@@ -51,8 +51,6 @@ locals {
     ingress_hostname      = "sentry.apatsev.org.ru"
     ingress_class_name    = "nginx"
 
-    elasticsearch_url = "http://sentry-nodestore-es-http.elasticsearch.svc.cluster.local:9200"
-
     filestore = {
       s3 = {
         accessKey  = yandex_iam_service_account_static_access_key.sa_s3_sentry_key.access_key

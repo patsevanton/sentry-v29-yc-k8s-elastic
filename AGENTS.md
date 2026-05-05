@@ -12,7 +12,7 @@
 | PostgreSQL | Встроенный в Helm Sentry | `values_sentry.yaml.tpl` | `sentry` |
 | ClickHouse | Altinity clickhouse-operator (1 shard × 1 replica) | `k8s/clickhouse/` | `clickhouse` |
 | Kafka | Yandex Managed Kafka | Terraform (*.tf) | — (внешний) |
-| Elasticsearch 9.x | ECK Operator | `k8s/eck/` (манифесты) | `sentry` |
+| Elasticsearch 9.x | ECK Operator | `backup/elasticsearch.yaml` (не используется) | — |
 | Object Storage (S3) | Yandex Object Storage | Terraform (*.tf) | — (внешний) |
 | Autoscaling | KEDA v2.16.1 | Helm `kedacore/keda` | `keda` |
 | Monitoring | VictoriaMetrics K8s Stack v0.72.6 | `vmks-values.yaml`, `k8s/` | `vmks` |
@@ -27,7 +27,7 @@
 - **Database**: PostgreSQL (через Helm чарт Sentry)
 - **Analytics DB**: ClickHouse (Altinity clickhouse-operator, k8s, namespace `clickhouse`)
 - **Message Broker**: Kafka (Yandex Managed Kafka)
-- **Nodestore**: Elasticsearch 9.x через ECK Operator
+- **Nodestore**: Sentry default (Bigtable/Redis)
 - **Object Storage**: S3 (Yandex Object Storage) для артефактов
 - **Autoscaling**: KEDA (по Kafka lag)
 - **Monitoring**: VictoriaMetrics K8s Stack (VMSingle, VMAgent, Grafana)
@@ -43,7 +43,7 @@
 | `vmks-values.yaml` | Values для VictoriaMetrics K8s Stack | При изменении мониторинга |
 | `ip-dns.tf` | DNS-записи и IP ingress | При изменении сетевой доступности |
 | `*.tf` (остальные) | Terraform-ресурсы (VPC, K8S, MDB, S3) | При изменении инфраструктуры |
-| `k8s/` | Kubernetes-манифесты (мониторинг, DNS, exporters, ECK) | При изменении объектов вне Helm |
+| `k8s/` | Kubernetes-манифесты (мониторинг, DNS, exporters) | При изменении объектов вне Helm |
 | `k8s/clickhouse/` | ClickHouseInstallation CRD для clickhouse-operator | При изменении конфигурации ClickHouse |
 | `dashboard/` | Дашборды Grafana (`sentry-issues-events-overview.json`) | При обновлении визуализаций; импортируется в Grafana после установки VMKS |
 | `demo/` | Демо-клиенты (Python, Node.js) | При изменении примеров интеграции |
@@ -63,10 +63,10 @@
 - `kubectl -n sentry get pods` — проверка подов Sentry
 - `kubectl -n sentry get jobs` — проверка Job'ов Sentry
 - `kubectl -n sentry logs deployment/sentry-web --tail=20` — логи web
-- `kubectl -n sentry exec -it deploy/sentry-web -- sentry upgrade --with-nodestore` — инициализация nodestore
+- `kubectl -n sentry exec -it deploy/sentry-web -- sentry upgrade` — инициализация/миграции Sentry
 - `kubectl -n clickhouse get clickhouseinstallation` — проверка ClickHouse кластера
 - `kubectl -n clickhouse get pods` — проверка подов ClickHouse
-- `kubectl rollout restart deployment -n clickhouse-operator` — **обязательно** после применения/изменения `ClickHouseOperatorConfiguration` (оператор не подхватывает конфигурацию на лету, см. https://github.com/Altinity/clickhouse-operator/issues/1930)
+
 
 ## CRITICAL RULES — ОБЯЗАТЕЛЬНО
 
@@ -115,14 +115,13 @@
 
 1. Terraform apply (VPC, K8S, Kafka, S3, DNS)
 2. ClickHouse Operator + ClickHouseInstallation CRD
-3. ECK Operator + Elasticsearch 9.x
-4. KEDA
-5. Helm-репозиторий Sentry + namespace
-6. `helm upgrade --install sentry` (с values из Terraform)
-7. VictoriaMetrics K8s Stack
-8. Мониторинг (Prometheus exporter, VMServiceScrape)
-9. Импорт дашборда `dashboard/sentry-issues-events-overview.json` в Grafana
-10. Демо-клиенты
+3. KEDA
+4. Helm-репозиторий Sentry + namespace
+5. `helm upgrade --install sentry` (с values из Terraform)
+6. VictoriaMetrics K8s Stack
+7. Мониторинг (Prometheus exporter, VMServiceScrape)
+8. Импорт дашборда `dashboard/sentry-issues-events-overview.json` в Grafana
+9. Демо-клиенты
 
 ## References / Полезные ссылки
 

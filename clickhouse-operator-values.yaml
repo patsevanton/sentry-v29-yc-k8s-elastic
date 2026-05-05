@@ -3,4 +3,4 @@ configs:
     config.yaml:
       watch:
         namespaces:
-          - sentry
+          - clickhouse

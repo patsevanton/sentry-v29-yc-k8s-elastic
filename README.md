@@ -6,7 +6,7 @@
 
 - Инфраструктура через Terraform (K8S, Kafka, PostgreSQL, Object Storage, VPC).
 - ClickHouse через [Altinity clickhouse-operator](https://github.com/Altinity/clickhouse-operator) в Kubernetes (кластер 1 shard × 1 replica).
-- Elasticsearch 9.x через ECK Operator для nodestore.
+- ~~Elasticsearch 9.x через ECK Operator для nodestore~~ (перенесено в `backup/`, не используется — nodestore настроен на стандартный бэкенд Sentry).
 - Sentry в Kubernetes через Helm-чарт.
 - S3 filestore (Yandex Object Storage) для артефактов Sentry (debug-символы, source maps).
 - KEDA — автоскейлинг воркеров Sentry по накоплению сообщений в Kafka-очередях.
@@ -75,12 +75,6 @@ kubectl -n clickhouse-operator get pods
 kubectl get crd | grep clickhouse
 ```
 
-> **⚠ Важно:** оператор **не подхватывает** изменения `ClickHouseOperatorConfiguration` на лету (см. [Altinity/clickhouse-operator#1930](https://github.com/Altinity/clickhouse-operator/issues/1930)). После применения или изменения `ClickHouseOperatorConfiguration` **обязательно** перезапустите оператор:
->
-> ```bash
-> kubectl rollout restart deployment -n clickhouse-operator
-> ```
-
 **0.2. Кластер ClickHouse**
 
 Манифест CRD генерируется Terraform из шаблона [k8s/clickhouse/clickhouse-installation.yaml.tpl](https://github.com/patsevanton/sentry-v29-yc-k8s-elastic/blob/master/k8s/clickhouse/clickhouse-installation.yaml.tpl) (см. [clickhouse.tf](https://github.com/patsevanton/sentry-v29-yc-k8s-elastic/blob/master/clickhouse.tf)). После `terraform apply` файл `k8s/clickhouse/clickhouse-installation.yaml` готов к применению.
@@ -135,9 +129,14 @@ kubectl run -it --rm dns-test --image=busybox:1.36 --restart=Never -- nslookup s
 # ожидается IP из: terraform output -raw ingress_public_ip
 ```
 
-### 2. Elasticsearch (nodestore) и оператор ECK
+### 2. ~~Elasticsearch (nodestore) и оператор ECK~~ (не используется)
 
-Nodestore хранит «сырые» узлы событий; здесь используется [sentry-nodestore-elastic](https://pypi.org/project/sentry-nodestore-elastic/) и кластер **Elasticsearch 9.x** через [ECK](https://www.elastic.co/guide/en/cloud-on-k8s/current/index.html). Чарт Sentry не ставит `sentry-nodestore-elastic` сам, поэтому нужен **кастомный образ** на базе `ghcr.io/getsentry/sentry` ([реестр](https://github.com/getsentry/sentry/pkgs/container/sentry) — см. [Dockerfile.sentry-nodestore](https://github.com/patsevanton/sentry-v29-yc-k8s-elastic/blob/master/Dockerfile.sentry-nodestore). На PyPI у пакета ограничение `elasticsearch<9` (Python-клиент); для кластера **9.x** клиент **9.x** в образе ставится отдельно (комментарии в `Dockerfile.sentry-nodestore`).
+> **Статус:** компоненты перенесены в `backup/`. Nodestore работает на стандартном бэкенде Sentry (Bigtable/Redis). Все файлы манифестов сохранены в `backup/elasticsearch.yaml` и `backup/elasticsearch-sections/` для возможного восстановления.
+
+<details>
+<summary>Историческая инструкция по ECK и Elasticsearch (кликните для раскрытия)</summary>
+
+Nodestore хранит «сырые» узлы событий; здесь используется [sentry-nodestore-elastic](https://pypi.org/project/sentry-nodestore-elastic/) и кластер **Elasticsearch 9.x** через [ECK](https://www.elastic.co/guide/en/cloud-on-k8s/current/index.html). Чарт Sentry не ставит `sentry-nodestore-elastic` сам, поэтому нужен **кастомный образ** на базе `ghcr.io/getsentry/sentry` ([реестр](https://github.com/getsentry/sentry/pkgs/container/sentry) — см. `Dockerfile.sentry-nodestore`. На PyPI у пакета ограничение `elasticsearch<9` (Python-клиент); для кластера **9.x** клиент **9.x** в образе ставится отдельно (комментарии в `Dockerfile.sentry-nodestore`).
 
 **2.1. Оператор Elasticsearch (ECK)**
 
@@ -156,11 +155,11 @@ rm -rf cloud-on-k8s
 
 **2.2. Кластер Elasticsearch 9.x**
 
-Манифест кластера — [elasticsearch.yaml](https://github.com/patsevanton/sentry-v29-yc-k8s-elastic/blob/master/elasticsearch.yaml).
+Манифест кластера — `backup/elasticsearch.yaml`.
 
 ```bash
 kubectl create namespace elasticsearch
-kubectl apply -f elasticsearch.yaml
+kubectl apply -f backup/elasticsearch.yaml
 ```
 
 Проверка готовности:
@@ -176,62 +175,7 @@ ECK создаёт HTTP-сервис `**<имя-ресурса>-es-http**`. Дл
 
 В манифесте отключены TLS на HTTP и встроенная security Elasticsearch: это упрощает минимальный сценарий — nodestore в Sentry подключается по обычному `http://` без выдачи сертификатов, доверия к CA и без логина и пароля в `sentryConfPy`; трафик к API Elasticsearch остаётся внутри сети кластера.
 
-**2.4. Образ Sentry с nodestore**
-
-В этом репозитории образ **уже собран** и публикуется в GHCR; для установки по примеру из README достаточно указать его в Helm values — см. [values_sentry.yaml.tpl](https://github.com/patsevanton/sentry-v29-yc-k8s-elastic/blob/master/values_sentry.yaml.tpl) (`images.sentry.repository` и `images.sentry.tag`). Файл `values_sentry.yaml` генерируется автоматически из шаблона через Terraform (см. [templatefile.tf](https://github.com/patsevanton/sentry-v29-yc-k8s-elastic/blob/master/templatefile.tf)).
-
-Если вы **сами** собираете образ (другой реестр, свои правки в `Dockerfile.sentry-nodestore` или обновление под новый релиз чарта), делайте так:
-
-```bash
-docker build -f Dockerfile.sentry-nodestore -t <registry>/<имя>:<тег> .
-docker push <registry>/<имя>:<тег>
-```
-
-Тег образа Sentry должен соответствовать версии приложения в чарте (см. **2.6**). В `values` при установке:
-
-```yaml
-images:
-  sentry:
-    repository: <registry>/<имя>
-    tag: "<тег>"
-```
-
-**2.5. Интеграция nodestore в Sentry**
-
-В `config.sentryConfPy` в [values_sentry.yaml.tpl](https://github.com/patsevanton/sentry-v29-yc-k8s-elastic/blob/master/values_sentry.yaml.tpl) (или в своём values поверх него) задайте клиент и приложение Django, например для HTTP без TLS (как в манифесте ECK выше). Готовый пример — тот же файл:
-
-```python
-# Не импортируйте sentry.conf.server здесь: фрагмент дописывается в конец sentry.conf.py
-# чарта; повторный import * обнуляет SENTRY_CACHE (ошибка cache.backend).
-from elasticsearch import Elasticsearch
-
-es = Elasticsearch(
-    ["http://sentry-nodestore-es-http.elasticsearch.svc.cluster.local:9200"],
-    request_timeout=60,
-    max_retries=3,
-    retry_on_timeout=True,
-)
-
-SENTRY_NODESTORE = "sentry_nodestore_elastic.ElasticNodeStorage"
-SENTRY_NODESTORE_OPTIONS = {
-    "es": es,
-    "refresh": False,
-}
-
-SENTRY_AIR_GAP = True
-
-INSTALLED_APPS = list(INSTALLED_APPS)
-INSTALLED_APPS.append("sentry_nodestore_elastic")
-INSTALLED_APPS = tuple(INSTALLED_APPS)
-```
-
-Установка или обновление релиза с nodestore — один values-файл с образом и `config.sentryConfPy` (`values_sentry.yaml`, генерируется из [values_sentry.yaml.tpl](https://github.com/patsevanton/sentry-v29-yc-k8s-elastic/blob/master/values_sentry.yaml.tpl)). Саму команду `helm upgrade` и инициализацию nodestore выполняйте один раз после **§0** (ClickHouse) и **§3** (репозиторий Helm) — см. **§4**.
-
-**2.6. TLS и версии**
-
-- Для HTTPS и аутентификации настройте Elasticsearch по [документации Elastic](https://www.elastic.co/guide/en/elasticsearch/reference/current/configuring-security.html) и используйте `basic_auth` / `ssl_assert_fingerprint` в клиенте Python — см. [PyPI sentry-nodestore-elastic](https://pypi.org/project/sentry-nodestore-elastic/).
-- Версия образа Sentry должна совпадать с `appVersion` чарта Sentry (`helm show chart sentry/sentry --version <ver>`).
-- Кластер **9.x** и образ с **elasticsearch-py 9.x** согласованы с [elasticsearch.yaml](https://github.com/patsevanton/sentry-v29-yc-k8s-elastic/blob/master/elasticsearch.yaml) и `Dockerfile.sentry-nodestore`.
+</details>
 
 ### 3. KEDA (автоскейлинг по Kafka lag)
 
@@ -281,9 +225,9 @@ filestore:
 
 ### 4. Установка Sentry
 
-**Порядок зависимостей.** Чарт поднимает PostgreSQL, Redis и Kafka в namespace `sentry`, а **ClickHouse работает в k8s через clickhouse-operator** (namespace `clickhouse`, `externalClickhouse` в [values_sentry.yaml.tpl](https://github.com/patsevanton/sentry-v29-yc-k8s-elastic/blob/master/values_sentry.yaml.tpl)). Сначала выполните **§0** (ClickHouse Operator + CRD), **§2.1–2.2** (Elasticsearch), **§3** (репозиторий Helm), затем команду ниже.
+**Порядок зависимостей.** Чарт поднимает PostgreSQL, Redis и Kafka в namespace `sentry`, а **ClickHouse работает в k8s через clickhouse-operator** (namespace `clickhouse`, `externalClickhouse` в [values_sentry.yaml.tpl](https://github.com/patsevanton/sentry-v29-yc-k8s-elastic/blob/master/values_sentry.yaml.tpl)). Сначала выполните **§0** (ClickHouse Operator + CRD), **§3** (репозиторий Helm), затем команду ниже.
 
-Установка с `values_sentry.yaml` (генерируется из [values_sentry.yaml.tpl](https://github.com/patsevanton/sentry-v29-yc-k8s-elastic/blob/master/values_sentry.yaml.tpl) через `terraform apply`): в файле уже заданы nodestore в Elasticsearch (`images.sentry`, `config.sentryConfPy`) и параметры ClickHouse из k8s-сервиса.
+Установка с `values_sentry.yaml` (генерируется из [values_sentry.yaml.tpl](https://github.com/patsevanton/sentry-v29-yc-k8s-elastic/blob/master/values_sentry.yaml.tpl) через `terraform apply`): в файле заданы параметры ClickHouse из k8s-сервиса.
 
 ```bash
 helm upgrade --install sentry sentry/sentry --version 30.4.0 -n sentry \
@@ -301,17 +245,9 @@ helm upgrade --install sentry sentry/sentry --version 30.4.0 -n sentry \
 | sentry | sentry-kafka-provisioning | 1/1 | 10m | 26m |
 | sentry | sentry-db-check | 1/1 | 2m50s | 29m |
 
-После первого подключения к Elasticsearch инициализируйте шаблон индекса nodestore:
+После установки зайдите в Sentry в браузере: **[http://sentry.apatsev.org.ru](http://sentry.apatsev.org.ru)** (DNS и ingress — **§8**; если задали другой хост в Ingress/`values`, используйте его).
 
-```bash
-kubectl -n sentry exec -it deploy/sentry-web -- sentry upgrade --with-nodestore
-```
-
-Зайти в Sentry в браузере: **[http://sentry.apatsev.org.ru](http://sentry.apatsev.org.ru)** (DNS и ingress — **§8**; если задали другой хост в Ingress/`values`, используйте его).
-
-Пакет `sentry-nodestore-elastic` относится к **sentry-web** и воркерам на том же образе. **Relay** и **taskbroker** отдельно не настраиваются. Для **Snuba** при необходимости см. [Dockerfile.snuba-nodestore](https://github.com/patsevanton/sentry-v29-yc-k8s-elastic/blob/master/Dockerfile.snuba-nodestore).
-
-Свой образ и правки nodestore — по **§2.4–2.5** (в том же `values_sentry.yaml.tpl` или в дополнительном `-f` при необходимости). Репозиторий Helm — **§3** (выполните до первой установки).
+**Relay** и **taskbroker** отдельно не настраиваются.
 
 ### 5. Проверка подов и логов
 

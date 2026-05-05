@@ -17,26 +17,7 @@ system:
 
 config:
   sentryConfPy: |
-    from elasticsearch import Elasticsearch
-
-    es = Elasticsearch(
-        ["${elasticsearch_url}"],
-        request_timeout=60,
-        max_retries=3,
-        retry_on_timeout=True,
-    )
-
-    SENTRY_NODESTORE = "sentry_nodestore_elastic.ElasticNodeStorage"
-    SENTRY_NODESTORE_OPTIONS = {
-        "es": es,
-        "refresh": False,
-    }
-
     SENTRY_AIR_GAP = True
-
-    INSTALLED_APPS = list(INSTALLED_APPS)
-    INSTALLED_APPS.append("sentry_nodestore_elastic")
-    INSTALLED_APPS = tuple(INSTALLED_APPS)
 
 externalClickhouse:
   host: "${external_clickhouse.host}"
