@@ -88,6 +88,11 @@ relay:
     limits:
       cpu: 1000m
       memory: 4Gi
+  autoscaling:
+    enabled: true
+    minReplicas: 1
+    maxReplicas: 3
+    targetCPUUtilizationPercentage: 70
 
 vroom:
   resources:
@@ -142,6 +147,11 @@ sentry:
       limits:
         cpu: 1000m
         memory: 2Gi
+    autoscaling:
+      enabled: true
+      minReplicas: 1
+      maxReplicas: 3
+      targetCPUUtilizationPercentage: 70
   taskWorker:
     livenessProbe:
       initialDelaySeconds: 30
