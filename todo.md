@@ -5,6 +5,7 @@
 - [ ] Зафиксировано по исследованию Kafka: `externalKafka.provisioning.replicationFactor=3` в `values_sentry.yaml` влияет только на provisioning-job Helm; при включенном `auto_create_topics_enable=true` авто-созданные брокером топики могут оставаться с RF=1, поэтому в YC у них «Высокая доступность: отсутствует».
 
 - проверить CACHES в sentry.conf.py
+- Подробнее в https://github.com/getsentry/sentry/blob/master/self-hosted/sentry.conf.py#L113
 
 ## Идеи для снижения расходов и повышения производительности
 
