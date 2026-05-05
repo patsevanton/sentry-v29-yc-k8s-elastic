@@ -7,34 +7,19 @@ resource "local_file" "write_sentry_config" {
 locals {
   sentry_admin_password = "admin"
 
-  managed_clickhouse_user_password_effective  = var.managed_clickhouse_user_password != "" ? var.managed_clickhouse_user_password : random_password.managed_clickhouse_user_password.result
-  managed_clickhouse_admin_password_effective = var.managed_clickhouse_admin_password != "" ? var.managed_clickhouse_admin_password : one(random_password.managed_clickhouse_admin_password[*].result)
-  managed_kafka_user_password_effective       = var.managed_kafka_user_password != "" ? var.managed_kafka_user_password : random_password.managed_kafka_user_password.result
-
-  # Yandex MCH: Snuba ON CLUSTER must match system.clusters.cluster. In Yandex Cloud that name is
-  # typically "default", not yandex_mdb_clickhouse_cluster.<name> (API resource name).
-  external_clickhouse_cluster_name_effective = (
-    var.external_clickhouse_cluster_name != "" ?
-    var.external_clickhouse_cluster_name :
-    var.managed_clickhouse_clickhouse_cluster_name
-  )
-  external_clickhouse_distributed_cluster_name_effective = (
-    var.external_clickhouse_distributed_cluster_name != "" ?
-    var.external_clickhouse_distributed_cluster_name :
-    var.managed_clickhouse_clickhouse_cluster_name
-  )
+  managed_kafka_user_password_effective = var.managed_kafka_user_password != "" ? var.managed_kafka_user_password : random_password.managed_kafka_user_password.result
 
   external_clickhouse_effective = {
-    host                   = yandex_mdb_clickhouse_cluster.managed.host[0].fqdn
-    tcpPort                = var.external_clickhouse_tcp_port
-    httpPort               = var.external_clickhouse_http_port
-    username               = var.managed_clickhouse_user
-    password               = local.managed_clickhouse_user_password_effective
-    database               = var.managed_clickhouse_database
-    singleNode             = var.external_clickhouse_single_node
-    clusterName            = local.external_clickhouse_cluster_name_effective
-    distributedClusterName = local.external_clickhouse_distributed_cluster_name_effective
-    secure                 = true
+    host                   = "chi-sentry-clickhouse-sentry-clickhouse-0-0.clickhouse.svc.cluster.local"
+    tcpPort                = 9000
+    httpPort               = 8123
+    username               = "sentry"
+    password               = random_password.clickhouse_sentry_password.result
+    database               = "sentry"
+    singleNode             = true
+    clusterName            = "sentry-clickhouse"
+    distributedClusterName = "sentry-clickhouse"
+    secure                 = false
   }
 
   managed_kafka_broker_hosts = sort([for h in yandex_mdb_kafka_cluster.managed.host : h.name])
@@ -66,11 +51,6 @@ locals {
     ingress_hostname      = "sentry.apatsev.org.ru"
     ingress_class_name    = "nginx"
 
-    sentry_image_repository = "ghcr.io/patsevanton/sentry-v29-yc-k8s-elastic"
-    sentry_image_tag        = "sentry-1.25.0"
-    snuba_image_repository  = "ghcr.io/patsevanton/sentry-v29-yc-k8s-elastic"
-    snuba_image_tag         = "snuba-1.25.0"
-
     elasticsearch_url = "http://sentry-nodestore-es-http.elasticsearch.svc.cluster.local:9200"
 
     filestore = {
@@ -88,7 +68,5 @@ locals {
 
     external_clickhouse                  = local.external_clickhouse_effective
     sentry_hooks_active_deadline_seconds = var.sentry_hooks_active_deadline_seconds
-    enable_clickhouse_dns_search         = var.enable_clickhouse_dns_search
-    clickhouse_dns_search_suffix         = var.clickhouse_dns_search_suffix
   })
 }

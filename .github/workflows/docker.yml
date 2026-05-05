@@ -40,12 +40,6 @@ jobs:
       fail-fast: false
       matrix:
         include:
-          - image: sentry
-            context: .
-            dockerfile: Dockerfile.sentry-nodestore
-          - image: snuba
-            context: .
-            dockerfile: Dockerfile.snuba-nodestore
           - image: demo-node
             context: demo/node
             dockerfile: demo/node/Dockerfile
@@ -74,13 +68,3 @@ jobs:
             ghcr.io/${{ github.repository }}:${{ matrix.image }}-${{ needs.release.outputs.version }}
             ghcr.io/${{ github.repository }}:${{ matrix.image }}-latest
 
-      # Прежние теги без префикса (только sentry), как в однообразной сборке.
-      - name: Alias default tags (sentry)
-        if: matrix.image == 'sentry'
-        run: |
-          set -eux
-          SRC="ghcr.io/${{ github.repository }}:sentry-${{ needs.release.outputs.version }}"
-          docker buildx imagetools create \
-            --tag "ghcr.io/${{ github.repository }}:${{ needs.release.outputs.version }}" \
-            --tag "ghcr.io/${{ github.repository }}:latest" \
-            "$SRC"

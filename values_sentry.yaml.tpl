@@ -3,14 +3,6 @@ user:
   email: "${user_email}"
   password: "${sentry_admin_password}"
 
-images:
-  sentry:
-    repository: "${sentry_image_repository}"
-    tag: "${sentry_image_tag}"
-  snuba:
-    repository: "${snuba_image_repository}"
-    tag: "${snuba_image_tag}"
-
 route:
   main:
     enabled: false
@@ -600,16 +592,6 @@ snuba:
 
 hooks:
   activeDeadlineSeconds: ${sentry_hooks_active_deadline_seconds}
-
-%{ if enable_clickhouse_dns_search ~}
-dnsPolicy: ClusterFirst
-dnsConfig:
-  searches:
-    - sentry.svc.cluster.local
-    - svc.cluster.local
-    - cluster.local
-    - ${clickhouse_dns_search_suffix}
-%{ endif ~}
 
 filestore:
   backend: s3
