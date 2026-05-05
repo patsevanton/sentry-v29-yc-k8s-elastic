@@ -94,20 +94,12 @@ kubectl -n clickhouse get pods,svc
 **0.3. Endpoint для Sentry (Snuba)**
 
 Кластер доступен из namespace `sentry` по адресам:
-- **TCP**: `chi-sentry-clickhouse-sentry-clickhouse-0-0.clickhouse.svc.cluster.local:9000`
-- **HTTP**: `chi-sentry-clickhouse-sentry-clickhouse-0-0.clickhouse.svc.cluster.local:8123`
+- **TCP**: `chi-sentry-clickhouse-single-node-0-0.clickhouse.svc.cluster.local:9000`
+- **HTTP**: `chi-sentry-clickhouse-single-node-0-0.clickhouse.svc.cluster.local:8123`
 
-В `system.clusters` имя кластера — `sentry-clickhouse`, порт `9000`. Значения `clusterName` и `distributedClusterName` в `values_sentry.yaml` должны совпадать с этим именем.
+В `system.clusters` имя кластера — `single-node`, порт `9000`. Значения `clusterName` и `distributedClusterName` в `values_sentry.yaml` должны совпадать с этим именем.
 
-**0.4. Пароль пользователя**
-
-Terraform генерирует случайный пароль (`random_password.clickhouse_sentry_password`) и подставляет его в `values_sentry.yaml` через `templatefile.tf`. Получить пароль:
-
-```bash
-terraform output -raw clickhouse_sentry_password
-```
-
-Пользователь `sentry` создаётся автоматически при старте кластера (см. CRD). База данных `sentry` также создаётся автоматически.
+Пользователь `default` используется без пароля (`networks/ip: 0.0.0.0/0`). База данных `sentry` должна быть создана вручную после старта кластера.
 
 ### 1. NodeLocal DNSCache (опционально)
 

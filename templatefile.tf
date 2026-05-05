@@ -10,15 +10,15 @@ locals {
   managed_kafka_user_password_effective = var.managed_kafka_user_password != "" ? var.managed_kafka_user_password : random_password.managed_kafka_user_password.result
 
   external_clickhouse_effective = {
-    host                   = "chi-sentry-clickhouse-sentry-clickhouse-0-0.clickhouse.svc.cluster.local"
+    host                   = "chi-sentry-clickhouse-single-node-0-0.clickhouse.svc.cluster.local"
     tcpPort                = 9000
     httpPort               = 8123
-    username               = "sentry"
-    password               = random_password.clickhouse_sentry_password.result
+    username               = "default"
+    password               = ""
     database               = "sentry"
     singleNode             = true
-    clusterName            = "sentry-clickhouse"
-    distributedClusterName = "sentry-clickhouse"
+    clusterName            = "single-node"
+    distributedClusterName = "single-node"
     secure                 = false
   }
 
