@@ -75,6 +75,12 @@ kubectl -n clickhouse-operator get pods
 kubectl get crd | grep clickhouse
 ```
 
+> **⚠ Важно:** оператор **не подхватывает** изменения `ClickHouseOperatorConfiguration` на лету (см. [Altinity/clickhouse-operator#1930](https://github.com/Altinity/clickhouse-operator/issues/1930)). После применения или изменения `ClickHouseOperatorConfiguration` **обязательно** перезапустите оператор:
+>
+> ```bash
+> kubectl rollout restart deployment -n clickhouse-operator
+> ```
+
 **0.2. Кластер ClickHouse**
 
 Манифест CRD генерируется Terraform из шаблона [k8s/clickhouse/clickhouse-installation.yaml.tpl](https://github.com/patsevanton/sentry-v29-yc-k8s-elastic/blob/master/k8s/clickhouse/clickhouse-installation.yaml.tpl) (см. [clickhouse.tf](https://github.com/patsevanton/sentry-v29-yc-k8s-elastic/blob/master/clickhouse.tf)). После `terraform apply` файл `k8s/clickhouse/clickhouse-installation.yaml` готов к применению.

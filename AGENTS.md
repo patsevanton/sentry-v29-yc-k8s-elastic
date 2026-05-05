@@ -66,6 +66,7 @@
 - `kubectl -n sentry exec -it deploy/sentry-web -- sentry upgrade --with-nodestore` — инициализация nodestore
 - `kubectl -n clickhouse get clickhouseinstallation` — проверка ClickHouse кластера
 - `kubectl -n clickhouse get pods` — проверка подов ClickHouse
+- `kubectl rollout restart deployment -n clickhouse-operator` — **обязательно** после применения/изменения `ClickHouseOperatorConfiguration` (оператор не подхватывает конфигурацию на лету, см. https://github.com/Altinity/clickhouse-operator/issues/1930)
 
 ## CRITICAL RULES — ОБЯЗАТЕЛЬНО
 
