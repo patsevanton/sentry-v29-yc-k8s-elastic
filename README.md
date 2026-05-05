@@ -55,7 +55,7 @@ configs:
     config.yaml:
       watch:
         namespaces:
-          - sentry
+          - clickhouse
 EOF
 
 helm repo add clickhouse-operator https://helm.altinity.com
