@@ -4,7 +4,8 @@
 
 Статья описывает процесс развёртывания Sentry v30.4.0 в Yandex Cloud на кластере Kubernetes. Будет развёрнуто:
 
-- Инфраструктура через Terraform (K8S, ClickHouse, Kafka, PostgreSQL, Object Storage, VPC).
+- Инфраструктура через Terraform (K8S, Kafka, PostgreSQL, Object Storage, VPC).
+- ClickHouse через [Altinity clickhouse-operator](https://github.com/Altinity/clickhouse-operator) в Kubernetes (кластер 1 shard × 1 replica).
 - Elasticsearch 9.x через ECK Operator для nodestore.
 - Sentry в Kubernetes через Helm-чарт.
 - S3 filestore (Yandex Object Storage) для артефактов Sentry (debug-символы, source maps).
@@ -34,46 +35,69 @@ terraform init
 terraform apply
 ```
 
-### 0. Managed ClickHouse (Yandex Cloud)
+### 0. ClickHouse (Altinity clickhouse-operator)
 
-ClickHouse используется только как внешний managed-кластер в Yandex Cloud. Terraform создаёт Managed ClickHouse и автоматически подставляет endpoint/креды в `values_sentry.yaml` (через `values_sentry.yaml.tpl`):
-- кластер: `yandex_mdb_clickhouse_cluster.managed`;
-- база: `clickhousedbops_database.managed_sentry` (при SQL user management);
-- пользователь: `clickhousedbops_user.managed_sentry` или `yandex_mdb_clickhouse_user.managed_sentry` (в зависимости от режима SQL user management).
+ClickHouse для Sentry/Snuba развёрнут в Kubernetes через [Altinity clickhouse-operator](https://github.com/Altinity/clickhouse-operator). Кластер: **1 shard × 1 replica**, namespace `clickhouse`. Это заменяет Yandex Managed ClickHouse и решает проблему с TLS: `system.clusters` отдаёт порт **9000** (native TCP, без TLS), что позволяет Snuba работать без TLS-костылей.
 
-Пароль пользователя managed CH можно задать явно:
+**Преимущества перед Managed ClickHouse:**
+- `system.clusters` отдаёт порт 9000 (no TLS) — Snuba работает без `secure=true`;
+- DNS-хостнеймы резолвятся внутри кластера без `dnsConfig.searches`;
+- Полный контроль над версией ClickHouse, конфигурацией и ресурсами.
 
-```hcl
-managed_clickhouse_user_password = "<SECRET>"
-```
+**0.1. Установка clickhouse-operator**
 
-Если не задавать `managed_clickhouse_user_password`, Terraform сгенерирует случайный пароль автоматически.
-
-Перед `helm upgrade` проверьте DNS из pod (если в `system.clusters` есть short hostnames):
+Operator устанавливается вручную (паттерн аналогичен ECK, §2.1):
 
 ```bash
-kubectl -n sentry run -it --rm dns-test --image=busybox:1.36 --restart=Never -- nslookup <host_name_из_system.clusters>
+kubectl create namespace clickhouse-operator
+
+helm repo add altinity https://altinity.github.io/charts/
+helm repo update
+helm template clickhouse-operator altinity/clickhouse-operator \
+  -n clickhouse-operator \
+  | kubectl apply -f -
 ```
 
-Если short hostnames не резолвятся, включите в Terraform `enable_clickhouse_dns_search=true`.
+Проверка:
 
-**Важно про distributed + non-TLS (вывод из проверки `system.clusters`).**
-
-На текущем Yandex Managed ClickHouse в `system.clusters` для `clusterName=default` опубликован только порт `9440` (TLS):
-
-```
-┌─cluster─┬─host_name─────────────────────────────────┬─port─┬─shard_num─┬─replica_num─┐
-│ default │ rc1a-3s788r2f9setaa1o.mdb.yandexcloud.net │ 9440 │         1 │           1 │
-│ default │ rc1b-j5i5388j1nhdhuc5.mdb.yandexcloud.net │ 9440 │         1 │           2 │
-│ default │ rc1d-rbcg9hhifci2e797.mdb.yandexcloud.net │ 9440 │         1 │           3 │
-└─────────┴───────────────────────────────────────────┴──────┴───────────┴─────────────┘
+```bash
+kubectl -n clickhouse-operator get pods
+kubectl get crd | grep clickhouse
 ```
 
-Это означает:
-- при `external_clickhouse_single_node=false` Snuba использует `system.clusters` для distributed-операций;
-- комбинация `single_node=false` + `tcpPort=9000` + **NO TLS** с этим MCH не работает;
-- чтобы сохранить distributed (HA), нужен TLS/`9440`;
-- чтобы использовать NO TLS/`9000` в distributed-режиме, нужно использовать [ClickHouse Operator](https://github.com/Altinity/clickhouse-operator) в k8s, где `system.clusters` отдаёт порт `9000`.
+**0.2. Кластер ClickHouse**
+
+Манифест CRD генерируется Terraform из шаблона [k8s/clickhouse/clickhouse-installation.yaml.tpl](https://github.com/patsevanton/sentry-v29-yc-k8s-elastic/blob/master/k8s/clickhouse/clickhouse-installation.yaml.tpl) (см. [clickhouse.tf](https://github.com/patsevanton/sentry-v29-yc-k8s-elastic/blob/master/clickhouse.tf)). После `terraform apply` файл `k8s/clickhouse/clickhouse-installation.yaml` готов к применению.
+
+```bash
+kubectl create namespace clickhouse
+kubectl apply -f k8s/clickhouse/clickhouse-installation.yaml
+```
+
+Проверка готовности:
+
+```bash
+kubectl -n clickhouse get clickhouseinstallation sentry-clickhouse
+kubectl -n clickhouse get pods,svc
+```
+
+**0.3. Endpoint для Sentry (Snuba)**
+
+Кластер доступен из namespace `sentry` по адресам:
+- **TCP**: `chi-sentry-clickhouse-sentry-clickhouse-0-0.clickhouse.svc.cluster.local:9000`
+- **HTTP**: `chi-sentry-clickhouse-sentry-clickhouse-0-0.clickhouse.svc.cluster.local:8123`
+
+В `system.clusters` имя кластера — `sentry-clickhouse`, порт `9000`. Значения `clusterName` и `distributedClusterName` в `values_sentry.yaml` должны совпадать с этим именем.
+
+**0.4. Пароль пользователя**
+
+Terraform генерирует случайный пароль (`random_password.clickhouse_sentry_password`) и подставляет его в `values_sentry.yaml` через `templatefile.tf`. Получить пароль:
+
+```bash
+terraform output -raw clickhouse_sentry_password
+```
+
+Пользователь `sentry` создаётся автоматически при старте кластера (см. CRD). База данных `sentry` также создаётся автоматически.
 
 ### 1. NodeLocal DNSCache (опционально)
 
@@ -143,26 +167,6 @@ ECK создаёт HTTP-сервис `**<имя-ресурса>-es-http**`. Дл
 `sentry-nodestore-es-http.elasticsearch.svc.cluster.local:9200`
 
 В манифесте отключены TLS на HTTP и встроенная security Elasticsearch: это упрощает минимальный сценарий — nodestore в Sentry подключается по обычному `http://` без выдачи сертификатов, доверия к CA и без логина и пароля в `sentryConfPy`; трафик к API Elasticsearch остаётся внутри сети кластера.
-
-**1.3. ILM: удаление старых данных (опционально)**
-
-Манифест [index-lifecycle-policy-delete.yaml](https://github.com/patsevanton/sentry-v29-yc-k8s-elastic/blob/master/index-lifecycle-policy-delete.yaml) задаёт политику ILM с фазой `delete` через ресурс `StackConfigPolicy` (ECK **3.3+**). Для [Elastic Stack configuration policies](https://www.elastic.co/guide/en/cloud-on-k8s/current/k8s-stack-config-policy.html) в ECK нужна лицензия **Enterprise** или **trial** ([лицензии в ECK](https://www.elastic.co/docs/deploy-manage/license/manage-your-license-in-eck)).
-
-После того как кластер из **§2.2** в статусе `Ready`:
-
-```bash
-kubectl apply -f index-lifecycle-policy-delete.yaml
-```
-
-Политика в `namespace: elasticsearch` без `resourceSelector` применяется ко всем кластерам Elasticsearch в этом namespace (в т.ч. к `sentry-nodestore`). Оператор создаёт в Elasticsearch именованную политику `index-lifecycle-policy-delete` (удаление через **20 дней** после `min_age`). Чтобы ретенция реально действовала на индексы nodestore, политику нужно **привязать** к ним (index template, `index.lifecycle.name` или `PUT` настроек индекса) — само наличие ILM в кластере не меняет существующие индексы без привязки.
-
-Проверка:
-
-```bash
-kubectl -n elasticsearch get stackconfigpolicy index-lifecycle-policy-delete
-# из пода в кластере, при необходимости:
-curl -s "http://sentry-nodestore-es-http.elasticsearch.svc.cluster.local:9200/_ilm/policy/index-lifecycle-policy-delete"
-```
 
 **2.4. Образ Sentry с nodestore**
 
@@ -269,9 +273,9 @@ filestore:
 
 ### 4. Установка Sentry
 
-**Порядок зависимостей.** Чарт поднимает PostgreSQL, Redis и Kafka в namespace `sentry`, а **ClickHouse задаётся снаружи** (`externalClickhouse` в [values_sentry.yaml.tpl](https://github.com/patsevanton/sentry-v29-yc-k8s-elastic/blob/master/values_sentry.yaml.tpl)). Сначала выполните **§2.1–2.2** (Elasticsearch), **§0** (Managed ClickHouse через Terraform), **§3** (репозиторий Helm), затем команду ниже.
+**Порядок зависимостей.** Чарт поднимает PostgreSQL, Redis и Kafka в namespace `sentry`, а **ClickHouse работает в k8s через clickhouse-operator** (namespace `clickhouse`, `externalClickhouse` в [values_sentry.yaml.tpl](https://github.com/patsevanton/sentry-v29-yc-k8s-elastic/blob/master/values_sentry.yaml.tpl)). Сначала выполните **§0** (ClickHouse Operator + CRD), **§2.1–2.2** (Elasticsearch), **§3** (репозиторий Helm), затем команду ниже.
 
-Установка с `values_sentry.yaml` (генерируется из [values_sentry.yaml.tpl](https://github.com/patsevanton/sentry-v29-yc-k8s-elastic/blob/master/values_sentry.yaml.tpl) через `terraform apply`): в файле уже заданы nodestore в Elasticsearch (`images.sentry`, `config.sentryConfPy`) и параметры Managed ClickHouse из Terraform outputs.
+Установка с `values_sentry.yaml` (генерируется из [values_sentry.yaml.tpl](https://github.com/patsevanton/sentry-v29-yc-k8s-elastic/blob/master/values_sentry.yaml.tpl) через `terraform apply`): в файле уже заданы nodestore в Elasticsearch (`images.sentry`, `config.sentryConfPy`) и параметры ClickHouse из k8s-сервиса.
 
 ```bash
 helm upgrade --install sentry sentry/sentry --version 30.4.0 -n sentry \
@@ -403,6 +407,22 @@ kubectl -n vmks get vmstaticscrape yc-managed-kafka
 ```
 
 5. Импортируйте дашборд [dashboard/yc-managed-kafka-overview.json](https://github.com/patsevanton/sentry-v29-yc-k8s-elastic/blob/master/dashboard/yc-managed-kafka-overview.json) в Grafana (`Dashboards -> New -> Import`) и выберите datasource Prometheus/VictoriaMetrics.
+
+### 7.2. Мониторинг ClickHouse Operator в Grafana
+
+После установки clickhouse-operator (**§0.1**) и VictoriaMetrics K8s Stack (**§6**) подключите scrape метрик operator'а.
+
+Operator expose-ит Prometheus-метрики на порту **8888**. Манифест [k8s/vmscrape-clickhouse-operator.yaml](https://github.com/patsevanton/sentry-v29-yc-k8s-elastic/blob/master/k8s/vmscrape-clickhouse-operator.yaml) создаёт `VMServiceScrape` в namespace `vmks` (где работает `VMAgent` из §6).
+
+```bash
+kubectl apply -f k8s/vmscrape-clickhouse-operator.yaml
+```
+
+Проверка:
+
+```bash
+kubectl -n vmks get vmscrape clickhouse-operator
+```
 
 ### 8. Доступ к Sentry
 

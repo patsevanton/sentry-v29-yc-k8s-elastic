@@ -68,132 +68,16 @@ variable "subnet_d_zone" {
   default     = "ru-central1-d"
 }
 
-variable "external_clickhouse_tcp_port" {
-  description = "ClickHouse native TCP over TLS, обычно 9440 во VPC"
-  type        = number
-  default     = 9440
-}
-
-variable "external_clickhouse_http_port" {
-  description = "ClickHouse HTTPS port, обычно 8443 во VPC"
-  type        = number
-  default     = 8443
-}
-
-variable "external_clickhouse_single_node" {
-  description = "Set true for single-node external ClickHouse, false for replicated/distributed"
-  type        = bool
-  default     = false
-}
-
-variable "managed_clickhouse_clickhouse_cluster_name" {
-  description = "ClickHouse logical cluster name as in system.clusters.cluster (Yandex MCH: typically \"default\"). Used for Snuba when external_clickhouse_cluster_name is empty."
-  type        = string
-  default     = "default"
-}
-
-variable "external_clickhouse_cluster_name" {
-  description = "Snuba clusterName; must match system.clusters.cluster. Leave empty to use managed_clickhouse_clickhouse_cluster_name (default \"default\" on Yandex MCH)."
-  type        = string
-  default     = ""
-}
-
-variable "external_clickhouse_distributed_cluster_name" {
-  description = "Snuba distributedClusterName; usually the same as clusterName. Leave empty to use managed_clickhouse_clickhouse_cluster_name."
-  type        = string
-  default     = ""
-}
-
 variable "sentry_hooks_active_deadline_seconds" {
   description = "Helm hooks activeDeadlineSeconds for long-running jobs (db-init/snuba-migrate)"
   type        = number
   default     = 1800
 }
 
-variable "enable_clickhouse_dns_search" {
-  description = "Add DNS search suffix when CH returns short hostnames in system.clusters"
-  type        = bool
-  default     = false
-}
-
-variable "clickhouse_dns_search_suffix" {
-  description = "DNS search suffix for ClickHouse short hostnames (for in-cluster CH usually clickhouse.svc.cluster.local)"
-  type        = string
-  default     = "clickhouse.svc.cluster.local"
-}
-
 variable "sentry_values_output_path" {
   description = "Path to generated values_sentry.yaml file used by Helm"
   type        = string
   default     = "values_sentry.yaml"
-}
-
-variable "managed_clickhouse_name" {
-  description = "Managed ClickHouse cluster name"
-  type        = string
-  default     = "sentry-clickhouse-managed"
-}
-
-variable "managed_clickhouse_version" {
-  description = "Managed ClickHouse version"
-  type        = string
-  default     = "25.3"
-}
-
-variable "managed_clickhouse_resource_preset_id" {
-  description = "Managed ClickHouse host resource preset"
-  type        = string
-  default     = "s2.micro"
-}
-
-variable "managed_clickhouse_disk_type_id" {
-  description = "Managed ClickHouse disk type"
-  type        = string
-  default     = "network-ssd"
-}
-
-variable "managed_clickhouse_disk_size" {
-  description = "Managed ClickHouse disk size in GiB"
-  type        = number
-  default     = 64
-}
-
-variable "managed_clickhouse_database" {
-  description = "Managed ClickHouse database for Sentry/Snuba"
-  type        = string
-  default     = "sentry"
-}
-
-variable "managed_clickhouse_user" {
-  description = "Managed ClickHouse user for Sentry/Snuba"
-  type        = string
-  default     = "sentry"
-}
-
-variable "managed_clickhouse_user_password" {
-  description = "Managed ClickHouse user password for Sentry/Snuba (if empty, Terraform generates random)"
-  type        = string
-  default     = ""
-  sensitive   = true
-}
-
-variable "managed_clickhouse_sql_user_management_enabled" {
-  description = "Enable SQL database and user management in Managed ClickHouse (sql_database_management + sql_user_management; needed for GRANT ... WORKLOAD and clickhousedbops; requires DNS/network to cluster FQDN)"
-  type        = bool
-  default     = true
-}
-
-variable "managed_clickhouse_admin_password" {
-  description = "Admin password for SQL user management in Managed ClickHouse (if empty, Terraform generates random)"
-  type        = string
-  default     = ""
-  sensitive   = true
-}
-
-variable "managed_clickhouse_grant_create_workload" {
-  description = "Grant CREATE/DROP WORKLOAD ON *.* to managed_clickhouse_user via clickhousedbops provider (needed by Snuba workload migrations)"
-  type        = bool
-  default     = true
 }
 
 variable "sentry_incluster_kafka_enabled" {

@@ -1,0 +1,19 @@
+# VMServiceScrape для clickhouse-operator metrics endpoint.
+# Operator exposes Prometheus metrics on port 8888 at /metrics.
+# Манифест размещается в namespace vmks (где работает VMAgent из VictoriaMetrics K8s Stack).
+apiVersion: operator.victoriametrics.com/v1beta1
+kind: VMServiceScrape
+metadata:
+  name: clickhouse-operator
+  namespace: vmks
+spec:
+  namespaceSelector:
+    matchNames:
+      - clickhouse-operator
+  selector:
+    matchLabels:
+      app: clickhouse-operator
+  endpoints:
+    - port: http-metrics
+      scrapeInterval: 30s
+      scrapeTimeout: 25s

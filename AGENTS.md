@@ -10,7 +10,7 @@
 |-----------|-----------|-----------------|-----------|
 | Sentry App | Helm chart `sentry/sentry` v30.4.0 | `values_sentry.yaml.tpl`, `templatefile.tf` | `sentry` |
 | PostgreSQL | Встроенный в Helm Sentry | `values_sentry.yaml.tpl` | `sentry` |
-| ClickHouse | Yandex Managed ClickHouse | Terraform (*.tf) | — (внешний) |
+| ClickHouse | Altinity clickhouse-operator (1 shard × 1 replica) | `k8s/clickhouse/` | `clickhouse` |
 | Kafka | Yandex Managed Kafka | Terraform (*.tf) | — (внешний) |
 | Elasticsearch 9.x | ECK Operator | `k8s/eck/` (манифесты) | `sentry` |
 | Object Storage (S3) | Yandex Object Storage | Terraform (*.tf) | — (внешний) |
@@ -25,7 +25,7 @@
 - **Orchestration**: Kubernetes (Yandex Managed Kubernetes)
 - **Application**: Sentry v30.4.0 через Helm-чарт `sentry/sentry`
 - **Database**: PostgreSQL (через Helm чарт Sentry)
-- **Analytics DB**: ClickHouse (Yandex Managed ClickHouse)
+- **Analytics DB**: ClickHouse (Altinity clickhouse-operator, k8s, namespace `clickhouse`)
 - **Message Broker**: Kafka (Yandex Managed Kafka)
 - **Nodestore**: Elasticsearch 9.x через ECK Operator
 - **Object Storage**: S3 (Yandex Object Storage) для артефактов
@@ -44,6 +44,7 @@
 | `ip-dns.tf` | DNS-записи и IP ingress | При изменении сетевой доступности |
 | `*.tf` (остальные) | Terraform-ресурсы (VPC, K8S, MDB, S3) | При изменении инфраструктуры |
 | `k8s/` | Kubernetes-манифесты (мониторинг, DNS, exporters, ECK) | При изменении объектов вне Helm |
+| `k8s/clickhouse/` | ClickHouseInstallation CRD для clickhouse-operator | При изменении конфигурации ClickHouse |
 | `dashboard/` | Дашборды Grafana (`sentry-issues-events-overview.json`) | При обновлении визуализаций; импортируется в Grafana после установки VMKS |
 | `demo/` | Демо-клиенты (Python, Node.js) | При изменении примеров интеграции |
 | `examples/` | Примеры интеграции (native C, source maps) | При добавлении примеров |
@@ -63,6 +64,8 @@
 - `kubectl -n sentry get jobs` — проверка Job'ов Sentry
 - `kubectl -n sentry logs deployment/sentry-web --tail=20` — логи web
 - `kubectl -n sentry exec -it deploy/sentry-web -- sentry upgrade --with-nodestore` — инициализация nodestore
+- `kubectl -n clickhouse get clickhouseinstallation` — проверка ClickHouse кластера
+- `kubectl -n clickhouse get pods` — проверка подов ClickHouse
 
 ## CRITICAL RULES — ОБЯЗАТЕЛЬНО
 
@@ -75,7 +78,7 @@
 - Одна задача за раз. НЕ делать несколько изменений одновременно
 - Если не уверен — СПРОСИ, не угадывай
 - При изменении `values_sentry.yaml.tpl` помни: файл генерируется через `templatefile.tf` — проверяй шаблоны переменных
-- ClickHouse endpoint содержит только TLS-порт 9440 — проверяй совместимость при изменении настроек
+- ClickHouse работает в k8s через clickhouse-operator — проверяй CRD ClickHouseInstallation при изменениях
 
 ## Working Style / Стиль работы
 
@@ -109,18 +112,18 @@
 
 ## Порядок зависимостей при развёртывании
 
-1. Terraform apply (VPC, K8S, ClickHouse, Kafka, S3, DNS)
-2. ECK Operator + Elasticsearch 9.x
-3. KEDA
-4. Helm-репозиторий Sentry + namespace
-5. `helm upgrade --install sentry` (с values из Terraform)
-6. VictoriaMetrics K8s Stack
-7. Мониторинг (Prometheus exporter, VMServiceScrape)
-8. Импорт дашборда `dashboard/sentry-issues-events-overview.json` в Grafana
-9. Демо-клиенты
+1. Terraform apply (VPC, K8S, Kafka, S3, DNS)
+2. ClickHouse Operator + ClickHouseInstallation CRD
+3. ECK Operator + Elasticsearch 9.x
+4. KEDA
+5. Helm-репозиторий Sentry + namespace
+6. `helm upgrade --install sentry` (с values из Terraform)
+7. VictoriaMetrics K8s Stack
+8. Мониторинг (Prometheus exporter, VMServiceScrape)
+9. Импорт дашборда `dashboard/sentry-issues-events-overview.json` в Grafana
+10. Демо-клиенты
 
 ## References / Полезные ссылки
 
 - Спецификация метрик Yandex Managed Kafka: https://github.com/yandex-cloud/docs/blob/master/ru/_includes/monitoring/metrics-ref/managed-kafka.md
-- Спецификация метрик Yandex Managed ClickHouse: https://github.com/yandex-cloud/docs/blob/master/ru/_includes/monitoring/metrics-ref/managed-clickhouse.md
 - Спецификация метрик Yandex Managed Kubernetes: https://github.com/yandex-cloud/docs/blob/master/ru/_includes/monitoring/metrics-ref/managed-kubernetes.md
