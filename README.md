@@ -49,13 +49,23 @@ ClickHouse для Sentry/Snuba развёрнут в Kubernetes через [Alti
 Operator устанавливается вручную (паттерн аналогичен ECK, §2.1):
 
 ```bash
-kubectl create namespace clickhouse-operator
+cat <<'EOF' > clickhouse-operator-values.yaml
+configs:
+  files:
+    config.yaml:
+      watch:
+        namespaces:
+          - sentry
+EOF
 
-helm repo add altinity https://altinity.github.io/charts/
+helm repo add clickhouse-operator https://helm.altinity.com
 helm repo update
-helm template clickhouse-operator altinity/clickhouse-operator \
-  -n clickhouse-operator \
-  | kubectl apply -f -
+helm upgrade --install clickhouse-operator clickhouse-operator/altinity-clickhouse-operator \
+  --version 0.26.0 \
+  --namespace clickhouse-operator \
+  --create-namespace \
+  -f clickhouse-operator-values.yaml \
+  --wait
 ```
 
 Проверка:
