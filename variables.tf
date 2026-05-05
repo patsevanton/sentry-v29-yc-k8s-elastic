@@ -71,7 +71,7 @@ variable "subnet_d_zone" {
 variable "sentry_hooks_active_deadline_seconds" {
   description = "Helm hooks activeDeadlineSeconds for long-running jobs (db-init/snuba-migrate)"
   type        = number
-  default     = 1800
+  default     = 7200
 }
 
 variable "sentry_values_output_path" {
