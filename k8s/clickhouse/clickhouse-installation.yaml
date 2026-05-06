@@ -8,6 +8,15 @@ spec:
     users:
       default/networks/ip:
         - "0.0.0.0/0"
+    files:
+      config.d/init-sentry.xml: |
+        <clickhouse>
+          <startup_scripts>
+            <scripts>
+              <query>CREATE DATABASE IF NOT EXISTS sentry</query>
+            </scripts>
+          </startup_scripts>
+        </clickhouse>
     clusters:
       - name: single-node
         layout:
@@ -20,18 +29,6 @@ spec:
           containers:
             - name: clickhouse
               image: altinity/clickhouse-server:25.3.6.10034.altinitystable
-              lifecycle:
-                postStart:
-                  exec:
-                    command:
-                      - /bin/bash
-                      - -c
-                      - |
-                        for i in $(seq 1 30); do
-                          clickhouse-client -q "CREATE DATABASE IF NOT EXISTS sentry" && exit 0
-                          sleep 2
-                        done
-                        exit 1
   defaults:
     templates:
       podTemplate: clickhouse-single-node

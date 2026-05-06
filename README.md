@@ -46,18 +46,9 @@ ClickHouse для Sentry/Snuba развёрнут в Kubernetes через [Alti
 
 **0.1. Установка clickhouse-operator**
 
-Operator устанавливается вручную (паттерн аналогичен ECK, §2.1):
+Operator устанавливается вручную. Helm-values задаются в файле [clickhouse-operator-values.yaml](https://github.com/patsevanton/sentry-v29-yc-k8s-elastic/blob/master/clickhouse-operator-values.yaml) (operator смотрит только namespace `clickhouse`).
 
 ```bash
-cat <<'EOF' > clickhouse-operator-values.yaml
-configs:
-  files:
-    config.yaml:
-      watch:
-        namespaces:
-          - clickhouse
-EOF
-
 helm repo add clickhouse-operator https://helm.altinity.com
 helm repo update
 helm upgrade --install clickhouse-operator clickhouse-operator/altinity-clickhouse-operator \
@@ -75,9 +66,17 @@ kubectl -n clickhouse-operator get pods
 kubectl get crd | grep clickhouse
 ```
 
+> **Известная проблема ([Altinity/clickhouse-operator#1930](https://github.com/Altinity/clickhouse-operator/issues/1930)):** если `ClickHouseOperatorConfiguration` применяется **после** запуска operator'а (например, вы изменили watched namespaces через values), operator не подхватывает изменение динамически. `ClickHouseInstallation` в новом namespace будет игнорироваться до рестарта пода operator'а. **Workaround:** после применения новой конфигурации выполните:
+>
+> ```bash
+> kubectl rollout restart deployment -n clickhouse-operator
+> ```
+>
+> При установке через Helm-values (как в этом проекте) проблема не возникает — namespace задаётся до первого запуска.
+
 **0.2. Кластер ClickHouse**
 
-Манифест CRD генерируется Terraform из шаблона [k8s/clickhouse/clickhouse-installation.yaml.tpl](https://github.com/patsevanton/sentry-v29-yc-k8s-elastic/blob/master/k8s/clickhouse/clickhouse-installation.yaml.tpl) (см. [clickhouse.tf](https://github.com/patsevanton/sentry-v29-yc-k8s-elastic/blob/master/clickhouse.tf)). После `terraform apply` файл `k8s/clickhouse/clickhouse-installation.yaml` готов к применению.
+Манифест CRD — [k8s/clickhouse/clickhouse-installation.yaml](https://github.com/patsevanton/sentry-v29-yc-k8s-elastic/blob/master/k8s/clickhouse/clickhouse-installation.yaml). Operator не имеет встроенной декларативной поддержки `databases` в CRD (`spec.configuration.databases` не существует). База данных `sentry` создаётся через init-скрипт, смонтированный в `/docker-entrypoint-initdb.d` (официальный паттерн Altinity — [02-templates-05-bootstrap-schema.yaml](https://github.com/Altinity/clickhouse-operator/blob/master/docs/chi-examples/02-templates-05-bootstrap-schema.yaml)). Скрипт хранится в ConfigMap `clickhouse-initdb` и выполняется при первом запуске пода (env `CLICKHOUSE_ALWAYS_RUN_INITDB_SCRIPTS=true`). Повторные запуски не пересоздают существующую БД (`CREATE DATABASE IF NOT EXISTS`).
 
 ```bash
 kubectl create namespace clickhouse
@@ -91,6 +90,15 @@ kubectl -n clickhouse get clickhouseinstallation sentry-clickhouse
 kubectl -n clickhouse get pods,svc
 ```
 
+Убедитесь, что в STATUS отображается `Completed` и что под Running:
+
+```bash
+kubectl -n clickhouse exec -it chi-sentry-clickhouse-single-node-0-0-0 -- \
+  clickhouse-client -q "SHOW DATABASES"
+```
+
+В списке должна быть база `sentry`.
+
 **0.3. Endpoint для Sentry (Snuba)**
 
 Кластер доступен из namespace `sentry` по адресам:
@@ -99,7 +107,7 @@ kubectl -n clickhouse get pods,svc
 
 В `system.clusters` имя кластера — `single-node`, порт `9000`. Значения `clusterName` и `distributedClusterName` в `values_sentry.yaml` должны совпадать с этим именем.
 
-Пользователь `default` используется без пароля (`networks/ip: 0.0.0.0/0`). База данных `sentry` должна быть создана вручную после старта кластера.
+Пользователь `default` используется без пароля (`networks/ip: 0.0.0.0/0`). База данных `sentry` создаётся init-скриптом из ConfigMap при первом запуске.
 
 ### 1. NodeLocal DNSCache (опционально)
 
