@@ -109,7 +109,7 @@ kubectl -n clickhouse exec -it chi-sentry-clickhouse-single-node-0-0-0 -- \
 
 Пользователь `default` используется без пароля (`networks/ip: 0.0.0.0/0`). База данных `sentry` создаётся init-скриптом из ConfigMap при первом запуске.
 
-### 1. NodeLocal DNSCache (опционально)
+### 1. NodeLocal DNSCache
 
 [NodeLocal DNSCache](https://kubernetes.io/docs/tasks/administer-cluster/nodelocaldns/) — кэш DNS на каждом узле (DaemonSet в `kube-system`), снижает задержки и нагрузку на CoreDNS. В манифесте [k8s/nodelocaldns.yaml](https://github.com/patsevanton/sentry-v29-yc-k8s-elastic/blob/master/k8s/nodelocaldns.yaml) в блоке `.:53` плейсхолдер `**__SENTRY_INGRESS_IP__**` нужно заменить на текущий внешний IP из `terraform output -raw ingress_public_ip` (тот же адрес, что резервирует [ip-dns.tf](https://github.com/patsevanton/sentry-v29-yc-k8s-elastic/blob/master/ip-dns.tf) и куда указывают A-записи), чтобы поды резолвили тот же адрес, что и публичный DNS, даже если внешний DNS из кластера недоступен.
 
