@@ -237,10 +237,8 @@ kubectl -n sentry logs deployment/sentry-web --tail=20
 Нужен уже установленный **ingress-nginx** с классом `nginx` (в этом репозитории — Helm-релиз в [k8s.tf](https://github.com/patsevanton/sentry-v29-yc-k8s-elastic/blob/master/k8s.tf)).
 
 ```bash
-helm repo add vm https://victoriametrics.github.io/helm-charts/
-helm repo update
 kubectl create namespace vmks
-helm upgrade --install vmks vm/victoria-metrics-k8s-stack \
+helm upgrade --install vmks oci://ghcr.io/victoriametrics/helm-charts/victoria-metrics-k8s-stack \
   --version 0.72.6 \
   -n vmks \
   -f vmks-values.yaml \
