@@ -1,37 +1,26 @@
 # Аутентификация в Yandex Monitoring API
 
-## Почему нельзя использовать статический IAM-токен бесконечного срока действия
+## Как работает аутентификация в этом проекте
 
-В Yandex Cloud **нельзя создать IAM-токен с бесконечным сроком действия** — это архитектурное ограничение платформы. Ниже описано, почему в проекте используется именно авторизованный ключ сервисного аккаунта.
+Terraform автоматически создаёт:
 
-### 1. IAM-токен всегда временный
+1. **Сервисный аккаунт** `monitoring-viewer-sa` с ролью `monitoring.viewer` ([monitoring.tf](../monitoring.tf))
+2. **API-ключ** этого сервисного аккаунта (`yandex_iam_service_account_api_key`) — используется как bearer-токен
+3. **K8S Secret** `yc-monitoring-api-key` в namespace `vmks` — из шаблона [k8s/secret-yc-monitoring-api-key.yaml.tpl](../k8s/secret-yc-monitoring-api-key.yaml.tpl)
 
-Максимальный срок жизни IAM-токена в Yandex Cloud — **12 часов** (при получении через Metadata API, CLI или API). OAuth-токены также имеют ограниченный TTL. Платформа намеренно не предоставляет вечные IAM-токены по соображениям безопасности.
+VMAgent (из VictoriaMetrics K8s Stack) читает bearer-токен из K8S Secret и делает HTTPS-запрос на `monitoring.api.cloud.yandex.net/monitoring/v2/prometheusMetrics`.
 
-### 2. Авторизованный ключ — долгоживущие учётные данные
+## Почему API-ключ, а не IAM-токен
 
-В [`monitoring.tf`](../monitoring.tf) создаётся ресурс `yandex_iam_service_account_key`, который генерирует **RSA key pair**. Из него программно генерируется IAM-токен через обмен JWT → IAM token. Это стандартный паттерн в YC: ключ бесконечен, но каждый токен из него — краткосрочный.
+- **IAM-токен** — максимум 12 часов жизни, требует периодического обновления.
+- **API-ключ** — бессрочный, подходит для bearer-аутентификации в Monitoring API.
 
-### 3. Static Access Key не подходит
+## Почему не Static Access Key
 
-«Статические ключи доступа» (идентификатор + секрет) в YC работают только с **S3 API** и **AWS-compatible API**. Для Yandex Monitoring API (через `yc-monitoring` или HTTP API) нужен именно IAM-токен.
-
-### 4. API Key имеет ограничения
-
-API Keys в YC тоже вечные, но предназначены для **SpeechKit**, **Translate** и некоторых других сервисов. Для Monitoring API они не подходят.
-
-## Альтернативы
-
-Если кластер Kubernetes развёрнут в **Yandex Managed Kubernetes**, можно избавиться от авторизованного ключа и скрипта:
-
-- Назначьте сервисный аккаунт YC на ноду / под через `serviceAccountName` + IAM-роль ноды.
-- VMAgent сможет получать IAM-токен автоматически через внутренний Metadata Service (`169.254.169.254`).
-
-Если VMAgent не умеет сам запрашивать токен из Metadata API, остаются варианты:
-1. Оставить авторизованный ключ + скрипт-обновлялку (`scripts/get-yc-iam-token.py`), которая периодически генерирует IAM-токен.
-2. Использовать sidecar/init-container для автоматического обновления токена в Kubernetes Secret.
+«Статические ключи доступа» в YC работают только с **S3 API** и **AWS-compatible API**. Для Yandex Monitoring API нужен API-ключ или IAM-токен.
 
 ## См. также
 
-- [`monitoring.tf`](../monitoring.tf) — создание сервисного аккаунта и авторизованного ключа.
-- [`scripts/get-yc-iam-token.py`](../scripts/get-yc-iam-token.py) — скрипт генерации IAM-токена из авторизованного ключа.
+- [`monitoring.tf`](../monitoring.tf) — создание сервисного аккаунта, API-ключа и K8S Secret.
+- [`k8s/vmstaticscrape-yc-managed-kafka.yaml.tpl`](../k8s/vmstaticscrape-yc-managed-kafka.yaml.tpl) — VMStaticScrape с bearer-аутентификацией.
+- [`k8s/secret-yc-monitoring-api-key.yaml.tpl`](../k8s/secret-yc-monitoring-api-key.yaml.tpl) — шаблон K8S Secret.

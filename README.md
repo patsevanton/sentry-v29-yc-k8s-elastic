@@ -285,34 +285,31 @@ kubectl apply -f k8s/sentry-prometheus-exporter.yaml
 
 Для Managed Kafka в Yandex Cloud метрики берутся напрямую из Yandex Monitoring endpoint `https://monitoring.api.cloud.yandex.net/monitoring/v2/prometheusMetrics` c параметрами `folderId` и `service=managed-kafka` (официальный export в формате Prometheus).
 
-Terraform автоматически создаёт сервисный аккаунт `monitoring-viewer-sa` с ролью `monitoring.viewer`, генерирует API-ключ и рендерит манифест [k8s/vmstaticscrape-yc-managed-kafka.yaml](https://github.com/patsevanton/sentry-v29-yc-k8s-elastic/blob/master/k8s/vmstaticscrape-yc-managed-kafka.yaml) из шаблона [k8s/vmstaticscrape-yc-managed-kafka.yaml.tpl](https://github.com/patsevanton/sentry-v29-yc-k8s-elastic/blob/master/k8s/vmstaticscrape-yc-managed-kafka.yaml.tpl) с подставленным `folder_id` (см. [monitoring.tf](https://github.com/patsevanton/sentry-v29-yc-k8s-elastic/blob/master/monitoring.tf)). Почему используется авторизованный ключ вместо статического IAM-токена — см. [docs/yc-monitoring-auth.md](https://github.com/patsevanton/sentry-v29-yc-k8s-elastic/blob/master/docs/yc-monitoring-auth.md).
+Terraform автоматически создаёт сервисный аккаунт `monitoring-viewer-sa` с ролью `monitoring.viewer`, генерирует API-ключ и рендерит два манифеста:
+- [k8s/vmstaticscrape-yc-managed-kafka.yaml](https://github.com/patsevanton/sentry-v29-yc-k8s-elastic/blob/master/k8s/vmstaticscrape-yc-managed-kafka.yaml) — VMStaticScrape (из шаблона [.tpl](https://github.com/patsevanton/sentry-v29-yc-k8s-elastic/blob/master/k8s/vmstaticscrape-yc-managed-kafka.yaml.tpl))
+- [k8s/secret-yc-monitoring-api-key.yaml](https://github.com/patsevanton/sentry-v29-yc-k8s-elastic/blob/master/k8s/secret-yc-monitoring-api-key.yaml) — K8S Secret с bearer-токеном (из шаблона [.tpl](https://github.com/patsevanton/sentry-v29-yc-k8s-elastic/blob/master/k8s/secret-yc-monitoring-api-key.yaml.tpl))
 
-1. Получите значение API-ключа из Terraform output:
+Оба файла содержат секреты и добавлены в `.gitignore`. См. [monitoring.tf](https://github.com/patsevanton/sentry-v29-yc-k8s-elastic/blob/master/monitoring.tf). Почему используется API-ключ вместо статического IAM-токена — см. [docs/yc-monitoring-auth.md](https://github.com/patsevanton/sentry-v29-yc-k8s-elastic/blob/master/docs/yc-monitoring-auth.md).
 
-```bash
-export MONITORING_API_KEY=$(terraform output -raw monitoring_api_key)
-```
-
-2. Создайте Kubernetes Secret в namespace `vmks`:
+1. Примените K8S Secret (содержит API-ключ, сгенерирован Terraform):
 
 ```bash
-kubectl -n vmks create secret generic yc-monitoring-api-key \
-  --from-literal=bearer="$MONITORING_API_KEY"
+kubectl apply -f k8s/secret-yc-monitoring-api-key.yaml
 ```
 
-3. Примените манифест (он уже содержит `folder_id` после `terraform apply`):
+2. Примените VMStaticScrape (содержит `folder_id`, сгенерирован Terraform):
 
 ```bash
 kubectl apply -f k8s/vmstaticscrape-yc-managed-kafka.yaml
 ```
 
-4. Проверьте, что vmagent видит target:
+3. Проверьте, что vmagent видит target:
 
 ```bash
 kubectl -n vmks get vmstaticscrape yc-managed-kafka
 ```
 
-5. Импортируйте дашборд [dashboard/yc-managed-kafka-overview.json](https://github.com/patsevanton/sentry-v29-yc-k8s-elastic/blob/master/dashboard/yc-managed-kafka-overview.json) в Grafana (`Dashboards -> New -> Import`) и выберите datasource Prometheus/VictoriaMetrics.
+4. Импортируйте дашборд [dashboard/yc-managed-kafka-overview.json](https://github.com/patsevanton/sentry-v29-yc-k8s-elastic/blob/master/dashboard/yc-managed-kafka-overview.json) в Grafana (`Dashboards -> New -> Import`) и выберите datasource Prometheus/VictoriaMetrics.
 
 ### 7.2. Мониторинг ClickHouse Operator в Grafana
 

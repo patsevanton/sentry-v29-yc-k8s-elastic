@@ -56,7 +56,9 @@
 - `terraform plan` — план изменений инфраструктуры
 - `terraform apply` — применение инфраструктуры
 - `terraform output -raw ingress_public_ip` — получить внешний IP ingress
-- `terraform output -raw monitoring_api_key` — получить API-ключ мониторинга
+- `terraform output -raw monitoring_api_key` — получить API-ключ мониторинга (sensitive)
+- `kubectl apply -f k8s/secret-yc-monitoring-api-key.yaml` — создать K8S Secret с bearer-токеном мониторинга
+- `kubectl apply -f k8s/vmstaticscrape-yc-managed-kafka.yaml` — применить VMStaticScrape для Kafka
 - `helm upgrade --install sentry sentry/sentry --version 31.0.0 -n sentry -f values_sentry.yaml --timeout=3600s --create-namespace` — установка/обновление Sentry
 - `helm upgrade --install vmks vm/victoria-metrics-k8s-stack --version 0.72.6 -n vmks -f vmks-values.yaml --wait --timeout=15m` — установка VictoriaMetrics
 - `helm upgrade --install keda kedacore/keda --version 2.16.1 -n keda --wait --timeout=10m` — установка KEDA
