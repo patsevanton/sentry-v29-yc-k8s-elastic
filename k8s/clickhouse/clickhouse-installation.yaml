@@ -5,6 +5,10 @@ metadata:
   namespace: clickhouse
 spec:
   configuration:
+    zookeeper:
+      nodes:
+        - host: keeper-clickhouse-keeper.clickhouse.svc.cluster.local
+          port: 2181
     users:
       default/networks/ip:
         - "0.0.0.0/0"
@@ -28,15 +32,15 @@ spec:
           </prometheus>
         </clickhouse>
     clusters:
-      - name: single-node
+      - name: sentry-cluster
         layout:
           shardsCount: 1
-          replicasCount: 1
+          replicasCount: 3
         templates:
           serviceTemplate: clickhouse-metrics
   templates:
     podTemplates:
-      - name: clickhouse-single-node
+      - name: clickhouse
         spec:
           containers:
             - name: clickhouse
@@ -44,6 +48,21 @@ spec:
               ports:
                 - name: prometheus
                   containerPort: 9363
+          affinity:
+            podAntiAffinity:
+              requiredDuringSchedulingIgnoredDuringExecution:
+                - labelSelector:
+                    matchLabels:
+                      clickhouse.altinity.com/chi: sentry-clickhouse
+                  topologyKey: kubernetes.io/hostname
+    volumeClaimTemplates:
+      - name: data-volume
+        spec:
+          accessModes:
+            - ReadWriteOnce
+          resources:
+            requests:
+              storage: 20Gi
     serviceTemplates:
       - name: clickhouse-metrics
         spec:
@@ -53,4 +72,5 @@ spec:
           type: ClusterIP
   defaults:
     templates:
-      podTemplate: clickhouse-single-node
+      podTemplate: clickhouse
+      dataVolumeClaimTemplate: data-volume
