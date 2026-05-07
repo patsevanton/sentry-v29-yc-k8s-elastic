@@ -327,7 +327,7 @@ kubectl apply -f k8s/vmscrape-clickhouse-operator.yaml
 kubectl -n vmks get vmscrape clickhouse-operator
 ```
 
-Импортируйте дашборд ClickHouse Operator в Grafana (`Dashboards -> New -> Import`, ID **8891**, datasource — Prometheus/VictoriaMetrics). Дашборд [Altinity ClickHouse Operator Dashboard](https://grafana.com/grafana/dashboards/8891-altinity-clickhouse-operator/) показывает состояние оператора: количество CR, reconcile latency, количество managed ClickHouseInstallation.
+Импортируйте дашборд ClickHouse Operator в Grafana (`Dashboards -> New -> Import`, загрузите JSON-файл, datasource — Prometheus/VictoriaMetrics). JSON-файл дашборда: [Altinity_ClickHouse_Operator_dashboard.json](https://github.com/Altinity/clickhouse-operator/blob/master/grafana-dashboard/Altinity_ClickHouse_Operator_dashboard.json) — показывает состояние оператора: количество CR, reconcile latency, количество managed ClickHouseInstallation.
 
 ### 7.3. Мониторинг ClickHouse (встроенные метрики)
 
@@ -348,7 +348,7 @@ kubectl -n clickhouse exec -it chi-sentry-clickhouse-single-node-0-0-0 -- \
   curl -s http://localhost:9363/metrics | head -20
 ```
 
-3. Импортируйте дашборд в Grafana (`Dashboards -> New -> Import`, ID **14061**, datasource — Prometheus/VictoriaMetrics). Дашборд [ClickHouse Dashboard](https://grafana.com/grafana/dashboards/14061-clickhouse-dashboard/) показывает: количество запросов, задержки, использование памяти, размеры таблиц, состояние репликации.
+3. Импортируйте дашборд в Grafana (`Dashboards -> New -> Import`, загрузите JSON-файл, datasource — Prometheus/VictoriaMetrics). JSON-файл дашборда: [ClickHouse_Queries_dashboard.json](https://github.com/Altinity/clickhouse-operator/blob/master/grafana-dashboard/ClickHouse_Queries_dashboard.json) — показывает: количество запросов, задержки, использование памяти, размеры таблиц, состояние репликации.
 
 ### 8. Доступ к Sentry
 
