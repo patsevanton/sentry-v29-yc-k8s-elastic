@@ -1,8 +1,8 @@
-# Развёртывание Sentry v30.4.0 в Yandex Cloud на Kubernetes
+# Развёртывание Sentry v31.0.0 в Yandex Cloud на Kubernetes
 
 ## Цели статьи
 
-Статья описывает процесс развёртывания Sentry v30.4.0 в Yandex Cloud на кластере Kubernetes. Будет развёрнуто:
+Статья описывает процесс развёртывания Sentry v31.0.0 в Yandex Cloud на кластере Kubernetes. Будет развёрнуто:
 
 - Инфраструктура через Terraform (K8S, Kafka, PostgreSQL, Object Storage, VPC).
 - ClickHouse через [Altinity clickhouse-operator](https://github.com/Altinity/clickhouse-operator) в Kubernetes (кластер 1 shard × 1 replica).
@@ -194,7 +194,7 @@ filestore:
 Установка с `values_sentry.yaml` (генерируется из [values_sentry.yaml.tpl](https://github.com/patsevanton/sentry-v29-yc-k8s-elastic/blob/master/values_sentry.yaml.tpl) через `terraform apply`): в файле заданы параметры ClickHouse из k8s-сервиса.
 
 ```bash
-helm upgrade --install sentry sentry/sentry --version 30.4.0 -n sentry \
+helm upgrade --install sentry sentry/sentry --version 31.0.0 -n sentry \
   -f values_sentry.yaml --timeout=7200s --create-namespace
 ```
 
