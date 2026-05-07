@@ -9,7 +9,7 @@ metadata:
   labels:
     app: sentry-demo-node
 spec:
-  replicas: 1
+  replicas: 5
   selector:
     matchLabels:
       app: sentry-demo-node
