@@ -1,0 +1,20 @@
+# VMServiceScrape для встроенного Prometheus-endpoint ClickHouse.
+# ClickHouse expose-ит /metrics на порту 9363 (включено в config.d/prometheus.xml).
+# Манифест размещается в namespace vmks (где работает VMAgent из VictoriaMetrics K8s Stack).
+apiVersion: operator.victoriametrics.com/v1beta1
+kind: VMServiceScrape
+metadata:
+  name: clickhouse-server
+  namespace: vmks
+spec:
+  namespaceSelector:
+    matchNames:
+      - clickhouse
+  selector:
+    matchLabels:
+      clickhouse.altinity.com/chi: sentry-clickhouse
+  endpoints:
+    - port: prometheus
+      scrape_interval: 30s
+      scrapeTimeout: 25s
+      path: /metrics

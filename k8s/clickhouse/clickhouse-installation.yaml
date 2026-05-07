@@ -17,11 +17,23 @@ spec:
             </scripts>
           </startup_scripts>
         </clickhouse>
+      config.d/prometheus.xml: |
+        <clickhouse>
+          <prometheus>
+            <endpoint>/metrics</endpoint>
+            <port>9363</port>
+            <metrics>true</metrics>
+            <events>true</events>
+            <asynchronous_metrics>true</asynchronous_metrics>
+          </prometheus>
+        </clickhouse>
     clusters:
       - name: single-node
         layout:
           shardsCount: 1
           replicasCount: 1
+        templates:
+          serviceTemplate: clickhouse-metrics
   templates:
     podTemplates:
       - name: clickhouse-single-node
@@ -29,6 +41,16 @@ spec:
           containers:
             - name: clickhouse
               image: altinity/clickhouse-server:25.3.6.10034.altinitystable
+              ports:
+                - name: prometheus
+                  containerPort: 9363
+    serviceTemplates:
+      - name: clickhouse-metrics
+        spec:
+          ports:
+            - name: prometheus
+              port: 9363
+          type: ClusterIP
   defaults:
     templates:
       podTemplate: clickhouse-single-node

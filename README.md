@@ -76,7 +76,7 @@ kubectl get crd | grep clickhouse
 
 **0.2. Кластер ClickHouse**
 
-Манифест CRD — [k8s/clickhouse/clickhouse-installation.yaml](https://github.com/patsevanton/sentry-v29-yc-k8s-elastic/blob/master/k8s/clickhouse/clickhouse-installation.yaml). Operator не имеет встроенной декларативной поддержки `databases` в CRD (`spec.configuration.databases` не существует). База данных `sentry` создаётся через init-скрипт, смонтированный в `/docker-entrypoint-initdb.d` (официальный паттерн Altinity — [02-templates-05-bootstrap-schema.yaml](https://github.com/Altinity/clickhouse-operator/blob/master/docs/chi-examples/02-templates-05-bootstrap-schema.yaml)). Скрипт хранится в ConfigMap `clickhouse-initdb` и выполняется при первом запуске пода (env `CLICKHOUSE_ALWAYS_RUN_INITDB_SCRIPTS=true`). Повторные запуски не пересоздают существующую БД (`CREATE DATABASE IF NOT EXISTS`).
+Манифест CRD — [k8s/clickhouse/clickhouse-installation.yaml](https://github.com/patsevanton/sentry-v29-yc-k8s-elastic/blob/master/k8s/clickhouse/clickhouse-installation.yaml). Operator не имеет встроенной декларативной поддержки `databases` в CRD (`spec.configuration.databases` не существует). База данных `sentry` создаётся через init-скрипт, смонтированный в `/docker-entrypoint-initdb.d` (официальный паттерн Altinity — [02-templates-05-bootstrap-schema.yaml](https://github.com/Altinity/clickhouse-operator/blob/master/docs/chi-examples/02-templates-05-bootstrap-schema.yaml)). Скрипт хранится в ConfigMap `clickhouse-initdb` и выполняется при первом запуске пода (env `CLICKHOUSE_ALWAYS_RUN_INITDB_SCRIPTS=true`). Повторные запуски не пересоздают существующую БД (`CREATE DATABASE IF NOT EXISTS`). Также в манифесте включён встроенный Prometheus-endpoint ClickHouse (`config.d/prometheus.xml`, порт 9363) для мониторинга (см. **§7.3**).
 
 ```bash
 kubectl create namespace clickhouse
@@ -326,6 +326,29 @@ kubectl apply -f k8s/vmscrape-clickhouse-operator.yaml
 ```bash
 kubectl -n vmks get vmscrape clickhouse-operator
 ```
+
+Импортируйте дашборд ClickHouse Operator в Grafana (`Dashboards -> New -> Import`, ID **8891**, datasource — Prometheus/VictoriaMetrics). Дашборд [Altinity ClickHouse Operator Dashboard](https://grafana.com/grafana/dashboards/8891-altinity-clickhouse-operator/) показывает состояние оператора: количество CR, reconcile latency, количество managed ClickHouseInstallation.
+
+### 7.3. Мониторинг ClickHouse (встроенные метрики)
+
+ClickHouse имеет встроенный Prometheus-endpoint. Конфигурация включена в [k8s/clickhouse/clickhouse-installation.yaml](https://github.com/patsevanton/sentry-v29-yc-k8s-elastic/blob/master/k8s/clickhouse/clickhouse-installation.yaml) через `config.d/prometheus.xml`: ClickHouse отдаёт метрики на порту **9363**, путь `/metrics`. Включены `metrics` (гаuges), `events` (счётчики) и `asynchronous_metrics` (размеры таблиц, использование памяти и т.д.).
+
+VMServiceScrape для сбора метрик сервера — [k8s/vmscrape-clickhouse-server.yaml](https://github.com/patsevanton/sentry-v29-yc-k8s-elastic/blob/master/k8s/vmscrape-clickhouse-server.yaml). Манифест создаёт `VMServiceScrape` в namespace `vmks` и указывает на сервис ClickHouse в namespace `clickhouse`.
+
+1. Примените VMServiceScrape:
+
+```bash
+kubectl apply -f k8s/vmscrape-clickhouse-server.yaml
+```
+
+2. Проверьте, что endpoint доступен из пода ClickHouse:
+
+```bash
+kubectl -n clickhouse exec -it chi-sentry-clickhouse-single-node-0-0-0 -- \
+  curl -s http://localhost:9363/metrics | head -20
+```
+
+3. Импортируйте дашборд в Grafana (`Dashboards -> New -> Import`, ID **14061**, datasource — Prometheus/VictoriaMetrics). Дашборд [ClickHouse Dashboard](https://grafana.com/grafana/dashboards/14061-clickhouse-dashboard/) показывает: количество запросов, задержки, использование памяти, размеры таблиц, состояние репликации.
 
 ### 8. Доступ к Sentry
 
