@@ -80,6 +80,7 @@ spec:
               port: 9363
           type: ClusterIP
   defaults:
+    replicasUseFQDN: "true"
     templates:
       podTemplate: clickhouse
       dataVolumeClaimTemplate: data-volume
