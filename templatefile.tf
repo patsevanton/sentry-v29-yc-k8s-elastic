@@ -79,20 +79,10 @@ locals {
     password    = local.managed_kafka_user_password_effective
   })
 
-  keda_taskworker_ingest_config = templatefile("${path.module}/k8s/keda-taskworker-ingest.yaml.tpl", {
-    kafka_credentials_secret_name = local.kafka_credentials_secret_name
-    kafka_bootstrap_servers       = local.managed_kafka_bootstrap_servers
-  })
 }
 
 resource "local_file" "write_kafka_credentials" {
   content         = local.kafka_credentials_config
   filename        = "${path.module}/k8s/kafka-credentials.yaml"
   file_permission = "0600"
-}
-
-resource "local_file" "write_keda_taskworker_ingest" {
-  content         = local.keda_taskworker_ingest_config
-  filename        = "${path.module}/k8s/keda-taskworker-ingest.yaml"
-  file_permission = "0644"
 }
