@@ -180,5 +180,5 @@ variable "external_kafka_provisioning_replication_factor" {
 variable "external_kafka_provisioning_num_partitions" {
   description = "Default partitions for Sentry externalKafka provisioning"
   type        = number
-  default     = 1
+  default     = 3
 }

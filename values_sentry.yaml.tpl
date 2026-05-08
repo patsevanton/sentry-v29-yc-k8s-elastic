@@ -46,11 +46,11 @@ redis:
   master:
     resources:
       requests:
-        cpu: 100m
-        memory: 128Mi
-      limits:
-        cpu: 500m
+        cpu: 250m
         memory: 512Mi
+      limits:
+        cpu: 1000m
+        memory: 1Gi
 kafka:
   enabled: ${kafka_enabled}
   zookeeper:
@@ -72,8 +72,11 @@ externalKafka:
 %{ endif ~}
   sasl:
     mechanism: "${external_kafka.sasl.mechanism}"
-    username: "${external_kafka.sasl.username}"
-    password: "${external_kafka.sasl.password}"
+    existingSecret: "${kafka_credentials_secret_name}"
+    existingSecretKeys:
+      mechanism: "mechanism"
+      username: "username"
+      password: "password"
   security:
     protocol: "${external_kafka.security.protocol}"
   provisioning:
