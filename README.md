@@ -1,5 +1,7 @@
 # Развёртывание Sentry v31.0.0 в Yandex Cloud на Kubernetes
 
+TODO проверить все ли файлы указаны в readme
+
 ## Цели статьи
 
 Статья описывает процесс развёртывания Sentry v31.0.0 в Yandex Cloud на кластере Kubernetes. Будет развёрнуто:
@@ -41,9 +43,9 @@ ClickHouse для Sentry/Snuba развёрнут в Kubernetes через [Alti
 
 **Преимущества перед Managed ClickHouse:**
 - `system.clusters` отдаёт порт 9000 (no TLS) — Snuba работает без `secure=true`;
-- DNS-хостнеймы резолвятся внутри кластера без `dnsConfig.searches`;
-- Полный контроль над версией ClickHouse, конфигурацией и ресурсами.
-- Clickhouse-operator обычно дешевле
+- DNS-хостнеймы резолвятся внутри кластера;
+- Полный контроль над версией ClickHouse, конфигурацией и ресурсами;
+- Clickhouse-operator обычно дешевле;
 
 **0.1. Установка clickhouse-operator**
 
@@ -77,7 +79,7 @@ kubectl get crd | grep clickhouse
 
 **0.2. ClickHouse Keeper (координация репликации)**
 
-ClickHouse с `replicasCount > 1` требует ZooKeeper-совместимый координатор для репликации данных. В этом проекте используется **ClickHouse Keeper** (лёгкая замена ZooKeeper, встроенная в экосистему ClickHouse). Манифест — [k8s/clickhouse/clickhouse-keeper-installation.yaml](https://github.com/patsevanton/sentry-v29-yc-k8s-elastic/blob/master/k8s/clickhouse/clickhouse-keeper-installation.yaml) (3 реплики Keeper с anti-affinity по хостам — **требуется минимум 3 ноды** в кластере K8S).
+ClickHouse с `replicasCount > 1` требует ZooKeeper-совместимый координатор для репликации данных. В этом проекте используется (ClickHouse Keeper)[https://clickhouse.com/docs/guides/sre/keeper/clickhouse-keeper].
 
 > **ВАЖНО:** Keeper **ДОЛЖЕН** быть запущен и готов **ДО** применения `ClickHouseInstallation`. Иначе ClickHouse не сможет подключиться к координатору, и Snuba-миграции завершатся ошибкой: `Cannot use any of provided ZooKeeper nodes`.
 
@@ -95,7 +97,7 @@ kubectl -n clickhouse get pods -l clickhouse-keeper.altinity.com/chi=sentry-keep
 
 **0.3. Кластер ClickHouse**
 
-Манифест CRD — [k8s/clickhouse/clickhouse-installation.yaml](https://github.com/patsevanton/sentry-v29-yc-k8s-elastic/blob/master/k8s/clickhouse/clickhouse-installation.yaml). База данных `sentry` создаётся через механизм `startup_scripts` clickhouse-operator'а: в `spec.configuration.files` задан файл `config.d/init-sentry.xml` с секцией `<startup_scripts>`, содержащий `CREATE DATABASE IF NOT EXISTS sentry`. Этот скрипт выполняется clickhouse-server при каждом запуске, но `IF NOT EXISTS` предотвращает ошибку при повторных запусках. Также в манифесте включён встроенный Prometheus-endpoint ClickHouse (`config.d/prometheus.xml`, порт 9363) для мониторинга (см. **§8.3**).
+База данных `sentry` создаётся через механизм `startup_scripts` clickhouse-operator'а: в `spec.configuration.files` задан файл `config.d/init-sentry.xml` с секцией `<startup_scripts>`, содержащий `CREATE DATABASE IF NOT EXISTS sentry`. Этот скрипт выполняется clickhouse-server при каждом запуске, но `IF NOT EXISTS` предотвращает ошибку при повторных запусках. Также в манифесте включён встроенный Prometheus-endpoint ClickHouse (`config.d/prometheus.xml`, порт 9363) для мониторинга (см. **§8.3**).
 
 ```bash
 kubectl apply -f k8s/clickhouse/clickhouse-installation.yaml
@@ -161,7 +163,7 @@ kubectl run -it --rm dns-test --image=busybox:1.36 --restart=Never -- nslookup s
 
 ### 3. Prometheus Operator CRD
 
-VictoriaMetrics Operator по умолчанию включает конвертацию Prometheus-совместимых CRD (`ServiceMonitor`, `PodMonitor`, `PrometheusRule`, `Probe`, `ScrapeConfig`, `AlertmanagerConfig` из `monitoring.coreos.com`). Если эти CRD не установлены в кластере, operator падает при старте с ошибкой:
+VictoriaMetrics Operator по умолчанию включает конвертацию Prometheus-совместимых CRD (`ServiceMonitor`, `PodMonitor`, `PrometheusRule`, `Probe`, `ScrapeConfig`, `AlertmanagerConfig` из `monitoring.coreos.com`). Если эти CRD не установлены в кластере, VictoriaMetrics operator падает при старте с ошибкой:
 
 ```
 if kind is a CRD, it should be installed before calling Start
@@ -169,6 +171,7 @@ if kind is a CRD, it should be installed before calling Start
 
 Установите **только CRD** (без самого Prometheus Operator):
 
+TODO переделать на helm install
 ```bash
 kubectl apply --server-side -f https://github.com/prometheus-operator/prometheus-operator/releases/download/v0.91.0/stripped-down-crds.yaml
 ```
@@ -179,13 +182,11 @@ kubectl apply --server-side -f https://github.com/prometheus-operator/prometheus
 kubectl get crd | grep monitoring.coreos.com
 ```
 
-> **Примечание:** файл `stripped-down-crds.yaml` содержит только определения CRD (CustomResourceDefinition), без Deployment, RBAC и прочих ресурсов Prometheus Operator. Это безопасно — в кластере не появляется Prometheus, только схемы объектов, которые использует VictoriaMetrics Operator для конвертации.
-
 ### 4. VictoriaMetrics K8s Stack
 
-Стек [VictoriaMetrics K8s Stack](https://docs.victoriametrics.com/helm/victoria-metrics-k8s-stack/) поднимает оператор VictoriaMetrics, **VMSingle**, **VMAgent**, **Grafana**, **vmalert**, Alertmanager, **node-exporter** и **kube-state-metrics**. Готовые значения — [vmks-values.yaml](https://github.com/patsevanton/sentry-v29-yc-k8s-elastic/blob/master/vmks-values.yaml) (Ingress для UI хранилища и Grafana).
+Стек [VictoriaMetrics K8s Stack](https://docs.victoriametrics.com/helm/victoria-metrics-k8s-stack/) поднимает оператор VictoriaMetrics, **VMSingle**, **VMAgent**, **Grafana**, **vmalert**, Alertmanager, **node-exporter** и **kube-state-metrics**.
 
-Нужен уже установленный **ingress-nginx** с классом `nginx` (в этом репозитории — Helm-релиз в [k8s.tf](https://github.com/patsevanton/sentry-v29-yc-k8s-elastic/blob/master/k8s.tf)). Также **обязательно** выполните **§3** (Prometheus Operator CRD) перед установкой — иначе VictoriaMetrics Operator не сможет стартовать.
+Нужен уже установленный **ingress-nginx** с классом `nginx` или Gateway API.
 
 ```bash
 kubectl create namespace vmks
@@ -196,19 +197,15 @@ helm upgrade --install vmks oci://ghcr.io/victoriametrics/helm-charts/victoria-m
   --wait --timeout=15m
 ```
 
-**Пароль Grafana.** Подчарт Grafana создаёт Secret с учётными данными администратора: имя вида `**<имя Helm-релиза>-grafana`**. Для команды выше (релиз `vmks`, namespace `vmks`) это `**vmks-grafana**`. Пароль:
+**Пароль Grafana.**
 
 ```bash
 kubectl -n vmks get secret vmks-grafana -o jsonpath='{.data.admin-password}' | base64 -d && echo
 ```
 
-Логин по умолчанию — `**admin**` (его можно прочитать из ключа `admin-user` того же Secret). Если вы установили стек под другим именем релиза, замените `vmks-grafana` на `<ваш-релиз>-grafana`.
-
-DNS-записи `vmsingle.apatsev.org.ru` и `grafana.apatsev.org.ru` создаются автоматически через [ip-dns.tf](https://github.com/patsevanton/sentry-v29-yc-k8s-elastic/blob/master/ip-dns.tf) при `terraform apply` (тот же внешний IP, что и у `sentry.apatsev.org.ru`).
+Логин по умолчанию — `**admin**` (его можно прочитать из ключа `admin-user` того же Secret).
 
 Веб-интерфейс Grafana доступен по адресу **[http://grafana.apatsev.org.ru](http://grafana.apatsev.org.ru)**.
-
-Интеграция с экспортёром Sentry — шаг 4 в **§8** и манифест [k8s/vmscrape-sentry-prometheus-exporter.yaml](https://github.com/patsevanton/sentry-v29-yc-k8s-elastic/blob/master/k8s/vmscrape-sentry-prometheus-exporter.yaml).
 
 ### 5. KEDA (автоскейлинг по Kafka lag)
 
