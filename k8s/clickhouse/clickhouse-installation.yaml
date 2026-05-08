@@ -8,6 +8,9 @@ spec:
     users:
       default/networks/ip:
         - "0.0.0.0/0"
+      clickhouse_operator/password: "clickhouse_operator_password"
+      clickhouse_operator/networks/ip:
+        - "0.0.0.0/0"
     files:
       config.d/init-sentry.xml: |
         <clickhouse>
@@ -33,7 +36,17 @@ spec:
           shardsCount: 1
           replicasCount: 3
         templates:
+          podTemplate: clickhouse
           serviceTemplate: clickhouse-metrics
+          volumeClaimTemplate: data-volume
+    zookeeper:
+      nodes:
+        - host: chk-sentry-keeper-sentry-keeper-0-0.clickhouse.svc.cluster.local
+          port: 2181
+        - host: chk-sentry-keeper-sentry-keeper-0-1.clickhouse.svc.cluster.local
+          port: 2181
+        - host: chk-sentry-keeper-sentry-keeper-0-2.clickhouse.svc.cluster.local
+          port: 2181
   templates:
     podTemplates:
       - name: clickhouse
