@@ -54,6 +54,13 @@ spec:
           containers:
             - name: clickhouse
               image: altinity/clickhouse-server:25.3.8.10042.altinitystable
+              resources:
+                requests:
+                  cpu: 1000m
+                  memory: 2Gi
+                limits:
+                  cpu: 1000m
+                  memory: 2Gi
               ports:
                 - name: prometheus
                   containerPort: 9363

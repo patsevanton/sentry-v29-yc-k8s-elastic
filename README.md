@@ -52,7 +52,7 @@ Operator устанавливается вручную. Helm-values задают
 helm repo add clickhouse-operator https://helm.altinity.com
 helm repo update
 helm upgrade --install clickhouse-operator clickhouse-operator/altinity-clickhouse-operator \
-  --version 0.26.0 \
+  --version 0.26.3 \
   --namespace clickhouse-operator \
   --create-namespace \
   -f clickhouse-operator-values.yaml \
@@ -412,9 +412,9 @@ kubectl -n ingress-nginx get svc
 kubectl apply -f demo/k8s/namespace.yaml
 # DSN (по одному Secret на Node и Python):
 kubectl create secret generic sentry-dsn-node -n demo-sentry \
-  --from-literal=dsn='http://971fe799e2d93f277938685911907990@sentry.apatsev.org.ru/2'
+  --from-literal=dsn='http://240501cc58b817987e282bca5bdf63c8@sentry.apatsev.org.ru/2'
 kubectl create secret generic sentry-dsn-python -n demo-sentry \
-  --from-literal=dsn='http://8f69e72dc963167a3dea01c4b0ec9136@sentry.apatsev.org.ru/3'
+  --from-literal=dsn='http://f49d24d8c491cf0930c260ef0e595a3e@sentry.apatsev.org.ru/3'
 # либо подставить dsn в demo/k8s/secret-sentry-dsn-*.yaml и:
 # kubectl apply -f demo/k8s/secret-sentry-dsn-node.yaml -f demo/k8s/secret-sentry-dsn-python.yaml
 

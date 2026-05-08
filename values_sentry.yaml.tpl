@@ -33,8 +33,24 @@ externalClickhouse:
 
 postgresql:
   enabled: ${postgresql_enabled}
+  primary:
+    resources:
+      requests:
+        cpu: 250m
+        memory: 256Mi
+      limits:
+        cpu: 1000m
+        memory: 1Gi
 redis:
   enabled: ${redis_enabled}
+  master:
+    resources:
+      requests:
+        cpu: 100m
+        memory: 128Mi
+      limits:
+        cpu: 500m
+        memory: 512Mi
 kafka:
   enabled: ${kafka_enabled}
   zookeeper:

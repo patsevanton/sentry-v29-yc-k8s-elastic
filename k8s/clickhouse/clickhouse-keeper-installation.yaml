@@ -20,6 +20,13 @@ spec:
           containers:
             - name: clickhouse-keeper
               image: altinity/clickhouse-keeper:25.3.8.10042.altinitystable
+              resources:
+                requests:
+                  cpu: 500m
+                  memory: 512Mi
+                limits:
+                  cpu: 500m
+                  memory: 512Mi
           affinity:
             podAntiAffinity:
               requiredDuringSchedulingIgnoredDuringExecution:
