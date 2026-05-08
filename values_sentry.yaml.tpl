@@ -600,6 +600,7 @@ snuba:
         cpu: 500m
         memory: 1Gi
   transactionsConsumer:
+    maxBatchSize: "3"
     resources:
       requests:
         cpu: 100m
