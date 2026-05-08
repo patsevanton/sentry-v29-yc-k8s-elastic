@@ -14,7 +14,7 @@
 - Мониторинг Sentry через Prometheus exporter.
 - Мониторинг Yandex Managed Kafka в Grafana (VMStaticScrape + дашборд).
 - NodeLocal DNSCache (опционально) для снижения DNS-задержек.
-- Демо-клиенты Sentry (Python/FastAPI, Node.js/Express, нативный C) и загрузка source maps.
+- Демо-клиенты Sentry (Python/FastAPI, Node.js/Express) и загрузка source maps.
 
 ## Применение через Terraform (корень репозитория)
 
@@ -229,7 +229,7 @@ kubectl -n sentry create secret generic kafka-credentials \
 
 ### 4. Установка Sentry
 
-**Порядок зависимостей.** Чарт поднимает PostgreSQL, Redis и Kafka в namespace `sentry`, а **ClickHouse работает в k8s через clickhouse-operator** (namespace `clickhouse`, `externalClickhouse` в [values_sentry.yaml.tpl](https://github.com/patsevanton/sentry-v29-yc-k8s-elastic/blob/master/values_sentry.yaml.tpl)). Сначала выполните **§0** (ClickHouse Operator + Keeper + ClickHouseInstallation), **§3** (репозиторий Helm), затем команду ниже.
+**Порядок зависимостей.** Чарт поднимает PostgreSQL и Redis в namespace `sentry`, а **ClickHouse работает в k8s через clickhouse-operator** (namespace `clickhouse`, `externalClickhouse` в [values_sentry.yaml.tpl](https://github.com/patsevanton/sentry-v29-yc-k8s-elastic/blob/master/values_sentry.yaml.tpl)). Kafka по умолчанию внешняя (Yandex Managed Kafka); встроенный Kafka включается переменной `sentry_incluster_kafka_enabled`. Сначала выполните **§0** (ClickHouse Operator + Keeper + ClickHouseInstallation), **§3.1** (репозиторий Helm), затем команду ниже.
 
 Установка с `values_sentry.yaml` (генерируется из [values_sentry.yaml.tpl](https://github.com/patsevanton/sentry-v29-yc-k8s-elastic/blob/master/values_sentry.yaml.tpl) через `terraform apply`): в файле заданы параметры ClickHouse из k8s-сервиса.
 
@@ -263,7 +263,7 @@ kubectl -n sentry logs deployment/sentry-web --tail=20
 
 ### 5.1. Prometheus Operator CRD
 
-VictoriaMetrics Operator v0.69.0 по умолчанию включает конвертацию Prometheus-совместимых CRD (`ServiceMonitor`, `PodMonitor`, `PrometheusRule`, `Probe`, `ScrapeConfig`, `AlertmanagerConfig` из `monitoring.coreos.com`). Если эти CRD не установлены в кластере, operator падает при старте с ошибкой:
+VictoriaMetrics Operator по умолчанию включает конвертацию Prometheus-совместимых CRD (`ServiceMonitor`, `PodMonitor`, `PrometheusRule`, `Probe`, `ScrapeConfig`, `AlertmanagerConfig` из `monitoring.coreos.com`). Если эти CRD не установлены в кластере, operator падает при старте с ошибкой:
 
 ```
 if kind is a CRD, it should be installed before calling Start
@@ -312,7 +312,7 @@ kubectl -n vmks get secret vmks-grafana -o jsonpath='{.data.admin-password}' | b
 
 Логин по умолчанию — `**admin**` (его можно прочитать из ключа `admin-user` того же Secret). Если вы установили стек под другим именем релиза, замените `vmks-grafana` на `<ваш-релиз>-grafana`.
 
-Для имён из `vmks-values.yaml` (`vmsingle.apatsev.org.ru`, `grafana.apatsev.org.ru`) добавьте **A-записи** на тот же внешний IP, что у ingress (см. [ip-dns.tf](https://github.com/patsevanton/sentry-v29-yc-k8s-elastic/blob/master/ip-dns.tf) для `sentry.apatsev.org.ru`).
+DNS-записи `vmsingle.apatsev.org.ru` и `grafana.apatsev.org.ru` создаются автоматически через [ip-dns.tf](https://github.com/patsevanton/sentry-v29-yc-k8s-elastic/blob/master/ip-dns.tf) при `terraform apply` (тот же внешний IP, что и у `sentry.apatsev.org.ru`).
 
 Веб-интерфейс Grafana доступен по адресу **[http://grafana.apatsev.org.ru](http://grafana.apatsev.org.ru)**.
 
@@ -382,7 +382,7 @@ kubectl apply -f k8s/vmscrape-clickhouse-operator.yaml
 Проверка:
 
 ```bash
-kubectl -n vmks get vmscrape clickhouse-operator
+kubectl -n vmks get vmservicescrape clickhouse-operator
 ```
 
 Импортируйте дашборд ClickHouse Operator в Grafana (`Dashboards -> New -> Import`, загрузите JSON-файл, datasource — Prometheus/VictoriaMetrics). JSON-файл дашборда: [Altinity_ClickHouse_Operator_dashboard.json](https://github.com/Altinity/clickhouse-operator/blob/master/grafana-dashboard/Altinity_ClickHouse_Operator_dashboard.json) — показывает состояние оператора: количество CR, reconcile latency, количество managed ClickHouseInstallation.
@@ -422,7 +422,7 @@ kubectl -n ingress-nginx get svc
 
 Два HTTP-сервиса (Python / FastAPI и Node.js / Express) с одинаковыми маршрутами для проверки self-hosted Sentry: исключения, сообщения, транзакции, breadcrumbs, контекст.
 
-> 📋 Полная сводка возможностей Sentry v30 и их реализации в проекте — в [docs/sentry-capabilities.md](https://github.com/patsevanton/sentry-v29-yc-k8s-elastic/blob/master/docs/sentry-capabilities.md). Там же — рекомендуемый порядок внедрения новых фич.
+> 📋 Полная сводка возможностей Sentry v31 и их реализации в проекте — в [docs/sentry-capabilities.md](https://github.com/patsevanton/sentry-v29-yc-k8s-elastic/blob/master/docs/sentry-capabilities.md). Там же — рекомендуемый порядок внедрения новых фич.
 
 #### Маршруты
 
@@ -464,7 +464,7 @@ kubectl apply -f demo/k8s/deployment-node.yaml
 kubectl apply -f demo/k8s/service.yaml
 ```
 
-Манифесты Secret с плейсхолдерами: `[demo/k8s/secret-sentry-dsn-node.yaml](https://github.com/patsevanton/sentry-v29-yc-k8s-elastic/blob/master/demo/k8s/secret-sentry-dsn-node.yaml)`, `[demo/k8s/secret-sentry-dsn-python.yaml](https://github.com/patsevanton/sentry-v29-yc-k8s-elastic/blob/master/demo/k8s/secret-sentry-dsn-python.yaml)`.
+Манифесты Secret с плейсхолдерами: [demo/k8s/secret-sentry-dsn-node.yaml](https://github.com/patsevanton/sentry-v29-yc-k8s-elastic/blob/master/demo/k8s/secret-sentry-dsn-node.yaml), [demo/k8s/secret-sentry-dsn-python.yaml](https://github.com/patsevanton/sentry-v29-yc-k8s-elastic/blob/master/demo/k8s/secret-sentry-dsn-python.yaml).
 
 Переменная `DEMO_AUTO_EXCEPTION_INTERVAL_SEC` в манифестах demo (и при локальном запуске) задаёт интервал автоматической отправки исключений в Sentry; `0` отключает. Откройте проект в Sentry и убедитесь, что появились issues и (при включённом performance) транзакции.
 
