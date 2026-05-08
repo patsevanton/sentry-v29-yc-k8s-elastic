@@ -5,10 +5,6 @@ metadata:
   namespace: clickhouse
 spec:
   configuration:
-    zookeeper:
-      nodes:
-        - host: keeper-clickhouse-keeper.clickhouse.svc.cluster.local
-          port: 2181
     users:
       default/networks/ip:
         - "0.0.0.0/0"
