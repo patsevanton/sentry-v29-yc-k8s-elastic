@@ -21,9 +21,9 @@ spec:
   scaleTargetRef:
     name: sentry-taskworker-ingest
   minReplicaCount: 1
-  maxReplicaCount: 5
+  maxReplicaCount: 8
   pollingInterval: 30
-  cooldownPeriod: 300
+  cooldownPeriod: 600
   triggers:
     - type: kafka
       metadata:
@@ -31,8 +31,8 @@ spec:
           ${kafka_bootstrap_servers}
         consumerGroup: taskworker-ingest
         topic: taskworker-ingest
-        lagThreshold: "100"
-        activationLagThreshold: "10"
+        lagThreshold: "1000"
+        activationLagThreshold: "100"
         offsetResetPolicy: latest
         sasl: "scram_sha512"
         tls: "disable"
