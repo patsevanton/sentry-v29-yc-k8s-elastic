@@ -447,9 +447,9 @@ kubectl -n ingress-nginx get svc
 kubectl apply -f demo/k8s/namespace.yaml
 # DSN (по одному Secret на Node и Python):
 kubectl create secret generic sentry-dsn-node -n demo-sentry \
-  --from-literal=dsn='http://e63a2b1c299c1f8fba91e2ac7c794294@sentry.apatsev.org.ru/2'
+  --from-literal=dsn='http://85cbd3d42f16344dae779b24f09fd298@sentry.apatsev.org.ru/2'
 kubectl create secret generic sentry-dsn-python -n demo-sentry \
-  --from-literal=dsn='http://e7bc0cd7b288de6bb4b50fe506f9563d@sentry.apatsev.org.ru/3'
+  --from-literal=dsn='http://692dd8f7e106c68909e8029bb7e1f3e2@sentry.apatsev.org.ru/3'
 # либо подставить dsn в demo/k8s/secret-sentry-dsn-*.yaml и:
 # kubectl apply -f demo/k8s/secret-sentry-dsn-node.yaml -f demo/k8s/secret-sentry-dsn-python.yaml
 
