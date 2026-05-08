@@ -10,7 +10,7 @@
 |-----------|-----------|-----------------|-----------|
 | Sentry App | Helm chart `sentry/sentry` v31.0.0 | `values_sentry.yaml.tpl`, `templatefile.tf` | `sentry` |
 | PostgreSQL | Встроенный в Helm Sentry | `values_sentry.yaml.tpl` | `sentry` |
-| ClickHouse | Altinity clickhouse-operator (1 shard × 1 replica) | `k8s/clickhouse/` | `clickhouse` |
+| ClickHouse | Altinity clickhouse-operator (1 shard × 3 replicas + Keeper) | `k8s/clickhouse/` | `clickhouse` |
 | Kafka | Yandex Managed Kafka | Terraform (*.tf) | — (внешний) |
 | Elasticsearch 9.x | ECK Operator | `backup/elasticsearch.yaml` (не используется) | — |
 | Object Storage (S3) | Yandex Object Storage | Terraform (*.tf) | — (внешний) |
@@ -116,7 +116,7 @@
 ## Порядок зависимостей при развёртывании
 
 1. Terraform apply (VPC, K8S, Kafka, S3, DNS)
-2. ClickHouse Operator + ClickHouseInstallation CRD
+2. ClickHouse Operator + ClickHouse Keeper + ClickHouseInstallation CRD
 3. KEDA
 4. Helm-репозиторий Sentry + namespace
 5. `helm upgrade --install sentry` (с values из Terraform)

@@ -5,7 +5,7 @@
 Статья описывает процесс развёртывания Sentry v31.0.0 в Yandex Cloud на кластере Kubernetes. Будет развёрнуто:
 
 - Инфраструктура через Terraform (K8S, Kafka, PostgreSQL, Object Storage, VPC).
-- ClickHouse через [Altinity clickhouse-operator](https://github.com/Altinity/clickhouse-operator) в Kubernetes (кластер 1 shard × 1 replica).
+- ClickHouse через [Altinity clickhouse-operator](https://github.com/Altinity/clickhouse-operator) в Kubernetes (кластер 1 shard × 3 replicas + ClickHouse Keeper).
 - ~~Elasticsearch 9.x через ECK Operator для nodestore~~ (перенесено в `backup/`, не используется — nodestore настроен на стандартный бэкенд Sentry).
 - Sentry в Kubernetes через Helm-чарт.
 - S3 filestore (Yandex Object Storage) для артефактов Sentry (debug-символы, source maps).
@@ -37,7 +37,7 @@ terraform apply
 
 ### 0. ClickHouse (Altinity clickhouse-operator)
 
-ClickHouse для Sentry/Snuba развёрнут в Kubernetes через [Altinity clickhouse-operator](https://github.com/Altinity/clickhouse-operator). Кластер: **1 shard × 1 replica**, namespace `clickhouse`. Это заменяет Yandex Managed ClickHouse и решает проблему с TLS: `system.clusters` отдаёт порт **9000** (native TCP, без TLS), что позволяет Snuba работать без TLS-костылей.
+ClickHouse для Sentry/Snuba развёрнут в Kubernetes через [Altinity clickhouse-operator](https://github.com/Altinity/clickhouse-operator). Кластер: **1 shard × 3 replicas**, namespace `clickhouse`. Координация репликации через **ClickHouse Keeper** (3 узла, тот же namespace). Это заменяет Yandex Managed ClickHouse и решает проблему с TLS: `system.clusters` отдаёт порт **9000** (native TCP, без TLS), что позволяет Snuba работать без TLS-костылей.
 
 **Преимущества перед Managed ClickHouse:**
 - `system.clusters` отдаёт порт 9000 (no TLS) — Snuba работает без `secure=true`;
@@ -74,12 +74,29 @@ kubectl get crd | grep clickhouse
 >
 > При установке через Helm-values (как в этом проекте) проблема не возникает — namespace задаётся до первого запуска.
 
-**0.2. Кластер ClickHouse**
+**0.2. ClickHouse Keeper (координация репликации)**
+
+ClickHouse с `replicasCount > 1` требует ZooKeeper-совместимый координатор для репликации данных. В этом проекте используется **ClickHouse Keeper** (лёгкая замена ZooKeeper, встроенная в экосистему ClickHouse). Манифест — [k8s/clickhouse/clickhouse-keeper-installation.yaml](https://github.com/patsevanton/sentry-v29-yc-k8s-elastic/blob/master/k8s/clickhouse/clickhouse-keeper-installation.yaml) (3 реплики Keeper с anti-affinity по хостам — **требуется минимум 3 ноды** в кластере K8S).
+
+> **ВАЖНО:** Keeper **ДОЛЖЕН** быть запущен и готов **ДО** применения `ClickHouseInstallation`. Иначе ClickHouse не сможет подключиться к координатору, и Snuba-миграции завершатся ошибкой: `Cannot use any of provided ZooKeeper nodes`.
+
+```bash
+kubectl create namespace clickhouse
+kubectl apply -f k8s/clickhouse/clickhouse-keeper-installation.yaml
+```
+
+Дождитесь готовности всех 3 подов Keeper:
+
+```bash
+kubectl -n clickhouse get pods -l clickhouse-keeper.altinity.com/chi=sentry-keeper
+# Все поды должны быть в статусе Running 1/1
+```
+
+**0.3. Кластер ClickHouse**
 
 Манифест CRD — [k8s/clickhouse/clickhouse-installation.yaml](https://github.com/patsevanton/sentry-v29-yc-k8s-elastic/blob/master/k8s/clickhouse/clickhouse-installation.yaml). Operator не имеет встроенной декларативной поддержки `databases` в CRD (`spec.configuration.databases` не существует). База данных `sentry` создаётся через init-скрипт, смонтированный в `/docker-entrypoint-initdb.d` (официальный паттерн Altinity — [02-templates-05-bootstrap-schema.yaml](https://github.com/Altinity/clickhouse-operator/blob/master/docs/chi-examples/02-templates-05-bootstrap-schema.yaml)). Скрипт хранится в ConfigMap `clickhouse-initdb` и выполняется при первом запуске пода (env `CLICKHOUSE_ALWAYS_RUN_INITDB_SCRIPTS=true`). Повторные запуски не пересоздают существующую БД (`CREATE DATABASE IF NOT EXISTS`). Также в манифесте включён встроенный Prometheus-endpoint ClickHouse (`config.d/prometheus.xml`, порт 9363) для мониторинга (см. **§7.3**).
 
 ```bash
-kubectl create namespace clickhouse
 kubectl apply -f k8s/clickhouse/clickhouse-installation.yaml
 ```
 
@@ -90,22 +107,22 @@ kubectl -n clickhouse get clickhouseinstallation sentry-clickhouse
 kubectl -n clickhouse get pods,svc
 ```
 
-Убедитесь, что в STATUS отображается `Completed` и что под Running:
+Убедитесь, что в STATUS отображается `Completed` и что поды Running:
 
 ```bash
-kubectl -n clickhouse exec -it chi-sentry-clickhouse-single-node-0-0-0 -- \
+kubectl -n clickhouse exec -it chi-sentry-clickhouse-sentry-cluster-0-0-0 -- \
   clickhouse-client -q "SHOW DATABASES"
 ```
 
 В списке должна быть база `sentry`.
 
-**0.3. Endpoint для Sentry (Snuba)**
+**0.4. Endpoint для Sentry (Snuba)**
 
-Кластер доступен из namespace `sentry` по адресам:
-- **TCP**: `chi-sentry-clickhouse-single-node-0-0.clickhouse.svc.cluster.local:9000`
-- **HTTP**: `chi-sentry-clickhouse-single-node-0-0.clickhouse.svc.cluster.local:8123`
+Кластер доступен из namespace `sentry` по адресу load-balancer сервиса:
+- **TCP**: `clickhouse-sentry-clickhouse.clickhouse.svc.cluster.local:9000`
+- **HTTP**: `clickhouse-sentry-clickhouse.clickhouse.svc.cluster.local:8123`
 
-В `system.clusters` имя кластера — `single-node`, порт `9000`. Значения `clusterName` и `distributedClusterName` в `values_sentry.yaml` должны совпадать с этим именем.
+В `system.clusters` имя кластера — `sentry-cluster`, порт `9000`. Значения `clusterName` и `distributedClusterName` в `values_sentry.yaml` должны совпадать с этим именем.
 
 Пользователь `default` используется без пароля (`networks/ip: 0.0.0.0/0`). База данных `sentry` создаётся init-скриптом из ConfigMap при первом запуске.
 
@@ -189,7 +206,7 @@ filestore:
 
 ### 4. Установка Sentry
 
-**Порядок зависимостей.** Чарт поднимает PostgreSQL, Redis и Kafka в namespace `sentry`, а **ClickHouse работает в k8s через clickhouse-operator** (namespace `clickhouse`, `externalClickhouse` в [values_sentry.yaml.tpl](https://github.com/patsevanton/sentry-v29-yc-k8s-elastic/blob/master/values_sentry.yaml.tpl)). Сначала выполните **§0** (ClickHouse Operator + CRD), **§3** (репозиторий Helm), затем команду ниже.
+**Порядок зависимостей.** Чарт поднимает PostgreSQL, Redis и Kafka в namespace `sentry`, а **ClickHouse работает в k8s через clickhouse-operator** (namespace `clickhouse`, `externalClickhouse` в [values_sentry.yaml.tpl](https://github.com/patsevanton/sentry-v29-yc-k8s-elastic/blob/master/values_sentry.yaml.tpl)). Сначала выполните **§0** (ClickHouse Operator + Keeper + ClickHouseInstallation), **§3** (репозиторий Helm), затем команду ниже.
 
 Установка с `values_sentry.yaml` (генерируется из [values_sentry.yaml.tpl](https://github.com/patsevanton/sentry-v29-yc-k8s-elastic/blob/master/values_sentry.yaml.tpl) через `terraform apply`): в файле заданы параметры ClickHouse из k8s-сервиса.
 
@@ -344,7 +361,7 @@ kubectl apply -f k8s/vmscrape-clickhouse-server.yaml
 2. Проверьте, что endpoint доступен из пода ClickHouse:
 
 ```bash
-kubectl -n clickhouse exec -it chi-sentry-clickhouse-single-node-0-0-0 -- \
+kubectl -n clickhouse exec -it chi-sentry-clickhouse-sentry-cluster-0-0-0 -- \
   curl -s http://localhost:9363/metrics | head -20
 ```
 
