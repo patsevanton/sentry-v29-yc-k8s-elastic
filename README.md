@@ -37,12 +37,13 @@ terraform apply
 
 ### 0. ClickHouse (Altinity clickhouse-operator)
 
-ClickHouse для Sentry/Snuba развёрнут в Kubernetes через [Altinity clickhouse-operator](https://github.com/Altinity/clickhouse-operator). Кластер: **1 shard × 3 replicas**, namespace `clickhouse`. Координация репликации через **ClickHouse Keeper** (3 узла, тот же namespace). Это заменяет Yandex Managed ClickHouse и решает проблему с TLS: `system.clusters` отдаёт порт **9000** (native TCP, без TLS), что позволяет Snuba работать без TLS-костылей.
+ClickHouse для Sentry/Snuba развёрнут в Kubernetes через [Altinity clickhouse-operator](https://github.com/Altinity/clickhouse-operator). Кластер: **1 shard × 3 replicas**, namespace `clickhouse`. Координация репликации через **ClickHouse Keeper** (3 узла, тот же namespace).
 
 **Преимущества перед Managed ClickHouse:**
 - `system.clusters` отдаёт порт 9000 (no TLS) — Snuba работает без `secure=true`;
 - DNS-хостнеймы резолвятся внутри кластера без `dnsConfig.searches`;
 - Полный контроль над версией ClickHouse, конфигурацией и ресурсами.
+- Clickhouse-operator обычно дешевле
 
 **0.1. Установка clickhouse-operator**
 
@@ -215,16 +216,7 @@ helm upgrade --install sentry sentry/sentry --version 31.0.0 -n sentry \
   -f values_sentry.yaml --timeout=7200s --create-namespace
 ```
 
-**Устанавливается долго:** первый `helm upgrade --install` часто занимает 20–40 минут и более — последовательно выполняются Job’ы (проверка/инициализация БД, provisioning Kafka, Snuba и миграции). Увеличенный timeout (`7200s` = 1 час) позволяет избежать прерывания установки при длительном выполнении Job. Смотрите `kubectl -n sentry get jobs` и логи подов Job при зависаниях. Пример строк (реальный прогон; в k9s колонка **AGE** часто отсортирована по возрастанию — значок **↑**):
-
-| NAMESPACE | NAME | COMPLETIONS | DURATION | AGE |
-|-----------|------|-------------|----------|-----|
-| sentry | sentry-user-create | 1/1 | 14s | 18s |
-| sentry | sentry-db-init | 1/1 | 2m2s | 2m21s |
-| sentry | sentry-snuba-db-init | 1/1 | 6s | 16m |
-| sentry | sentry-snuba-migrate | 1/1 | 13m | 16m |
-| sentry | sentry-kafka-provisioning | 1/1 | 10m | 26m |
-| sentry | sentry-db-check | 1/1 | 2m50s | 29m |
+**Устанавливается долго:** первый `helm upgrade --install` часто занимает 20–40 минут.
 
 После установки зайдите в Sentry в браузере: **[http://sentry.apatsev.org.ru](http://sentry.apatsev.org.ru)** (DNS и ingress — **§8**; если задали другой хост в Ingress/`values`, используйте его).
 
