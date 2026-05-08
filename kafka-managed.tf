@@ -16,7 +16,7 @@ resource "yandex_mdb_kafka_cluster" "managed" {
     brokers_count    = var.managed_kafka_brokers_count
     zones            = [local.subnet_a_zone, local.subnet_b_zone, local.subnet_d_zone]
     assign_public_ip = var.managed_kafka_assign_public_ip
-    unmanaged_topics = true
+    # unmanaged_topics = true
     schema_registry  = false
 
     kafka {
