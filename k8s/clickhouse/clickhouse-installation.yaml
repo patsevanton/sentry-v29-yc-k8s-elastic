@@ -53,7 +53,7 @@ spec:
         spec:
           containers:
             - name: clickhouse
-              image: altinity/clickhouse-server:25.3.6.10034.altinitystable
+              image: altinity/clickhouse-server:25.3.8.10042.altinitystable
               ports:
                 - name: prometheus
                   containerPort: 9363

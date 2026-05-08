@@ -19,7 +19,7 @@ spec:
         spec:
           containers:
             - name: clickhouse-keeper
-              image: altinity/clickhouse-keeper:25.3.6.10034.altinitystable
+              image: altinity/clickhouse-keeper:25.3.8.10042.altinitystable
           affinity:
             podAntiAffinity:
               requiredDuringSchedulingIgnoredDuringExecution:
