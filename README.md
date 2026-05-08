@@ -295,6 +295,25 @@ helm upgrade --install sentry sentry/sentry --version 31.0.0 -n sentry \
 
 **Relay** и **taskbroker** отдельно не настраиваются.
 
+#### Автоскейлинг taskworker-ingest (KEDA ScaledObject)
+
+После установки Sentry и KEDA примените манифест [k8s/keda-taskworker-ingest.yaml](https://github.com/patsevanton/sentry-v29-yc-k8s-elastic/blob/master/k8s/keda-taskworker-ingest.yaml) — `ScaledObject` для `sentry-taskworker-ingest` с триггером Kafka lag:
+
+```bash
+kubectl apply -f k8s/keda-taskworker-ingest.yaml
+```
+
+- **minReplicaCount:** 1, **maxReplicaCount:** 8
+- **Триггер:** `kafka_group_topic_partition_lag` (группа `taskworker-ingest`, топик `taskworker-ingest`) — запрос к VictoriaMetrics (§4)
+- **threshold:** 1000 (порог масштабирования), **activationThreshold:** 100 (порог «пробуждения» из 0→1)
+- **pollingInterval:** 30 сек, **cooldownPeriod:** 600 сек (10 мин)
+
+Проверка:
+
+```bash
+kubectl -n sentry get scaledobject taskworker-ingest
+```
+
 ### 7. Проверка подов и логов
 
 В конце установки Sentry убедитесь, что все Job завершились (статус `Completed`). Пока Job ещё запущены, поды инициализации могут быть в статусе `Running`, а Helm может ждать готовности.
@@ -329,7 +348,13 @@ kubectl -n sentry create secret generic sentry-auth-token --from-literal=token='
 kubectl apply -f k8s/sentry-prometheus-exporter.yaml
 ```
 
-4. Подключите scrape через `VMServiceScrape`: [k8s/vmscrape-sentry-prometheus-exporter.yaml](https://github.com/patsevanton/sentry-v29-yc-k8s-elastic/blob/master/k8s/vmscrape-sentry-prometheus-exporter.yaml) (`kubectl apply -f k8s/vmscrape-sentry-prometheus-exporter.yaml`). Манифест создаёт ресурс в namespace **`vmks`** (где работает `VMAgent` из §4) и указывает на Service в **`sentry`**; если положить `VMServiceScrape` только в `sentry`, vmagent его не подхватит. В нём же заданы `scrape_interval` / `scrapeTimeout` побольше: экспортёр отвечает медленно (запросы к API Sentry), иначе цель в vmagent будет **down** по таймауту. Либо укажите цель вручную, например `http://sentry-prometheus-exporter.sentry.svc.cluster.local:9790/metrics/`.
+4. 
+
+```bash
+kubectl apply -f k8s/vmscrape-sentry-prometheus-exporter.yaml
+```
+
+Подключите scrape через `VMServiceScrape`: [k8s/vmscrape-sentry-prometheus-exporter.yaml](https://github.com/patsevanton/sentry-v29-yc-k8s-elastic/blob/master/k8s/vmscrape-sentry-prometheus-exporter.yaml) (`kubectl apply -f k8s/vmscrape-sentry-prometheus-exporter.yaml`). Манифест создаёт ресурс в namespace **`vmks`** (где работает `VMAgent` из §4) и указывает на Service в **`sentry`**; если положить `VMServiceScrape` только в `sentry`, vmagent его не подхватит. В нём же заданы `scrape_interval` / `scrapeTimeout` побольше: экспортёр отвечает медленно (запросы к API Sentry), иначе цель в vmagent будет **down** по таймауту. Либо укажите цель вручную, например `http://sentry-prometheus-exporter.sentry.svc.cluster.local:9790/metrics/`.
 
 5. Импортируйте дашборд [dashboard/sentry-issues-events-overview.json](https://github.com/patsevanton/sentry-v29-yc-k8s-elastic/blob/master/dashboard/sentry-issues-events-overview.json) в Grafana (`Dashboards -> New -> Import`) и выберите datasource Prometheus/VictoriaMetrics.
 

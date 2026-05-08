@@ -43,7 +43,7 @@ spec:
             - name: SENTRY_ISSUES_1H
               value: "True"
             - name: SENTRY_ISSUES_24H
-              value: "False"
+              value: "True"
             - name: SENTRY_ISSUES_14D
               value: "False"
 ---
