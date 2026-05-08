@@ -1,3 +1,46 @@
+grafana:
+  resources:
+    requests:
+      cpu: 50m
+      memory: 256Mi
+    limits:
+      cpu: 200m
+      memory: 512Mi
+  ingress:
+    ingressClassName: nginx
+    enabled: true
+    annotations:
+      nginx.ingress.kubernetes.io/ssl-redirect: "false"
+    hosts:
+      - grafana.apatsev.org.ru
+
+kube-state-metrics:
+  resources:
+    requests:
+      cpu: 10m
+      memory: 32Mi
+    limits:
+      cpu: 100m
+      memory: 128Mi
+
+prometheus-node-exporter:
+  resources:
+    requests:
+      cpu: 10m
+      memory: 32Mi
+    limits:
+      cpu: 100m
+      memory: 128Mi
+
+victoria-metrics-operator:
+  resources:
+    requests:
+      cpu: 50m
+      memory: 64Mi
+    limits:
+      cpu: 200m
+      memory: 256Mi
+
 vmsingle:
   ingress:
     enabled: true
@@ -7,12 +50,3 @@ vmsingle:
       nginx.ingress.kubernetes.io/ssl-redirect: "false"
     hosts:
       - vmsingle.apatsev.org.ru
-
-grafana:
-  ingress:
-    ingressClassName: nginx
-    enabled: true
-    annotations:
-      nginx.ingress.kubernetes.io/ssl-redirect: "false"
-    hosts:
-      - grafana.apatsev.org.ru
