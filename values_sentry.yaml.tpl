@@ -47,18 +47,18 @@ redis:
     resources:
       requests:
         cpu: 250m
-        memory: 512Mi
+        memory: 1Gi
       limits:
         cpu: 1000m
-        memory: 1Gi
+        memory: 2Gi
   replicas:
     resources:
       requests:
         cpu: 250m
-        memory: 512Mi
+        memory: 1Gi
       limits:
         cpu: 1000m
-        memory: 1Gi
+        memory: 2Gi
 kafka:
   enabled: ${kafka_enabled}
   zookeeper:
