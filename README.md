@@ -205,6 +205,28 @@ filestore:
 
 По умолчанию чарт Sentry хранит артефакты на локальной ФС (`/var/lib/sentry/files`) с PVC в режиме **RWO** (ReadWriteOnce). RWO-том доступен только одному поду (обычно `sentry-web`); taskworker-ы при сборке (`assemble`) debug-файлов не находят blob-ы → `FileNotFoundError` / `internal server error` в UI. S3-бэкенд доступен всем подам одновременно и решает эту проблему.
 
+### 3.3. Kafka credentials (Secret для внешнего Kafka)
+
+При использовании внешнего Kafka (Yandex Managed Kafka) чарт Sentry ожидает Secret с credentials для SASL-аутентификации. В `values_sentry.yaml` задано `externalKafka.sasl.existingSecret: "kafka-credentials"` — этот Secret должен существовать в namespace `sentry` **до** запуска `helm upgrade --install sentry`, иначе Job `sentry-kafka-provisioning` завершится ошибкой `secret "kafka-credentials" not found`.
+
+Ключи Secret соответствуют секции `externalKafka.sasl.existingSecretKeys` в values:
+- `mechanism` — механизм SASL (например, `SCRAM-SHA-512`)
+- `username` — имя пользователя Kafka
+- `password` — пароль Kafka
+
+Если credentials уже есть в Terraform outputs:
+
+```bash
+kafka_user=$(terraform output -raw managed_kafka_user)
+kafka_password=$(terraform output -raw managed_kafka_password)
+kubectl -n sentry create secret generic kafka-credentials \
+  --from-literal=mechanism='SCRAM-SHA-512' \
+  --from-literal=username="${kafka_user}" \
+  --from-literal=password="${kafka_password}"
+```
+
+Если credentials задаются вручную, замените значения на реальные. При использовании встроенного Kafka (`kafka.enabled: true`) этот Secret не нужен.
+
 ### 4. Установка Sentry
 
 **Порядок зависимостей.** Чарт поднимает PostgreSQL, Redis и Kafka в namespace `sentry`, а **ClickHouse работает в k8s через clickhouse-operator** (namespace `clickhouse`, `externalClickhouse` в [values_sentry.yaml.tpl](https://github.com/patsevanton/sentry-v29-yc-k8s-elastic/blob/master/values_sentry.yaml.tpl)). Сначала выполните **§0** (ClickHouse Operator + Keeper + ClickHouseInstallation), **§3** (репозиторий Helm), затем команду ниже.
