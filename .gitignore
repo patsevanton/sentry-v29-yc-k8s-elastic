@@ -48,4 +48,3 @@ terragrunt/01-network-vpn/wg-client.conf
 k8s/vmstaticscrape-yc-managed-kafka.yaml
 k8s/secret-yc-monitoring-api-key.yaml
 k8s/kafka-credentials.yaml
-k8s/keda-taskworker-ingest.yaml
