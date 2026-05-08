@@ -150,7 +150,7 @@ helm repo add kedacore https://kedacore.github.io/charts
 helm repo update
 kubectl create namespace keda
 helm upgrade --install keda kedacore/keda \
-  --version 2.16.1 \
+  --version 2.19.0 \
   -n keda \
   --wait --timeout=10m
 ```
@@ -239,7 +239,7 @@ kubectl -n sentry logs deployment/sentry-web --tail=20
 ```bash
 kubectl create namespace vmks
 helm upgrade --install vmks oci://ghcr.io/victoriametrics/helm-charts/victoria-metrics-k8s-stack \
-  --version 0.72.6 \
+  --version 0.77.0 \
   -n vmks \
   -f vmks-values.yaml \
   --wait --timeout=15m

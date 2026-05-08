@@ -14,8 +14,8 @@
 | Kafka | Yandex Managed Kafka | Terraform (*.tf) | — (внешний) |
 | Elasticsearch 9.x | ECK Operator | `backup/elasticsearch.yaml` (не используется) | — |
 | Object Storage (S3) | Yandex Object Storage | Terraform (*.tf) | — (внешний) |
-| Autoscaling | KEDA v2.16.1 | Helm `kedacore/keda` | `keda` |
-| Monitoring | VictoriaMetrics K8s Stack v0.72.6 | `vmks-values.yaml`, `k8s/` | `vmks` |
+| Autoscaling | KEDA v2.19.0 | Helm `kedacore/keda` | `keda` |
+| Monitoring | VictoriaMetrics K8s Stack v0.77.0 | `vmks-values.yaml`, `k8s/` | `vmks` |
 | Ingress / DNS | Terraform managed | `ip-dns.tf`, Terraform outputs | — |
 | Infra (VPC, K8S) | Terraform | `*.tf` в корне | — |
 
@@ -60,8 +60,8 @@
 - `kubectl apply -f k8s/secret-yc-monitoring-api-key.yaml` — создать K8S Secret с bearer-токеном мониторинга
 - `kubectl apply -f k8s/vmstaticscrape-yc-managed-kafka.yaml` — применить VMStaticScrape для Kafka
 - `helm upgrade --install sentry sentry/sentry --version 31.0.0 -n sentry -f values_sentry.yaml --timeout=3600s --create-namespace` — установка/обновление Sentry
-- `helm upgrade --install vmks vm/victoria-metrics-k8s-stack --version 0.72.6 -n vmks -f vmks-values.yaml --wait --timeout=15m` — установка VictoriaMetrics
-- `helm upgrade --install keda kedacore/keda --version 2.16.1 -n keda --wait --timeout=10m` — установка KEDA
+- `helm upgrade --install vmks vm/victoria-metrics-k8s-stack --version 0.77.0 -n vmks -f vmks-values.yaml --wait --timeout=15m` — установка VictoriaMetrics
+- `helm upgrade --install keda kedacore/keda --version 2.19.0 -n keda --wait --timeout=10m` — установка KEDA
 - `kubectl -n sentry get pods` — проверка подов Sentry
 - `kubectl -n sentry get jobs` — проверка Job'ов Sentry
 - `kubectl -n sentry logs deployment/sentry-web --tail=20` — логи web
