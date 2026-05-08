@@ -247,6 +247,34 @@ kubectl -n sentry logs sentry-taskbroker-ingest-0 --tail=20
 kubectl -n sentry logs deployment/sentry-web --tail=20
 ```
 
+### 5.1. Prometheus Operator CRD
+
+VictoriaMetrics Operator v0.69.0 по умолчанию включает конвертацию Prometheus-совместимых CRD (`ServiceMonitor`, `PodMonitor`, `PrometheusRule`, `Probe`, `ScrapeConfig`, `AlertmanagerConfig` из `monitoring.coreos.com`). Если эти CRD не установлены в кластере, operator падает при старте с ошибкой:
+
+```
+if kind is a CRD, it should be installed before calling Start
+```
+
+Установите **только CRD** (без самого Prometheus Operator):
+
+```bash
+kubectl apply --server-side -f https://github.com/prometheus-operator/prometheus-operator/releases/download/v0.91.0/stripped-down-crds.yaml
+```
+
+Проверка:
+
+```bash
+kubectl get crd | grep monitoring.coreos.com
+```
+
+После установки CRD перезапустите VictoriaMetrics Operator, чтобы он корректно инициализировал кэш:
+
+```bash
+kubectl rollout restart deployment -n vmks
+```
+
+> **Примечание:** файл `stripped-down-crds.yaml` содержит только определения CRD (CustomResourceDefinition), без Deployment, RBAC и прочих ресурсов Prometheus Operator. Это безопасно — в кластере не появляется Prometheus, только схемы объектов, которые использует VictoriaMetrics Operator для конвертации.
+
 ### 6. VictoriaMetrics K8s Stack
 
 Стек [VictoriaMetrics K8s Stack](https://docs.victoriametrics.com/helm/victoria-metrics-k8s-stack/) поднимает оператор VictoriaMetrics, **VMSingle**, **VMAgent**, **Grafana**, **vmalert**, Alertmanager, **node-exporter** и **kube-state-metrics**. Готовые значения — [vmks-values.yaml](https://github.com/patsevanton/sentry-v29-yc-k8s-elastic/blob/master/vmks-values.yaml) (Ingress для UI хранилища и Grafana).
