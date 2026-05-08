@@ -295,6 +295,10 @@ helm upgrade --install sentry sentry/sentry --version 31.0.0 -n sentry \
 
 **Relay** и **taskbroker** отдельно не настраиваются.
 
+
+#### TODO проверить HPA taskworker-ingest
+
+
 #### Автоскейлинг taskworker-ingest (KEDA ScaledObject)
 
 После установки Sentry и KEDA примените манифест [k8s/keda-taskworker-ingest.yaml](https://github.com/patsevanton/sentry-v29-yc-k8s-elastic/blob/master/k8s/keda-taskworker-ingest.yaml) — `ScaledObject` для `sentry-taskworker-ingest` с триггером Kafka lag:
