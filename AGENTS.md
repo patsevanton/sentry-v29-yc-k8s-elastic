@@ -115,13 +115,14 @@
 
 1. Terraform apply (VPC, K8S, Kafka, S3, DNS)
 2. ClickHouse Operator + ClickHouse Keeper + ClickHouseInstallation CRD
-3. KEDA
-4. Helm-репозиторий Sentry + namespace
-5. `helm upgrade --install sentry` (с values из Terraform)
-6. VictoriaMetrics K8s Stack
-7. Мониторинг (Prometheus exporter, VMServiceScrape)
-8. Импорт дашборда `dashboard/sentry-issues-events-overview.json` в Grafana
-9. Демо-клиенты
+3. Prometheus Operator CRD
+4. VictoriaMetrics K8s Stack
+5. KEDA
+6. Helm-репозиторий Sentry + namespace
+7. `helm upgrade --install sentry` (с values из Terraform)
+8. Мониторинг (Prometheus exporter, VMServiceScrape)
+9. Импорт дашборда `dashboard/sentry-issues-events-overview.json` в Grafana
+10. Демо-клиенты
 
 ## References / Полезные ссылки
 
