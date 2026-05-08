@@ -95,7 +95,7 @@ kubectl -n clickhouse get pods -l clickhouse-keeper.altinity.com/chi=sentry-keep
 
 **0.3. Кластер ClickHouse**
 
-Манифест CRD — [k8s/clickhouse/clickhouse-installation.yaml](https://github.com/patsevanton/sentry-v29-yc-k8s-elastic/blob/master/k8s/clickhouse/clickhouse-installation.yaml). Operator не имеет встроенной декларативной поддержки `databases` в CRD (`spec.configuration.databases` не существует). База данных `sentry` создаётся через init-скрипт, смонтированный в `/docker-entrypoint-initdb.d` (официальный паттерн Altinity — [02-templates-05-bootstrap-schema.yaml](https://github.com/Altinity/clickhouse-operator/blob/master/docs/chi-examples/02-templates-05-bootstrap-schema.yaml)). Скрипт хранится в ConfigMap `clickhouse-initdb` и выполняется при первом запуске пода (env `CLICKHOUSE_ALWAYS_RUN_INITDB_SCRIPTS=true`). Повторные запуски не пересоздают существующую БД (`CREATE DATABASE IF NOT EXISTS`). Также в манифесте включён встроенный Prometheus-endpoint ClickHouse (`config.d/prometheus.xml`, порт 9363) для мониторинга (см. **§7.3**).
+Манифест CRD — [k8s/clickhouse/clickhouse-installation.yaml](https://github.com/patsevanton/sentry-v29-yc-k8s-elastic/blob/master/k8s/clickhouse/clickhouse-installation.yaml). База данных `sentry` создаётся через механизм `startup_scripts` clickhouse-operator'а: в `spec.configuration.files` задан файл `config.d/init-sentry.xml` с секцией `<startup_scripts>`, содержащий `CREATE DATABASE IF NOT EXISTS sentry`. Этот скрипт выполняется clickhouse-server при каждом запуске, но `IF NOT EXISTS` предотвращает ошибку при повторных запусках. Также в манифесте включён встроенный Prometheus-endpoint ClickHouse (`config.d/prometheus.xml`, порт 9363) для мониторинга (см. **§7.3**).
 
 ```bash
 kubectl apply -f k8s/clickhouse/clickhouse-installation.yaml
@@ -125,7 +125,7 @@ kubectl -n clickhouse exec -it chi-sentry-clickhouse-sentry-cluster-0-0-0 -- \
 
 В `system.clusters` имя кластера — `sentry-cluster`, порт `9000`. Значения `clusterName` и `distributedClusterName` в `values_sentry.yaml` должны совпадать с этим именем.
 
-Пользователь `default` используется без пароля (`networks/ip: 0.0.0.0/0`). База данных `sentry` создаётся init-скриптом из ConfigMap при первом запуске.
+Пользователь `default` используется без пароля (`networks/ip: 0.0.0.0/0`). База данных `sentry` создаётся через `startup_scripts` в конфигурации ClickHouse (`config.d/init-sentry.xml`) при запуске сервера.
 
 ### 1. NodeLocal DNSCache
 
