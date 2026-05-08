@@ -258,7 +258,7 @@ filestore:
 
 ### 5.3. Kafka credentials (Secret для внешнего Kafka)
 
-При использовании внешнего Kafka (Yandex Managed Kafka) чарт Sentry ожидает Secret с credentials для SASL-аутентификации. В `values_sentry.yaml` задано `externalKafka.sasl.existingSecret: "kafka-credentials"` — этот Secret должен существовать в namespace `sentry` **до** запуска `helm upgrade --install sentry`, иначе Job `sentry-kafka-provisioning` завершится ошибкой `secret "kafka-credentials" not found`.
+Так как используем внешнюю Kafka (Yandex Managed Kafka), чарт Sentry ожидает Secret с credentials для SASL-аутентификации. В `values_sentry.yaml` задано `externalKafka.sasl.existingSecret: "kafka-credentials"` — этот Secret должен существовать в namespace `sentry` **до** запуска `helm upgrade --install sentry`, иначе Job `sentry-kafka-provisioning` завершится ошибкой `secret "kafka-credentials" not found`.
 
 Ключи Secret соответствуют секции `externalKafka.sasl.existingSecretKeys` в values:
 - `mechanism` — механизм SASL (например, `SCRAM-SHA-512`)
