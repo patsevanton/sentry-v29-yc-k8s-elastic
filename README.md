@@ -228,7 +228,7 @@ helm upgrade --install keda kedacore/keda \
 
 ```bash
 kubectl -n keda get pods
-kubectl get crd | rg "keda.sh"
+kubectl get crd | grep "keda.sh"
 ```
 
 После установки можно добавлять `ScaledObject` для нужных deployment/statefulset (например, ingest-consumer-ов), с триггером Kafka lag.
