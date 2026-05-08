@@ -47,7 +47,6 @@
 | `k8s/clickhouse/` | ClickHouseInstallation CRD для clickhouse-operator | При изменении конфигурации ClickHouse |
 | `dashboard/` | Дашборды Grafana (`sentry-issues-events-overview.json`) | При обновлении визуализаций; импортируется в Grafana после установки VMKS |
 | `demo/` | Демо-клиенты (Python, Node.js) | При изменении примеров интеграции |
-| `examples/` | Примеры интеграции (native C, source maps) | При добавлении примеров |
 | `scripts/` | Вспомогательные скрипты | При изменении служебных скриптов |
 
 ## Key Commands
@@ -109,7 +108,6 @@
 - `k8s/` — Kubernetes-манифесты (мониторинг, DNS, exporters)
 - `demo/` — демо-клиенты Sentry (Python, Node.js)
 - `dashboard/` — дашборды Grafana
-- `examples/` — примеры интеграции (native C, source maps)
 - `scripts/` — вспомогательные скрипты
 - `docs/` — дополнительная документация
 

@@ -1,6 +1,6 @@
 # Возможности Sentry v30: что реализовано в проекте
 
-> Этот документ — сводная таблица всех ключевых возможностей Sentry SDK и платформы (версия ~v30.1.0) с указанием, что уже демонстрируется в демо-приложениях (`demo/`, `examples/`), а что — нет.
+> Этот документ — сводная таблица всех ключевых возможностей Sentry SDK и платформы (версия ~v30.1.0) с указанием, что уже демонстрируется в демо-приложениях (`demo/`), а что — нет.
 > Ориентирован на Python и Node.js backend SDK. Frontend-фичи (Session Replay, Web Vitals) отмечены отдельно.
 
 ---
@@ -198,8 +198,8 @@
 
 | Возможность | Python | Node | Реализовано | Комментарий |
 |-------------|--------|------|-------------|-------------|
-| Source Maps (Node) | — | ✅ | ✅ | `examples/sourcemap-upload` — загрузка карт в релиз |
-| Debug Symbols / Native (C/C++) | ✅ | — | ✅ | `examples/sentry-native-debug-sample` — ELF + DWARF |
+| Source Maps (Node) | — | ✅ | ❌ | Загрузка карт в релиз через sentry-cli |
+| Debug Symbols / Native (C/C++) | ✅ | — | ❌ | ELF + DWARF через sentry-cli |
 | Releases (`release` в init) | ✅ | ✅ | ❌ | Связывает события с версией кода; нужен для Source Maps и Suspect Commits |
 | Environments (`environment` в init) | ✅ | ✅ | ❌ | `production`/`staging` — фильтрация в UI |
 | Dist / Server Name | ✅ | ✅ | ❌ | Уточнение платформы (iOS dist, server hostname) |
