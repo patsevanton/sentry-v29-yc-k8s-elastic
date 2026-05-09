@@ -24,7 +24,7 @@ locals {
 
   kafka_credentials_secret_name = "kafka-credentials"
 
-  managed_kafka_broker_hosts = sort([for h in yandex_mdb_kafka_cluster.managed.host : h.name])
+  managed_kafka_broker_hosts      = sort([for h in yandex_mdb_kafka_cluster.managed.host : h.name])
   managed_kafka_bootstrap_servers = join(",", [for host in local.managed_kafka_broker_hosts : "${host}:${var.managed_kafka_port}"])
   external_kafka_effective = {
     cluster = [for host in local.managed_kafka_broker_hosts : {
@@ -47,12 +47,12 @@ locals {
   }
 
   sentry_config = templatefile("${path.module}/values_sentry.yaml.tpl", {
-    sentry_admin_password       = local.sentry_admin_password
-    user_email                  = "admin@sentry.local"
-    system_url                  = "http://sentry.apatsev.org.ru"
-    ingress_enabled             = true
-    ingress_hostname            = "sentry.apatsev.org.ru"
-    ingress_class_name          = "nginx"
+    sentry_admin_password         = local.sentry_admin_password
+    user_email                    = "admin@sentry.local"
+    system_url                    = "http://sentry.apatsev.org.ru"
+    ingress_enabled               = true
+    ingress_hostname              = "sentry.apatsev.org.ru"
+    ingress_class_name            = "nginx"
     kafka_credentials_secret_name = local.kafka_credentials_secret_name
 
     filestore = {
@@ -79,10 +79,19 @@ locals {
     password    = local.managed_kafka_user_password_effective
   })
 
+  node_local_dns_config = templatefile("${path.module}/node-local-dns-values.yaml.tpl", {
+    sentry_ingress_ip = local.ingress_public_ip
+  })
 }
 
 resource "local_file" "write_kafka_credentials" {
   content         = local.kafka_credentials_config
   filename        = "${path.module}/k8s/kafka-credentials.yaml"
   file_permission = "0600"
+}
+
+resource "local_file" "write_node_local_dns_config" {
+  content         = local.node_local_dns_config
+  filename        = "${path.module}/node-local-dns-values.yaml"
+  file_permission = "0644"
 }

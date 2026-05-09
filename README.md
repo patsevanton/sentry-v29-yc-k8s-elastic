@@ -126,24 +126,20 @@ kubectl -n clickhouse exec -it chi-sentry-clickhouse-sentry-cluster-0-0-0 -- \
 
 ### 1. NodeLocal DNSCache
 
-[NodeLocal DNSCache](https://kubernetes.io/docs/tasks/administer-cluster/nodelocaldns/) — кэш DNS на каждом узле (DaemonSet в `kube-system`), снижает задержки и нагрузку на CoreDNS. В манифесте [k8s/nodelocaldns.yaml](https://github.com/patsevanton/sentry-v29-yc-k8s-elastic/blob/master/k8s/nodelocaldns.yaml) в блоке `.:53` плейсхолдер `**__SENTRY_INGRESS_IP__**` нужно заменить на текущий внешний IP из `terraform output -raw ingress_public_ip` (тот же адрес, что резервирует [ip-dns.tf](https://github.com/patsevanton/sentry-v29-yc-k8s-elastic/blob/master/ip-dns.tf) и куда указывают A-записи), чтобы поды резолвили тот же адрес, что и публичный DNS, даже если внешний DNS из кластера недоступен.
+[NodeLocal DNSCache](https://kubernetes.io/docs/tasks/administer-cluster/nodelocaldns/) — кэш DNS на каждом узле (DaemonSet в `kube-system`), снижает задержки и нагрузку на CoreDNS. Устанавливается через Helm chart [`deliveryhero/node-local-dns`](https://github.com/deliveryhero/helm-charts/tree/master/stable/node-local-dns).
 
-**Установка** Нужен настроенный `kubectl` на кластер. Подставляется ClusterIP сервиса кластерного DNS (`kube-dns`), затем манифест применяется через `kubectl apply -f -`. Режим **iptables** у kube-proxy — типичный случай.
+В файле [`node-local-dns-values.yaml`](https://github.com/patsevanton/sentry-v29-yc-k8s-elastic/blob/master/node-local-dns-values.yaml) (генерируется из `node-local-dns-values.yaml.tpl` через `terraform apply`) задана статическая запись `sentry.apatsev.org.ru -> <ingress_public_ip>`.
+
+**Установка:**
 
 ```bash
-repo_root=$(git rev-parse --show-toplevel)
-kubedns=$(kubectl get svc kube-dns -n kube-system -o jsonpath='{.spec.clusterIP}')
-domain=cluster.local
-localdns=169.254.20.10
-ingress_ip=$(terraform -chdir="${repo_root}" output -raw ingress_public_ip)
-sed -e "s/__PILLAR__LOCAL__DNS__/${localdns}/g" \
-    -e "s/__PILLAR__DNS__DOMAIN__/${domain}/g" \
-    -e "s/__PILLAR__DNS__SERVER__/${kubedns}/g" \
-    -e "s/__SENTRY_INGRESS_IP__/${ingress_ip}/g" \
-    "${repo_root}/k8s/nodelocaldns.yaml" | kubectl apply -f -
+helm repo add deliveryhero https://charts.deliveryhero.io/
+helm repo update
+helm upgrade --install node-local-dns deliveryhero/node-local-dns \
+  --namespace kube-system \
+  --create-namespace \
+  -f node-local-dns-values.yaml
 ```
-
-Если kube-proxy в режиме **IPVS**, используйте подстановку из [документации](https://kubernetes.io/docs/tasks/administer-cluster/nodelocaldns/) (в т.ч. удаление `,__PILLAR__DNS__SERVER__` из `bind` и замена `__PILLAR__CLUSTER__DNS__`); для IPVS обычно меняют `--cluster-dns` у kubelet на адрес NodeLocal (`169.254.20.10`).
 
 Проверка из пода:
 
