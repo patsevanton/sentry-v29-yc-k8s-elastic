@@ -41,11 +41,11 @@ jobs:
       matrix:
         include:
           - image: demo-node
-            context: demo/node
-            dockerfile: demo/node/Dockerfile
+            context: demo/demo-nodejs
+            dockerfile: demo/demo-nodejs/Dockerfile
           - image: demo-python
-            context: demo/python
-            dockerfile: demo/python/Dockerfile
+            context: demo/demo-python
+            dockerfile: demo/demo-python/Dockerfile
     steps:
       - name: Checkout repository
         uses: actions/checkout@v4

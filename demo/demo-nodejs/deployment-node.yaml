@@ -5,7 +5,7 @@ apiVersion: apps/v1
 kind: Deployment
 metadata:
   name: sentry-demo-node
-  namespace: demo-sentry
+  namespace: demo-node
   labels:
     app: sentry-demo-node
 spec:
