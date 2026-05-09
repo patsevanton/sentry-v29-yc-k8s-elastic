@@ -83,6 +83,7 @@ data:
         }
         prometheus :9253
     }
+
     .:53 {
         errors
         cache 30
