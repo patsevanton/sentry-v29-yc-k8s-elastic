@@ -15,7 +15,7 @@ TODO проверить все ли файлы указаны в readme
 - VictoriaMetrics K8s Stack (VMSingle, VMAgent, Grafana, vmalert, node-exporter, kube-state-metrics).
 - Мониторинг Sentry через Prometheus exporter.
 - Мониторинг Yandex Managed Kafka в Grafana (VMStaticScrape + дашборд).
-- NodeLocal DNSCache (опционально) для снижения DNS-задержек.
+- NodeLocal DNSCache для снижения DNS-задержек.
 - Демо-клиенты Sentry (Python/FastAPI, Node.js/Express) и загрузка source maps.
 
 ## Применение через Terraform (корень репозитория)
@@ -133,7 +133,7 @@ kubectl -n clickhouse exec -it chi-sentry-clickhouse-sentry-cluster-0-0-0 -- \
 
 [NodeLocal DNSCache](https://kubernetes.io/docs/tasks/administer-cluster/nodelocaldns/) — кэш DNS на каждом узле (DaemonSet в `kube-system`), снижает задержки и нагрузку на CoreDNS. В манифесте [k8s/nodelocaldns.yaml](https://github.com/patsevanton/sentry-v29-yc-k8s-elastic/blob/master/k8s/nodelocaldns.yaml) в блоке `.:53` плейсхолдер `**__SENTRY_INGRESS_IP__**` нужно заменить на текущий внешний IP из `terraform output -raw ingress_public_ip` (тот же адрес, что резервирует [ip-dns.tf](https://github.com/patsevanton/sentry-v29-yc-k8s-elastic/blob/master/ip-dns.tf) и куда указывают A-записи), чтобы поды резолвили тот же адрес, что и публичный DNS, даже если внешний DNS из кластера недоступен.
 
-**Установка** (опционально). Нужен настроенный `kubectl` на кластер. Подставляется ClusterIP сервиса кластерного DNS (`kube-dns`), затем манифест применяется через `kubectl apply -f -`. Режим **iptables** у kube-proxy — типичный случай.
+**Установка** Нужен настроенный `kubectl` на кластер. Подставляется ClusterIP сервиса кластерного DNS (`kube-dns`), затем манифест применяется через `kubectl apply -f -`. Режим **iptables** у kube-proxy — типичный случай.
 
 ```bash
 repo_root=$(git rev-parse --show-toplevel)
@@ -473,9 +473,9 @@ kubectl -n ingress-nginx get svc
 kubectl apply -f demo/k8s/namespace.yaml
 # DSN (по одному Secret на Node и Python):
 kubectl create secret generic sentry-dsn-node -n demo-sentry \
-  --from-literal=dsn='http://85cbd3d42f16344dae779b24f09fd298@sentry.apatsev.org.ru/2'
+  --from-literal=dsn='http://99a3585c881ee59f649fcb78412e2783@sentry.apatsev.org.ru/2'
 kubectl create secret generic sentry-dsn-python -n demo-sentry \
-  --from-literal=dsn='http://692dd8f7e106c68909e8029bb7e1f3e2@sentry.apatsev.org.ru/3'
+  --from-literal=dsn='http://d7cf51aa5f3cf9b397e15335a6480d3d@sentry.apatsev.org.ru/3'
 # либо подставить dsn в demo/k8s/secret-sentry-dsn-*.yaml и:
 # kubectl apply -f demo/k8s/secret-sentry-dsn-node.yaml -f demo/k8s/secret-sentry-dsn-python.yaml
 
