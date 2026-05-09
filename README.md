@@ -493,3 +493,54 @@ kubectl apply -f demo/k8s/service.yaml
 
 Переменная `DEMO_AUTO_EXCEPTION_INTERVAL_SEC` в манифестах demo (и при локальном запуске) задаёт интервал автоматической отправки исключений в Sentry; `0` отключает. Откройте проект в Sentry и убедитесь, что появились issues и (при включённом performance) транзакции.
 
+### 11. Chaos Mesh (Fault Injection для тестирования устойчивости)
+
+[Chaos Mesh](https://chaos-mesh.org/) — платформа для fault injection в Kubernetes, позволяет тестировать устойчивость Sentry к сбоям: убивать поды, задерживать/терять сетевые пакеты, нагружать CPU/内存, сбои дисков и т.д.
+
+**Установка:**
+
+```bash
+helm repo add chaos-mesh https://charts.chaos-mesh.org
+helm repo update
+kubectl create namespace chaos-mesh
+helm upgrade --install chaos-mesh chaos-mesh/chaos-mesh \
+  --version 2.7.0 \
+  -n chaos-mesh \
+  --set chaosDaemon.runtime=containerd \
+  --set chaosDaemon.socketPath=/run/containerd/containerd.sock \
+  --set dashboard.securityMode=false \
+  --wait --timeout=10m
+```
+
+Проверка:
+
+```bash
+kubectl -n chaos-mesh get pods
+```
+
+**Портал Chaos Mesh (Dashboard):**
+
+```bash
+kubectl -n chaos-mesh port-forward svc/chaos-dashboard 2333:2333 &
+# Откройте http://localhost:2333
+```
+
+**Примеры экспериментов:**
+
+- [k8s/chaos/kill-sentry-web.yaml](https://github.com/patsevanton/sentry-v29-yc-k8s-elastic/blob/master/k8s/chaos/kill-sentry-web.yaml) — убийство пода `sentry-web` каждые 5 минут (`PodChaos`)
+- [k8s/chaos/delay-clickhouse.yaml](https://github.com/patsevanton/sentry-v29-yc-k8s-elastic/blob/master/k8s/chaos/delay-clickhouse.yaml) — задержка сети 200ms до ClickHouse на 5 минут (`NetworkChaos`)
+
+Применение:
+
+```bash
+kubectl apply -f k8s/chaos/kill-sentry-web.yaml
+kubectl apply -f k8s/chaos/delay-clickhouse.yaml
+```
+
+Остановка эксперимента:
+
+```bash
+kubectl -n chaos-mesh delete podchaos kill-sentry-web
+kubectl -n chaos-mesh delete networkchaos delay-clickhouse
+```
+
