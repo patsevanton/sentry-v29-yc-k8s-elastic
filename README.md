@@ -334,30 +334,21 @@ kubectl -n sentry logs deployment/sentry-web --tail=20
 
 ### 8. Мониторинг Sentry (Prometheus exporter)
 
-После установки Sentry (**§6**, namespace `sentry`) и VictoriaMetrics K8s Stack (**§4**) можно поднять [sentry-prometheus-exporter](https://github.com/italux/sentry-prometheus-exporter) манифестом [k8s/sentry-prometheus-exporter.yaml](https://github.com/patsevanton/sentry-v29-yc-k8s-elastic/blob/master/k8s/sentry-prometheus-exporter.yaml): метрики на порту **9790**, путь `/metrics` (часто с редиректом на `/metrics/`). Внутри кластера API Sentry задаётся как `http://sentry-web.sentry.svc.cluster.local:9000/api/0/`. Переменная окружения `SENTRY_EXPORTER_ORG` должна быть равна **slug** организации — короткому идентификатору в URL (`/organizations/<slug>/`, тот же сегмент, что в запросах API `.../organizations/<slug>/`). Это не обязательно совпадает с **отображаемым именем** организации. В манифесте по умолчанию задано `sentry`: такой slug обычно у первой организации после мастера self-hosted Sentry; если в инстансе другая организация или slug — замените значение перед `kubectl apply`.
+После установки Sentry (**§6**) и VictoriaMetrics K8s Stack (**§4**) поднимите [sentry-prometheus-exporter](https://github.com/italux/sentry-prometheus-exporter) ([манифест](https://github.com/patsevanton/sentry-v29-yc-k8s-elastic/blob/master/k8s/sentry-prometheus-exporter.yaml)): метрики на порту **9790**, путь `/metrics/`.
 
-1. Создайте токен через [Internal Integration](https://docs.sentry.io/product/integrations/integration-platform/internal-integration/). В UI Sentry 26+: **Settings** → **Developer Settings** → **Custom Integrations** → **Create New Integration** → тип **Internal Integration** → **Next** → имя, например **`vm-sentry-prometheus-exporter`**. В **Permissions** для [sentry-prometheus-exporter](https://github.com/italux/sentry-prometheus-exporter) нужны scope API: **Organization** (`org:read`), **Project** (`project:read`), **Release** (`project:releases`), **Issue & Event** (`event:read`) ([описание scope](https://docs.sentry.io/api/permissions/)). Для **Organization**, **Project** и **Issue & Event** в выпадающих списках задайте **Read**. Для **Release** в Sentry 26+ в списке часто только **No Access** и **Admin** — отдельного **Read** нет: в API один scope `project:releases` на все операции с релизами (в т.ч. только чтение), поэтому выберите **Admin**, чтобы токен получил `project:releases` (это не «полный админ» организации, а уровень категории в форме интеграции). Остальные категории (**Team**, **Distribution**, **Member**, **Alerts** и т.д.) — **No Access**, если не нужны. Полный набор как в upstream; при отключённых метриках по событиям/релизам иногда хватает меньше scope. **Save** → скопируйте **Token** внизу страницы (до 20 токенов на интеграцию). См. [как создать auth token](https://docs.sentry.io/api/guides/create-auth-token/) и [документацию API](https://docs.sentry.io/api/auth/).
-2. Сохраните токен в Secret в том же namespace, что и релиз Helm:
+> **Токен создаётся только вручную через UI Sentry** — автоматизировать создание API-токена невозможно, т.к. Sentry не предоставляет API для выпуска токенов внутренних интеграций.
+
+1. Создайте токен в UI Sentry: **Settings → Developer Settings → Custom Integrations → Create New Integration** (тип **Internal Integration**). В **Permissions** задайте **Read** для Organization, Project, Issue & Event; для Release выберите **Admin** (только так токен получит `project:releases`). Скопируйте токен после сохранения. Подробнее: [Internal Integration](https://docs.sentry.io/product/integrations/integration-platform/internal-integration/), [как создать auth token](https://docs.sentry.io/api/guides/create-auth-token/).
+
+2. Создайте Secret и примените манифесты:
 
 ```bash
 kubectl -n sentry create secret generic sentry-auth-token --from-literal=token='<SENTRY_AUTH_TOKEN>'
-```
-
-3. Примените манифест:
-
-```bash
 kubectl apply -f k8s/sentry-prometheus-exporter.yaml
-```
-
-4. 
-
-```bash
 kubectl apply -f k8s/vmscrape-sentry-prometheus-exporter.yaml
 ```
 
-Подключите scrape через `VMServiceScrape`: [k8s/vmscrape-sentry-prometheus-exporter.yaml](https://github.com/patsevanton/sentry-v29-yc-k8s-elastic/blob/master/k8s/vmscrape-sentry-prometheus-exporter.yaml) (`kubectl apply -f k8s/vmscrape-sentry-prometheus-exporter.yaml`). Манифест создаёт ресурс в namespace **`vmks`** (где работает `VMAgent` из §4) и указывает на Service в **`sentry`**; если положить `VMServiceScrape` только в `sentry`, vmagent его не подхватит. В нём же заданы `scrape_interval` / `scrapeTimeout` побольше: экспортёр отвечает медленно (запросы к API Sentry), иначе цель в vmagent будет **down** по таймауту. Либо укажите цель вручную, например `http://sentry-prometheus-exporter.sentry.svc.cluster.local:9790/metrics/`.
-
-5. Импортируйте дашборд [dashboard/sentry-issues-events-overview.json](https://github.com/patsevanton/sentry-v29-yc-k8s-elastic/blob/master/dashboard/sentry-issues-events-overview.json) в Grafana (`Dashboards -> New -> Import`) и выберите datasource Prometheus/VictoriaMetrics.
+3. Импортируйте дашборд [dashboard/sentry-issues-events-overview.json](https://github.com/patsevanton/sentry-v29-yc-k8s-elastic/blob/master/dashboard/sentry-issues-events-overview.json) в Grafana (`Dashboards → New → Import`).
 
 ### 8.1. Мониторинг Yandex Managed Kafka в Grafana
 
