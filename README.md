@@ -79,7 +79,7 @@ kubectl get crd | grep clickhouse
 
 **0.2. ClickHouse Keeper (координация репликации)**
 
-ClickHouse с `replicasCount > 1` требует ZooKeeper-совместимый координатор для репликации данных. В этом проекте используется (ClickHouse Keeper)[https://clickhouse.com/docs/guides/sre/keeper/clickhouse-keeper].
+ClickHouse с `replicasCount > 1` требует ZooKeeper-совместимый координатор для репликации данных. В этом проекте используется [ClickHouse Keeper](https://clickhouse.com/docs/guides/sre/keeper/clickhouse-keeper).
 
 > **ВАЖНО:** Keeper **ДОЛЖЕН** быть запущен и готов **ДО** применения `ClickHouseInstallation`. Иначе ClickHouse не сможет подключиться к координатору, и Snuba-миграции завершатся ошибкой: `Cannot use any of provided ZooKeeper nodes`.
 
