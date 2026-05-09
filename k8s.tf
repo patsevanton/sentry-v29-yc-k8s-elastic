@@ -218,6 +218,6 @@ output "k8s_cluster_credentials_command" {
 }
 
 output "ingress_public_ip" {
-  description = "External ingress-nginx IP for nodelocaldns substitution"
+  description = "External ingress-nginx IP"
   value       = local.ingress_public_ip
 }

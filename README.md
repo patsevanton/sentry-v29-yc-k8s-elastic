@@ -126,26 +126,37 @@ kubectl -n clickhouse exec -it chi-sentry-clickhouse-sentry-cluster-0-0-0 -- \
 
 ### 1. NodeLocal DNSCache
 
-[NodeLocal DNSCache](https://kubernetes.io/docs/tasks/administer-cluster/nodelocaldns/) — кэш DNS на каждом узле (DaemonSet в `kube-system`), снижает задержки и нагрузку на CoreDNS. Устанавливается через Helm chart [`deliveryhero/node-local-dns`](https://github.com/deliveryhero/helm-charts/tree/master/stable/node-local-dns).
+[NodeLocal DNSCache](https://kubernetes.io/docs/tasks/administer-cluster/nodelocaldns/) — кэш DNS на каждом узле (DaemonSet в `kube-system`), снижает задержки и нагрузку на CoreDNS. Устанавливается через Helm chart из [Yandex Cloud Marketplace](https://yandex.cloud/ru/docs/managed-kubernetes/operations/applications/node-local-dns).
 
-В файле [`node-local-dns-values.yaml`](https://github.com/patsevanton/sentry-v29-yc-k8s-elastic/blob/master/node-local-dns-values.yaml) (генерируется из `node-local-dns-values.yaml.tpl` через `terraform apply`) задана статическая запись `sentry.apatsev.org.ru -> <ingress_public_ip>`.
+> **cilium=false**, т.к. CNI в Yandex Managed Kubernetes управляется облаком и не требует `LocalRedirectPolicy`.
 
 **Установка:**
 
 ```bash
-helm repo add deliveryhero https://charts.deliveryhero.io/
-helm repo update
-helm upgrade --install node-local-dns deliveryhero/node-local-dns \
+helm pull oci://cr.yandex/yc-marketplace/yandex-cloud/node-local-dns \
+  --version 1.5.1 \
+  --untar && \
+helm install \
+  --set config.cilium=false \
+  --set config.clusterIp="10.96.128.2" \
   --namespace kube-system \
-  --create-namespace \
-  -f node-local-dns-values.yaml
+  node-local-dns ./node-local-dns/
 ```
 
-Проверка из пода:
+> `config.clusterIp` — ClusterIP сервиса `kube-dns` в namespace `kube-system`. Узнать текущий: `kubectl get svc kube-dns -n kube-system`.
+
+**Проверка:**
 
 ```bash
-kubectl run -it --rm dns-test --image=busybox:1.36 --restart=Never -- nslookup sentry.apatsev.org.ru
-# ожидается IP из: terraform output -raw ingress_public_ip
+kubectl -n kube-system get ds node-local-dns
+kubectl -n kube-system get pods -l k8s-app=node-local-dns
+kubectl -n kube-system logs -l k8s-app=node-local-dns --tail=20
+```
+
+**Проверка DNS из пода:**
+
+```bash
+kubectl run -it --rm dns-test --image=busybox:1.36 --restart=Never -- nslookup kubernetes.default.svc.cluster.local
 ```
 
 ### 2. ~~Elasticsearch (nodestore) и оператор ECK~~ (не используется)

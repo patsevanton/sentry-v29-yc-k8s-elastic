@@ -79,9 +79,6 @@ locals {
     password    = local.managed_kafka_user_password_effective
   })
 
-  node_local_dns_config = templatefile("${path.module}/node-local-dns-values.yaml.tpl", {
-    sentry_ingress_ip = local.ingress_public_ip
-  })
 }
 
 resource "local_file" "write_kafka_credentials" {
@@ -90,8 +87,3 @@ resource "local_file" "write_kafka_credentials" {
   file_permission = "0600"
 }
 
-resource "local_file" "write_node_local_dns_config" {
-  content         = local.node_local_dns_config
-  filename        = "${path.module}/node-local-dns-values.yaml"
-  file_permission = "0644"
-}
