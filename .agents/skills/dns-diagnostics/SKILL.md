@@ -1,7 +1,7 @@
 ---
 name: dns-diagnostics
 description: >-
-  Comprehensive DNS diagnostic playbook for Kubernetes clusters — CoreDNS, NodeLocalDNS,
+  Comprehensive DNS diagnostic playbook for Kubernetes clusters — CoreDNS,
   NetworkPolicy, and resolution paths. Adapted for Yandex Cloud Managed Kubernetes.
 ---
 
@@ -17,7 +17,7 @@ Use this skill when the user's question involves:
 - `Name or service not known`, `NXDOMAIN`, `SERVFAIL` errors
 - Intermittent DNS failures
 - Service unreachable by name but reachable by IP
-- Questions about CoreDNS or NodeLocalDNS health
+- Questions about CoreDNS health
 
 ## Project Context
 
@@ -117,18 +117,6 @@ Look for:
 - Policies in the affected namespace with `policyTypes: [Egress]`
 - Egress rules that don't include port 53 UDP/TCP or the kube-dns endpoint
 
-### Step 8 — NodeLocalDNS (if deployed)
-
-```bash
-kubectl get ds -n kube-system -l k8s-app=node-local-dns
-kubectl logs -n kube-system -l k8s-app=node-local-dns --tail=50 --since=5m
-```
-
-Check:
-- DaemonSet pods running on every node
-- Interface `169.254.20.10` (or whatever the NodeLocalDNS IP is)
-- LocalRedirectPolicy present (if required by CNI)
-
 ## Failure Patterns & Root Causes
 
 | Pattern | Evidence | Likely Root Cause |
@@ -139,7 +127,6 @@ Check:
 | `SERVFAIL` in logs | Step 4 | Upstream DNS unreachable (check forward directive in Step 3) |
 | Intermittent failures | Step 5 high error rate | CoreDNS capacity / caching issue, or upstream flaky |
 | Resolution works in some namespaces only | Step 7 | NetworkPolicy blocking DNS egress |
-| NodeLocalDNS-specific failures | Step 8 | Missing LocalRedirectPolicy |
 | Custom domain not resolving | Step 3 `rewrite` or `forward` | Misconfigured ConfigMap |
 | Kafka/ClickHouse/Sentry can't find each other | Step 6 with specific svc name | Wrong namespace or service name in config |
 
@@ -150,13 +137,12 @@ Check:
 | CoreDNS crashlooping | `kubectl rollout restart deployment/coredns -n kube-system` | T0 |
 | NetworkPolicy missing DNS egress | Apply patched NetworkPolicy with port 53 UDP/TCP | T2 (staging), T3 (prod) |
 | CoreDNS ConfigMap malformed | `kubectl edit configmap coredns -n kube-system` | T3 |
-| NodeLocalDNS pods missing | `kubectl rollout restart daemonset/node-local-dns -n kube-system` | T0 |
 | Upstream DNS server unreachable | Investigate Yandex Cloud DNS / NAT gateway | T4 (escalate) |
 | Service name wrong in Sentry config | Fix `values_sentry.yaml.tpl` and re-run `terraform apply` | T1 |
 
 ## Ambiguity Handling
 
-If after running steps 1-8 the evidence doesn't point clearly to one root cause:
+If after running steps 1-7 the evidence doesn't point clearly to one root cause:
 
 1. Set `status: "insufficient_data"` in the output
 2. List the specific additional data needed in `human_summary`
