@@ -55,7 +55,7 @@ Operator устанавливается вручную. Helm-values задают
 helm repo add clickhouse-operator https://helm.altinity.com
 helm repo update
 helm upgrade --install clickhouse-operator clickhouse-operator/altinity-clickhouse-operator \
-  --version 0.26.3 \
+  --version 0.27.0 \
   --namespace clickhouse-operator \
   --create-namespace \
   -f clickhouse-operator-values.yaml \
@@ -69,11 +69,7 @@ kubectl -n clickhouse-operator get pods
 kubectl get crd | grep clickhouse
 ```
 
-> **Известная проблема ([Altinity/clickhouse-operator#1930](https://github.com/Altinity/clickhouse-operator/issues/1930)):** если `ClickHouseOperatorConfiguration` применяется **после** запуска operator'а (например, вы изменили watched namespaces через values), operator не подхватывает изменение динамически. `ClickHouseInstallation` в новом namespace будет игнорироваться до рестарта пода operator'а. **Workaround:** после применения новой конфигурации выполните:
->
-> ```bash
-> kubectl rollout restart deployment -n clickhouse-operator
-> ```
+> **Известная проблема ([Altinity/clickhouse-operator#1930](https://github.com/Altinity/clickhouse-operator/issues/1930)):** если `ClickHouseOperatorConfiguration` применяется **после** запуска operator'а (например, вы изменили watched namespaces через values), operator не подхватывает изменение динамически. `ClickHouseInstallation` в новом namespace будет игнорироваться до рестарта пода operator'а.
 >
 > При установке через Helm-values (как в этом проекте) проблема не возникает — namespace задаётся до первого запуска.
 
