@@ -343,6 +343,27 @@ kubectl apply -f k8s/vmscrape-sentry-prometheus-exporter.yaml
 
 3. Импортируйте дашборд [dashboard/sentry-issues-events-overview.json](https://github.com/patsevanton/sentry-v29-yc-k8s-elastic/blob/master/dashboard/sentry-issues-events-overview.json) в Grafana (`Dashboards → New → Import`).
 
+4. Проверьте, что exporter работает корректно:
+
+```bash
+# 1. Под Running, без рестартов
+kubectl -n sentry get pods -l app=sentry-prometheus-exporter
+
+# 2. Нет ошибок DNS в логах (должны быть "projects loaded from API: N")
+kubectl -n sentry logs -l app=sentry-prometheus-exporter --tail=20
+
+# 3. VMServiceScrape в статусе operational
+kubectl -n vmks get vmservicescrape sentry-prometheus-exporter
+
+# 4. Метрики доступны (запрос занимает до 60 сек — exporter опрашивает Sentry API)
+kubectl -n sentry port-forward svc/sentry-prometheus-exporter 9790:9790 &
+curl -s --max-time 90 http://localhost:9790/metrics/ | grep -E 'sentry_open_issue_events|sentry_events_total|sentry_issues_bucket'
+kill %1
+
+# 5. Метрики видны в VMSingle
+curl -s "http://vmsingle.apatsev.org.ru/api/v1/query?query=sentry_open_issue_events" | python3 -m json.tool
+```
+
 ### 8.1. Мониторинг Yandex Managed Kafka в Grafana
 
 Для Managed Kafka в Yandex Cloud метрики берутся напрямую из Yandex Monitoring endpoint `https://monitoring.api.cloud.yandex.net/monitoring/v2/prometheusMetrics` c параметрами `folderId` и `service=managed-kafka` (официальный export в формате Prometheus).
