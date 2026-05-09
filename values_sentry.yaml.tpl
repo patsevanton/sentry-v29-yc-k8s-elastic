@@ -47,18 +47,18 @@ redis:
     resources:
       requests:
         cpu: 250m
-        memory: 1Gi
+        memory: 512Mi
       limits:
         cpu: 1000m
-        memory: 2Gi
+        memory: 1Gi
   replicas:
     resources:
       requests:
         cpu: 250m
-        memory: 1Gi
+        memory: 512Mi
       limits:
         cpu: 1000m
-        memory: 2Gi
+        memory: 1Gi
 kafka:
   enabled: ${kafka_enabled}
   zookeeper:
@@ -110,11 +110,11 @@ relay:
         memory: 256Mi
   resources:
     requests:
-      cpu: 200m
-      memory: 1Gi
+      cpu: 100m
+      memory: 256Mi
     limits:
-      cpu: 1000m
-      memory: 4Gi
+      cpu: 500m
+      memory: 1Gi
   autoscaling:
     enabled: true
     minReplicas: 1
@@ -162,10 +162,10 @@ sentry:
     resources:
       requests:
         cpu: 100m
-        memory: 256Mi
+        memory: 128Mi
       limits:
         cpu: 500m
-        memory: 1Gi
+        memory: 512Mi
   web:
     resources:
       requests:
@@ -394,11 +394,11 @@ snuba:
   api:
     resources:
       requests:
-        cpu: 200m
-        memory: 512Mi
+        cpu: 100m
+        memory: 256Mi
       limits:
-        cpu: 1000m
-        memory: 2Gi
+        cpu: 500m
+        memory: 1Gi
   cleanup:
     resources:
       requests:
