@@ -156,7 +156,15 @@ kubectl -n kube-system logs -l k8s-app=node-local-dns --tail=20
 **Проверка DNS из пода:**
 
 ```bash
-kubectl run -it --rm dns-test --image=busybox:1.36 --restart=Never -- nslookup kubernetes.default.svc.cluster.local
+kubectl run -it --rm dns-test --image=busybox:1.36 --restart=Never -- nslookup sentry.apatsev.org.ru
+```
+
+Убедитесь, что `sentry.apatsev.org.ru` резолвится в IP из Terraform output:
+
+```bash
+EXPECTED=$(terraform output -raw ingress_public_ip)
+RESOLVED=$(kubectl run -it --rm dns-test --image=busybox:1.36 --restart=Never -- nslookup sentry.apatsev.org.ru 2>/dev/null | grep -A1 'Name:' | grep 'Address' | awk '{print $3}')
+[ "$RESOLVED" = "$EXPECTED" ] && echo "OK: sentry.apatsev.org.ru -> $RESOLVED" || echo "FAIL: expected $EXPECTED, got $RESOLVED"
 ```
 
 ### 2. ~~Elasticsearch (nodestore) и оператор ECK~~ (не используется)
