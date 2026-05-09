@@ -43,6 +43,10 @@ postgresql:
       limits:
         cpu: 1000m
         memory: 1Gi
+
+cache:
+  enabled: true
+
 redis:
   enabled: ${redis_enabled}
   master:
