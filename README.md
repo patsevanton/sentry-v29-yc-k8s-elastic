@@ -171,9 +171,9 @@ if kind is a CRD, it should be installed before calling Start
 
 Установите **только CRD** (без самого Prometheus Operator):
 
-TODO переделать на helm install
 ```bash
-kubectl apply --server-side -f https://github.com/prometheus-operator/prometheus-operator/releases/download/v0.91.0/stripped-down-crds.yaml
+helm repo add prometheus-community https://prometheus-community.github.io/helm-charts
+helm install prometheus-operator-crds prometheus-community/prometheus-operator-crds
 ```
 
 Проверка:
