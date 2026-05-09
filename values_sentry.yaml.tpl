@@ -37,7 +37,7 @@ postgresql:
     resources:
       requests:
         cpu: 250m
-        memory: 256Mi
+        memory: 512Mi
       limits:
         cpu: 1000m
         memory: 1Gi
@@ -47,7 +47,7 @@ redis:
     resources:
       requests:
         cpu: 250m
-        memory: 512Mi
+        memory: 128Mi
       limits:
         cpu: 1000m
         memory: 1Gi
@@ -55,7 +55,7 @@ redis:
     resources:
       requests:
         cpu: 250m
-        memory: 512Mi
+        memory: 128Mi
       limits:
         cpu: 1000m
         memory: 1Gi
@@ -170,7 +170,7 @@ sentry:
     resources:
       requests:
         cpu: 200m
-        memory: 512Mi
+        memory: 1536Mi
       limits:
         cpu: 1000m
         memory: 2Gi
@@ -185,7 +185,7 @@ sentry:
     resources:
       requests:
         cpu: 200m
-        memory: 512Mi
+        memory: 1536Mi
       limits:
         cpu: 1000m
         memory: 2Gi

@@ -22,3 +22,11 @@ spec:
           })
         threshold: "1000"
         activationThreshold: "100"
+    - type: cpu
+      metricType: Utilization
+      metadata:
+        value: "80"
+    - type: memory
+      metricType: Utilization
+      metadata:
+        value: "80"
