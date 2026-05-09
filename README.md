@@ -133,14 +133,11 @@ kubectl -n clickhouse exec -it chi-sentry-clickhouse-sentry-cluster-0-0-0 -- \
 **Установка:**
 
 ```bash
-helm pull oci://cr.yandex/yc-marketplace/yandex-cloud/node-local-dns \
+helm upgrade --install node-local-dns oci://cr.yandex/yc-marketplace/yandex-cloud/node-local-dns \
   --version 1.5.1 \
-  --untar && \
-helm install \
-  --set config.cilium=false \
-  --set config.clusterIp="10.96.128.2" \
   --namespace kube-system \
-  node-local-dns ./node-local-dns/
+  --set config.cilium=false \
+  --set config.clusterIp="10.96.128.2"
 ```
 
 > `config.clusterIp` — ClusterIP сервиса `kube-dns` в namespace `kube-system`. Узнать текущий: `kubectl get svc kube-dns -n kube-system`.
