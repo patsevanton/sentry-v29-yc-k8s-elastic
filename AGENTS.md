@@ -81,6 +81,7 @@
 - Если не уверен — СПРОСИ, не угадывай
 - При изменении `values_sentry.yaml.tpl` помни: файл генерируется через `templatefile.tf` — проверяй шаблоны переменных
 - ClickHouse работает в k8s через clickhouse-operator — проверяй CRD ClickHouseInstallation при изменениях
+- При изменении namespace для clickhouse-operator проверяй, что `ClickHouseOperatorConfiguration` содержит нужные watched namespaces до запуска operator'а (operator не подхватывает изменения динамически — нужен рестарт пода)
 
 ## Working Style / Стиль работы
 
