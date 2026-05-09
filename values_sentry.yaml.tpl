@@ -51,7 +51,7 @@ redis:
       limits:
         cpu: 1000m
         memory: 1Gi
-  replicas:
+  replica:
     resources:
       requests:
         cpu: 250m
