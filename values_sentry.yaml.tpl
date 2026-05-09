@@ -34,6 +34,8 @@ externalClickhouse:
 postgresql:
   enabled: ${postgresql_enabled}
   primary:
+    extendedConfiguration: |
+      max_connections = 150
     resources:
       requests:
         cpu: 250m
@@ -149,6 +151,11 @@ metrics:
       memory: 1Gi
 
 pgbouncer:
+  enabled: true
+  replicas: 2
+  poolSize: "40"
+  maxClientConn: "8192"
+  poolMode: "transaction"
   resources:
     requests:
       cpu: 100m
