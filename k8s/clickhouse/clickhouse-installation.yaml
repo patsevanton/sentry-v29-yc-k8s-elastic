@@ -21,11 +21,11 @@ spec:
           volumeClaimTemplate: data-volume
     zookeeper:
       nodes:
-        - host: chk-sentry-keeper-sentry-keeper-0-0.clickhouse.svc.cluster.local
+        - host: chk-clickhouse-keeper-keeper-cluster-0-0.clickhouse.svc.cluster.local
           port: 2181
-        - host: chk-sentry-keeper-sentry-keeper-0-1.clickhouse.svc.cluster.local
+        - host: chk-clickhouse-keeper-keeper-cluster-0-1.clickhouse.svc.cluster.local
           port: 2181
-        - host: chk-sentry-keeper-sentry-keeper-0-2.clickhouse.svc.cluster.local
+        - host: chk-clickhouse-keeper-keeper-cluster-0-2.clickhouse.svc.cluster.local
           port: 2181
   templates:
     podTemplates:

@@ -1,21 +1,21 @@
 apiVersion: clickhouse-keeper.altinity.com/v1
 kind: ClickHouseKeeperInstallation
 metadata:
-  name: sentry-keeper
+  name: clickhouse-keeper
   namespace: clickhouse
 spec:
   configuration:
     clusters:
-      - name: sentry-keeper
+      - name: keeper-cluster
         layout:
           replicasCount: 3
   defaults:
     templates:
-      podTemplate: keeper
-      dataVolumeClaimTemplate: keeper-data
+      podTemplate: keeper-pod
+      volumeClaimTemplate: keeper-storage
   templates:
     podTemplates:
-      - name: keeper
+      - name: keeper-pod
         spec:
           containers:
             - name: clickhouse-keeper
@@ -25,13 +25,13 @@ spec:
               requiredDuringSchedulingIgnoredDuringExecution:
                 - labelSelector:
                     matchLabels:
-                      clickhouse-keeper.altinity.com/chi: sentry-keeper
+                      clickhouse-keeper.altinity.com/chk: clickhouse-keeper
                   topologyKey: kubernetes.io/hostname
     volumeClaimTemplates:
-      - name: keeper-data
+      - name: keeper-storage
         spec:
           accessModes:
             - ReadWriteOnce
           resources:
             requests:
-              storage: 5Gi
+              storage: 10Gi
