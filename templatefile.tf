@@ -15,7 +15,7 @@ locals {
     httpPort               = 8123
     username               = "default"
     password               = ""
-    database               = "sentry"
+    database               = "default"
     singleNode             = false
     clusterName            = "sentry-cluster"
     distributedClusterName = "sentry-cluster"

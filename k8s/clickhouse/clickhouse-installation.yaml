@@ -11,15 +11,6 @@ spec:
       clickhouse_operator/password: "clickhouse_operator_password"
       clickhouse_operator/networks/ip:
         - "0.0.0.0/0"
-    files:
-      config.d/init-sentry.xml: |
-        <clickhouse>
-          <startup_scripts>
-            <scripts>
-              <query>CREATE DATABASE IF NOT EXISTS sentry</query>
-            </scripts>
-          </startup_scripts>
-        </clickhouse>
     clusters:
       - name: sentry-cluster
         layout:
