@@ -1,5 +1,10 @@
 # VMServiceScrape для встроенного Prometheus-endpoint ClickHouse.
-# ClickHouse expose-ит /metrics на порту 9363 (включено в config.d/prometheus.xml).
+# ВНИМАНИЕ: Prometheus-endpoint НЕ включён в ClickHouseInstallation по умолчанию.
+# Для активации добавить settings в spec.configuration (см. todo.md):
+#   prometheus/port: "9363"
+#   prometheus/metrics: "true"
+#   prometheus/events: "true"
+#   prometheus/asynchronous_metrics: "true"
 # Манифест размещается в namespace vmks (где работает VMAgent из VictoriaMetrics K8s Stack).
 apiVersion: operator.victoriametrics.com/v1beta1
 kind: VMServiceScrape

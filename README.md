@@ -91,8 +91,6 @@ kubectl -n clickhouse get pods -l clickhouse-keeper.altinity.com/chi=sentry-keep
 
 **0.3. Кластер ClickHouse**
 
-База данных `sentry` создаётся через механизм `startup_scripts` clickhouse-operator'а: в `spec.configuration.files` задан файл `config.d/init-sentry.xml` с секцией `<startup_scripts>`, содержащий `CREATE DATABASE IF NOT EXISTS sentry`. Этот скрипт выполняется clickhouse-server при каждом запуске, но `IF NOT EXISTS` предотвращает ошибку при повторных запусках. Также в манифесте включён встроенный Prometheus-endpoint ClickHouse (`config.d/prometheus.xml`, порт 9363) для мониторинга (см. **§8.3**).
-
 ```bash
 kubectl apply -f k8s/clickhouse/clickhouse-installation.yaml
 ```
@@ -104,14 +102,7 @@ kubectl -n clickhouse get clickhouseinstallation sentry-clickhouse
 kubectl -n clickhouse get pods,svc
 ```
 
-Убедитесь, что в STATUS отображается `Completed` и что поды Running:
-
-```bash
-kubectl -n clickhouse exec -it chi-sentry-clickhouse-sentry-cluster-0-0-0 -- \
-  clickhouse-client -q "SHOW DATABASES"
-```
-
-В списке должна быть база `sentry`.
+Убедитесь, что в STATUS отображается `Completed` и что поды Running.
 
 **0.4. Endpoint для Sentry (Snuba)**
 
@@ -121,7 +112,7 @@ kubectl -n clickhouse exec -it chi-sentry-clickhouse-sentry-cluster-0-0-0 -- \
 
 В `system.clusters` имя кластера — `sentry-cluster`, порт `9000`. Значения `clusterName` и `distributedClusterName` в `values_sentry.yaml` должны совпадать с этим именем.
 
-Пользователь `default` используется без пароля (`networks/ip: 0.0.0.0/0`). База данных `sentry` создаётся через `startup_scripts` в конфигурации ClickHouse (`config.d/init-sentry.xml`) при запуске сервера.
+Пользователь `default` используется без пароля (`networks/ip: 0.0.0.0/0`).
 
 ### 1. ~~Elasticsearch (nodestore) и оператор ECK~~ (не используется)
 
@@ -385,27 +376,6 @@ kubectl -n vmks get vmservicescrape clickhouse-operator
 ```
 
 Импортируйте дашборд ClickHouse Operator в Grafana (`Dashboards -> New -> Import`, загрузите JSON-файл, datasource — Prometheus/VictoriaMetrics). JSON-файл дашборда: [Altinity_ClickHouse_Operator_dashboard.json](https://github.com/Altinity/clickhouse-operator/blob/master/grafana-dashboard/Altinity_ClickHouse_Operator_dashboard.json) — показывает состояние оператора: количество CR, reconcile latency, количество managed ClickHouseInstallation.
-
-### 7.3. Мониторинг ClickHouse (встроенные метрики)
-
-ClickHouse имеет встроенный Prometheus-endpoint. Конфигурация включена в [k8s/clickhouse/clickhouse-installation.yaml](https://github.com/patsevanton/sentry-v29-yc-k8s-elastic/blob/master/k8s/clickhouse/clickhouse-installation.yaml) через `config.d/prometheus.xml`: ClickHouse отдаёт метрики на порту **9363**, путь `/metrics`. Включены `metrics` (гаuges), `events` (счётчики) и `asynchronous_metrics` (размеры таблиц, использование памяти и т.д.).
-
-VMServiceScrape для сбора метрик сервера — [k8s/vmscrape-clickhouse-server.yaml](https://github.com/patsevanton/sentry-v29-yc-k8s-elastic/blob/master/k8s/vmscrape-clickhouse-server.yaml). Манифест создаёт `VMServiceScrape` в namespace `vmks` и указывает на сервис ClickHouse в namespace `clickhouse`.
-
-1. Примените VMServiceScrape:
-
-```bash
-kubectl apply -f k8s/vmscrape-clickhouse-server.yaml
-```
-
-2. Проверьте, что endpoint доступен из пода ClickHouse:
-
-```bash
-kubectl -n clickhouse exec -it chi-sentry-clickhouse-sentry-cluster-0-0-0 -- \
-  curl -s http://localhost:9363/metrics | head -20
-```
-
-3. Импортируйте дашборд в Grafana (`Dashboards -> New -> Import`, загрузите JSON-файл, datasource — Prometheus/VictoriaMetrics). JSON-файл дашборда: [ClickHouse_Queries_dashboard.json](https://github.com/Altinity/clickhouse-operator/blob/master/grafana-dashboard/ClickHouse_Queries_dashboard.json) — показывает: количество запросов, задержки, использование памяти, размеры таблиц, состояние репликации.
 
 ### 8. Доступ к Sentry
 

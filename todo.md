@@ -1,5 +1,34 @@
 # TODO
 
+## Добавить в ClickHouseInstallation
+
+- [ ] Добавить встроенный Prometheus-endpoint ClickHouse (`settings` в `spec.configuration`):
+  ```yaml
+  settings:
+    prometheus/port: "9363"
+    prometheus/metrics: "true"
+    prometheus/events: "true"
+    prometheus/asynchronous_metrics: "true"
+  ```
+- [ ] Добавить `startup_scripts` для автоматического создания БД `sentry` при запуске ClickHouse (`files` в `spec.configuration`):
+  ```yaml
+  files:
+    config.d/init-sentry.xml: |
+      <clickhouse>
+        <startup_scripts>
+          <script>
+            <query>CREATE DATABASE IF NOT EXISTS sentry</query>
+          </script>
+        </startup_scripts>
+      </clickhouse>
+  ```
+  Без этого при каждом пересоздании пода ClickHouse нужно создавать БД `sentry` вручную:
+  ```bash
+  kubectl -n clickhouse exec chi-sentry-clickhouse-sentry-cluster-0-0-0 -- \
+    clickhouse-client -q "CREATE DATABASE IF NOT EXISTS sentry"
+  ```
+- [ ] После включения Prometheus-endpoint применить VMServiceScrape `k8s/vmscrape-clickhouse-server.yaml` (см. §7.2 README) и импортировать дашборд [ClickHouse_Queries_dashboard.json](https://github.com/Altinity/clickhouse-operator/blob/master/grafana-dashboard/ClickHouse_Queries_dashboard.json).
+
 ## Проверить в будущем
 
 - [ ] Зафиксировано по исследованию Kafka: `externalKafka.provisioning.replicationFactor=3` в `values_sentry.yaml` влияет только на provisioning-job Helm; при включенном `auto_create_topics_enable=true` авто-созданные брокером топики могут оставаться с RF=1, поэтому в YC у них «Высокая доступность: отсутствует».
