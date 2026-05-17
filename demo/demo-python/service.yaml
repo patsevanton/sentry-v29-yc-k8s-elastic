@@ -2,7 +2,7 @@ apiVersion: v1
 kind: Service
 metadata:
   name: sentry-demo-python
-  namespace: demo-sentry
+  namespace: demo-python
   labels:
     app: sentry-demo-python
 spec:
@@ -18,7 +18,7 @@ apiVersion: v1
 kind: Service
 metadata:
   name: sentry-demo-node
-  namespace: demo-sentry
+  namespace: demo-node
   labels:
     app: sentry-demo-node
 spec:
