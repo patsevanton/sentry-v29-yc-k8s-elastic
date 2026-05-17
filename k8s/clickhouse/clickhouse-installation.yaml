@@ -20,16 +20,6 @@ spec:
             </scripts>
           </startup_scripts>
         </clickhouse>
-      config.d/prometheus.xml: |
-        <clickhouse>
-          <prometheus>
-            <endpoint>/metrics</endpoint>
-            <port>9363</port>
-            <metrics>true</metrics>
-            <events>true</events>
-            <asynchronous_metrics>true</asynchronous_metrics>
-          </prometheus>
-        </clickhouse>
     clusters:
       - name: sentry-cluster
         layout:
@@ -37,7 +27,6 @@ spec:
           replicasCount: 3
         templates:
           podTemplate: clickhouse
-          serviceTemplate: clickhouse-metrics
           volumeClaimTemplate: data-volume
     zookeeper:
       nodes:
@@ -54,16 +43,6 @@ spec:
           containers:
             - name: clickhouse
               image: altinity/clickhouse-server:25.3.8.10042.altinitystable
-              resources:
-                requests:
-                  cpu: 1000m
-                  memory: 8Gi
-                limits:
-                  cpu: 1000m
-                  memory: 8Gi
-              ports:
-                - name: prometheus
-                  containerPort: 9363
           affinity:
             podAntiAffinity:
               requiredDuringSchedulingIgnoredDuringExecution:
@@ -79,13 +58,6 @@ spec:
           resources:
             requests:
               storage: 20Gi
-    serviceTemplates:
-      - name: clickhouse-metrics
-        spec:
-          ports:
-            - name: prometheus
-              port: 9363
-          type: ClusterIP
   defaults:
     replicasUseFQDN: "true"
     templates:

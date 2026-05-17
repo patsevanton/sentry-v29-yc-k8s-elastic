@@ -231,6 +231,7 @@ filestore:
 Если credentials уже есть в Terraform outputs:
 
 ```bash
+kubectl create namespace sentry
 kafka_user=$(terraform output -raw managed_kafka_user)
 kafka_password=$(terraform output -raw managed_kafka_password)
 kubectl -n sentry create secret generic kafka-credentials \
