@@ -12,8 +12,8 @@ spec:
       - clickhouse-operator
   selector:
     matchLabels:
-      app: clickhouse-operator
+      app.kubernetes.io/name: altinity-clickhouse-operator
   endpoints:
-    - port: http-metrics
+    - port: op-metrics
       scrape_interval: 30s
       scrapeTimeout: 25s
