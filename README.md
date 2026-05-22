@@ -301,7 +301,7 @@ kubectl -n sentry logs deployment/sentry-web --tail=20
 2. Создайте Secret и примените манифесты:
 
 ```bash
-kubectl -n sentry create secret generic sentry-auth-token --from-literal=token='<SENTRY_AUTH_TOKEN>'
+kubectl -n sentry create secret generic sentry-auth-token --from-literal=token='SENTRY_AUTH_TOKEN'
 kubectl apply -f k8s/sentry-prometheus-exporter.yaml
 kubectl apply -f k8s/vmscrape-sentry-prometheus-exporter.yaml
 ```
