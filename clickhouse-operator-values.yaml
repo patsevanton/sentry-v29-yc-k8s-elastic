@@ -1,15 +1,11 @@
-operator:
-  resources:
-    requests:
-      cpu: 100m
-      memory: 128Mi
-    limits:
-      cpu: 500m
-      memory: 512Mi
-
 configs:
   files:
     config.yaml:
       watch:
         namespaces:
           - clickhouse
+          - sentry
+      reconcile:
+        coordination:
+          keeper:
+            onKeeperResourceUpdate: reconcile

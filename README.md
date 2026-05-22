@@ -1,4 +1,4 @@
-# Развёртывание Sentry v31.0.0 в Yandex Cloud на Kubernetes
+# Развёртывание Sentry v31.3.1 в Yandex Cloud на Kubernetes
 
 > **Важно:** для production-режима рекомендуется заменить встроенные PostgreSQL и Redis из Helm-чарта Sentry на **Yandex Managed PostgreSQL** и **Managed Redis (Valkey)**. Встроенные БД подходят только для dev/test окружений. В Terraform нужно создать ресурсы `yandex_mdb_postgresql_cluster` и `yandex_mdb_redis_cluster`, а в `values_sentry.yaml.tpl` указать `externalPostgresql` и `externalRedis` вместо `postgresql.enabled: true` и `redis.enabled: true`.
 
@@ -6,7 +6,7 @@ TODO проверить все ли файлы указаны в readme
 
 ## Цели статьи
 
-Статья описывает процесс развёртывания Sentry v31.0.0 в Yandex Cloud на кластере Kubernetes. Будет развёрнуто:
+Статья описывает процесс развёртывания Sentry v31.3.1 в Yandex Cloud на кластере Kubernetes. Будет развёрнуто:
 
 - Инфраструктура через Terraform (K8S, Kafka, PostgreSQL, Object Storage, VPC).
 - ClickHouse через [Altinity clickhouse-operator](https://github.com/Altinity/clickhouse-operator) в Kubernetes (кластер 1 shard × 3 replicas + ClickHouse Keeper).
@@ -148,7 +148,7 @@ kubectl get crd | grep monitoring.coreos.com
 ```bash
 kubectl create namespace vmks
 helm upgrade --install vmks oci://ghcr.io/victoriametrics/helm-charts/victoria-metrics-k8s-stack \
-  --version 0.77.0 \
+  --version 0.79.1 \
   -n vmks \
   -f vmks-values.yaml \
   --wait --timeout=15m
@@ -240,7 +240,7 @@ kubectl -n sentry create secret generic kafka-credentials \
 Установка с `values_sentry.yaml` (генерируется из [values_sentry.yaml.tpl](https://github.com/patsevanton/sentry-v29-yc-k8s-elastic/blob/master/values_sentry.yaml.tpl) через `terraform apply`): в файле заданы параметры ClickHouse из k8s-сервиса.
 
 ```bash
-helm upgrade --install sentry sentry/sentry --version 31.0.0 -n sentry \
+helm upgrade --install sentry sentry/sentry --version 31.3.1 -n sentry \
   -f values_sentry.yaml --timeout=7200s --create-namespace
 ```
 
@@ -416,15 +416,15 @@ kubectl -n ingress-nginx get svc
 
 #### Запуск в Kubernetes
 
-Из корня репозитория:
+Зайти в Sentry UI и создать 2 проекта: Node и Python. После чего из корня репозитория запустить:
 
 ```bash
 kubectl apply -f demo/k8s/namespace.yaml
 # DSN (по одному Secret на Node и Python):
 kubectl create secret generic sentry-dsn-node -n demo-sentry \
-  --from-literal=dsn='http://99a3585c881ee59f649fcb78412e2783@sentry.apatsev.org.ru/2'
+  --from-literal=dsn='http://YOUR_SENTRY_DSN_NODE@sentry.apatsev.org.ru/PROJECT_ID'
 kubectl create secret generic sentry-dsn-python -n demo-sentry \
-  --from-literal=dsn='http://d7cf51aa5f3cf9b397e15335a6480d3d@sentry.apatsev.org.ru/3'
+  --from-literal=dsn='http://YOUR_SENTRY_DSN_PYTHON@sentry.apatsev.org.ru/PROJECT_ID'
 # либо подставить dsn в demo/k8s/secret-sentry-dsn-*.yaml и:
 # kubectl apply -f demo/k8s/secret-sentry-dsn-node.yaml -f demo/k8s/secret-sentry-dsn-python.yaml
 
@@ -448,7 +448,7 @@ helm repo add chaos-mesh https://charts.chaos-mesh.org
 helm repo update
 kubectl create namespace chaos-mesh
 helm upgrade --install chaos-mesh chaos-mesh/chaos-mesh \
-  --version 2.7.0 \
+  --version 2.8.2 \
   -n chaos-mesh \
   --set chaosDaemon.runtime=containerd \
   --set chaosDaemon.socketPath=/run/containerd/containerd.sock \
