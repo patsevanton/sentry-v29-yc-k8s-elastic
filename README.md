@@ -1,4 +1,4 @@
-# Развёртывание Sentry v31.3.1 в Yandex Cloud на Kubernetes
+# Развёртывание Sentry v31.4.0 в Yandex Cloud на Kubernetes
 
 > **Важно:** для production-режима рекомендуется заменить встроенные PostgreSQL и Redis из Helm-чарта Sentry на **Yandex Managed PostgreSQL** и **Managed Redis (Valkey)**. Встроенные БД подходят только для dev/test окружений. В Terraform нужно создать ресурсы `yandex_mdb_postgresql_cluster` и `yandex_mdb_redis_cluster`, а в `values_sentry.yaml.tpl` указать `externalPostgresql` и `externalRedis` вместо `postgresql.enabled: true` и `redis.enabled: true`.
 
@@ -6,7 +6,7 @@ TODO проверить все ли файлы указаны в readme
 
 ## Цели статьи
 
-Статья описывает процесс развёртывания Sentry v31.3.1 в Yandex Cloud на кластере Kubernetes. Будет развёрнуто:
+Статья описывает процесс развёртывания Sentry v31.4.0 в Yandex Cloud на кластере Kubernetes. Будет развёрнуто:
 
 - Инфраструктура через Terraform (K8S, Kafka, PostgreSQL, Object Storage, VPC).
 - ClickHouse через [Altinity clickhouse-operator](https://github.com/Altinity/clickhouse-operator) в Kubernetes (кластер 1 shard × 3 replicas + ClickHouse Keeper).
@@ -240,7 +240,7 @@ kubectl -n sentry create secret generic kafka-credentials \
 Установка с `values_sentry.yaml` (генерируется из [values_sentry.yaml.tpl](https://github.com/patsevanton/sentry-v29-yc-k8s-elastic/blob/master/values_sentry.yaml.tpl) через `terraform apply`): в файле заданы параметры ClickHouse из k8s-сервиса.
 
 ```bash
-helm upgrade --install sentry sentry/sentry --version 31.3.1 -n sentry \
+helm upgrade --install sentry sentry/sentry --version 31.4.0 -n sentry \
   -f values_sentry.yaml --timeout=7200s --create-namespace
 ```
 

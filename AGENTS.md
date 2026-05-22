@@ -1,4 +1,4 @@
-# Sentry v31.3.1 в Yandex Cloud на Kubernetes
+# Sentry v31.4.0 в Yandex Cloud на Kubernetes
 
 > **Контекстный уровень: Level 1 (Project Details).**
 > Перед любым изменением кода или инфраструктуры используй эту карту для навигации.
@@ -8,7 +8,7 @@
 
 | Компонент | Технология | Где управляется | Namespace |
 |-----------|-----------|-----------------|-----------|
-| Sentry App | Helm chart `sentry/sentry` v31.3.1 | `values_sentry.yaml.tpl`, `templatefile.tf` | `sentry` |
+| Sentry App | Helm chart `sentry/sentry` v31.4.0 | `values_sentry.yaml.tpl`, `templatefile.tf` | `sentry` |
 | PostgreSQL | Встроенный в Helm Sentry | `values_sentry.yaml.tpl` | `sentry` |
 | ClickHouse | Altinity clickhouse-operator (1 shard × 3 replicas + Keeper) | `k8s/clickhouse/` | `clickhouse` |
 | Kafka | Yandex Managed Kafka | Terraform (*.tf) | — (внешний) |
@@ -23,7 +23,7 @@
 
 - **Infrastructure as Code**: Terraform (Yandex Cloud provider)
 - **Orchestration**: Kubernetes (Yandex Managed Kubernetes)
-- **Application**: Sentry v31.3.1 через Helm-чарт `sentry/sentry`
+- **Application**: Sentry v31.4.0 через Helm-чарт `sentry/sentry`
 - **Database**: PostgreSQL (через Helm чарт Sentry)
 - **Analytics DB**: ClickHouse (Altinity clickhouse-operator, k8s, namespace `clickhouse`)
 - **Message Broker**: Kafka (Yandex Managed Kafka)
@@ -58,7 +58,7 @@
 - `terraform output -raw monitoring_api_key` — получить API-ключ мониторинга (sensitive)
 - `kubectl apply -f k8s/secret-yc-monitoring-api-key.yaml` — создать K8S Secret с bearer-токеном мониторинга
 - `kubectl apply -f k8s/vmstaticscrape-yc-managed-kafka.yaml` — применить VMStaticScrape для Kafka
-- `helm upgrade --install sentry sentry/sentry --version 31.3.1 -n sentry -f values_sentry.yaml --timeout=3600s --create-namespace` — установка/обновление Sentry
+- `helm upgrade --install sentry sentry/sentry --version 31.4.0 -n sentry -f values_sentry.yaml --timeout=3600s --create-namespace` — установка/обновление Sentry
 - `helm upgrade --install vmks vm/victoria-metrics-k8s-stack --version 0.79.1 -n vmks -f vmks-values.yaml --wait --timeout=15m` — установка VictoriaMetrics
 - `helm upgrade --install keda kedacore/keda --version 2.19.0 -n keda --wait --timeout=10m` — установка KEDA
 - `kubectl -n sentry get pods` — проверка подов Sentry
