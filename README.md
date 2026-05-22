@@ -85,7 +85,7 @@ kubectl apply -f k8s/clickhouse/clickhouse-keeper-installation.yaml
 Дождитесь готовности всех 3 подов Keeper:
 
 ```bash
-kubectl -n clickhouse get pods -l clickhouse-keeper.altinity.com/chi=sentry-keeper
+kubectl -n clickhouse get pods -l clickhouse-keeper.altinity.com/chk=clickhouse-keeper
 # Все поды должны быть в статусе Running 1/1
 ```
 
@@ -160,7 +160,7 @@ helm upgrade --install vmks oci://ghcr.io/victoriametrics/helm-charts/victoria-m
 kubectl -n vmks get secret vmks-grafana -o jsonpath='{.data.admin-password}' | base64 -d && echo
 ```
 
-Логин по умолчанию — `**admin**` (его можно прочитать из ключа `admin-user` того же Secret).
+Логин по умолчанию — `admin` (его можно прочитать из ключа `admin-user` того же Secret).
 
 Веб-интерфейс Grafana доступен по адресу **[http://grafana.apatsev.org.ru](http://grafana.apatsev.org.ru)**.
 
@@ -419,25 +419,22 @@ kubectl -n ingress-nginx get svc
 Зайти в Sentry UI и создать 2 проекта: Node и Python. После чего из корня репозитория запустить:
 
 ```bash
-# Namespaces
-kubectl apply -f demo/demo-python/namespace.yaml
-kubectl apply -f demo/demo-nodejs/namespace.yaml
-
-# DSN (по одному Secret на Python и Node):
-kubectl create secret generic sentry-dsn-python -n demo-python \
-  --from-literal=dsn='http://YOUR_SENTRY_DSN_PYTHON@sentry.apatsev.org.ru/PROJECT_ID'
-kubectl create secret generic sentry-dsn-node -n demo-node \
+kubectl create namespace demo-sentry
+kubectl apply -f demo/k8s/namespace.yaml
+# DSN (по одному Secret на Node и Python):
+kubectl create secret generic sentry-dsn-node -n demo-sentry \
   --from-literal=dsn='http://YOUR_SENTRY_DSN_NODE@sentry.apatsev.org.ru/PROJECT_ID'
-# либо подставить dsn в secret-sentry-dsn-*.yaml и:
-# kubectl apply -f demo/demo-python/secret-sentry-dsn-python.yaml -f demo/demo-nodejs/secret-sentry-dsn-node.yaml
+kubectl create secret generic sentry-dsn-python -n demo-sentry \
+  --from-literal=dsn='http://YOUR_SENTRY_DSN_PYTHON@sentry.apatsev.org.ru/PROJECT_ID'
+# либо подставить dsn в demo/k8s/secret-sentry-dsn-*.yaml и:
+# kubectl apply -f demo/k8s/secret-sentry-dsn-node.yaml -f demo/k8s/secret-sentry-dsn-python.yaml
 
-# Deployments и Services
-kubectl apply -f demo/demo-python/deployment-python.yaml
-kubectl apply -f demo/demo-nodejs/deployment-node.yaml
-kubectl apply -f demo/demo-python/service.yaml
+kubectl apply -f demo/k8s/deployment-python.yaml
+kubectl apply -f demo/k8s/deployment-node.yaml
+kubectl apply -f demo/k8s/service.yaml
 ```
 
-Манифесты Secret с плейсхолдерами: [demo/demo-nodejs/secret-sentry-dsn-node.yaml](https://github.com/patsevanton/sentry-v29-yc-k8s-elastic/blob/master/demo/demo-nodejs/secret-sentry-dsn-node.yaml), [demo/demo-python/secret-sentry-dsn-python.yaml](https://github.com/patsevanton/sentry-v29-yc-k8s-elastic/blob/master/demo/demo-python/secret-sentry-dsn-python.yaml).
+Манифесты Secret с плейсхолдерами: [demo/k8s/secret-sentry-dsn-node.yaml](https://github.com/patsevanton/sentry-v29-yc-k8s-elastic/blob/master/demo/k8s/secret-sentry-dsn-node.yaml), [demo/k8s/secret-sentry-dsn-python.yaml](https://github.com/patsevanton/sentry-v29-yc-k8s-elastic/blob/master/demo/k8s/secret-sentry-dsn-python.yaml).
 
 Переменная `DEMO_AUTO_EXCEPTION_INTERVAL_SEC` в манифестах demo (и при локальном запуске) задаёт интервал автоматической отправки исключений в Sentry; `0` отключает. Откройте проект в Sentry и убедитесь, что появились issues и (при включённом performance) транзакции.
 
