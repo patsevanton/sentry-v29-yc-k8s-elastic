@@ -73,5 +73,5 @@ output "managed_redis_password" {
 }
 
 output "managed_redis_port" {
-  value = 6380
+  value = 6379
 }

@@ -69,10 +69,10 @@ locals {
     external_redis_enabled = true
     external_redis = {
       host     = local.managed_redis_host
-      port     = 6380
+      port     = 6379
       username = var.managed_redis_user
       password = local.managed_redis_password_effective
-      ssl      = true
+      ssl      = false
     }
 
     external_postgresql_enabled = true
