@@ -75,7 +75,6 @@ kubectl get crd | grep clickhouse
 
 ClickHouse с `replicasCount > 1` требует ZooKeeper-совместимый координатор для репликации данных. В этом проекте используется [ClickHouse Keeper](https://clickhouse.com/docs/guides/sre/keeper/clickhouse-keeper).
 
-> **ВАЖНО:** Keeper **ДОЛЖЕН** быть запущен и готов **ДО** применения `ClickHouseInstallation`. Иначе ClickHouse не сможет подключиться к координатору, и Snuba-миграции завершатся ошибкой: `Cannot use any of provided ZooKeeper nodes`.
 
 ```bash
 kubectl create namespace clickhouse
@@ -83,7 +82,6 @@ kubectl apply -f k8s/clickhouse/clickhouse-keeper-installation.yaml
 ```
 
 Дождитесь готовности всех 3 подов Keeper:
-Все поды должны быть в статусе Running 1/1
 
 ```bash
 kubectl -n clickhouse get pods -l clickhouse-keeper.altinity.com/chk=clickhouse-keeper
@@ -186,18 +184,6 @@ kubectl get crd | grep "keda.sh"
 
 После установки можно добавлять `ScaledObject` для нужных deployment/statefulset (например, ingest-consumer-ов), с триггером Kafka lag.
 
-### 4.1. Репозиторий Sentry
-
-Подключите Helm-репозиторий чарта Sentry. Namespace `sentry` можно создать заранее или при установке в **§6** флагом `--create-namespace`.
-
-```bash
-kubectl create namespace sentry
-helm repo add sentry https://sentry-kubernetes.github.io/charts
-helm repo update
-```
-
-Если namespace уже есть, `kubectl create namespace sentry` завершится ошибкой — это нормально. Либо опустите эту строку и полагайтесь только на `--create-namespace` у Helm.
-
 ### 4.2. S3 filestore (Yandex Object Storage)
 
 Для хранения артефактов (debug-символы, source maps, blob-ы загрузок) в `values_sentry.yaml` должен быть указан S3-бэкенд:
@@ -239,6 +225,9 @@ kubectl -n sentry create secret generic kafka-credentials \
 Установка с `values_sentry.yaml` (генерируется из [values_sentry.yaml.tpl](https://github.com/patsevanton/sentry-v29-yc-k8s-elastic/blob/master/values_sentry.yaml.tpl) через `terraform apply`): в файле заданы параметры ClickHouse из k8s-сервиса.
 
 ```bash
+kubectl create namespace sentry
+helm repo add sentry https://sentry-kubernetes.github.io/charts
+helm repo update
 helm upgrade --install sentry sentry/sentry --version 31.5.0 -n sentry \
   -f values_sentry.yaml --timeout=7200s --create-namespace
 ```

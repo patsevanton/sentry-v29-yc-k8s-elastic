@@ -44,6 +44,18 @@ postgresql:
         cpu: 1000m
         memory: 1Gi
 
+%{ if external_postgresql_enabled ~}
+externalPostgresql:
+  host: "${external_postgresql.host}"
+  port: ${external_postgresql.port}
+  username: "${external_postgresql.username}"
+  existingSecret: "managed-pg-credentials"
+  existingSecretKeys:
+    password: "password"
+  database: "${external_postgresql.database}"
+  sslmode: "${external_postgresql.sslmode}"
+%{ endif ~}
+
 cache:
   enabled: true
 
@@ -65,6 +77,15 @@ redis:
       limits:
         cpu: 1000m
         memory: 1Gi
+%{ if external_redis_enabled ~}
+externalRedis:
+  host: "${external_redis.host}"
+  port: ${external_redis.port}
+  existingSecret: "managed-redis-credentials"
+  existingSecretKeys:
+    password: "password"
+  ssl: ${external_redis.ssl}
+%{ endif ~}
 kafka:
   enabled: ${kafka_enabled}
   zookeeper:
@@ -155,7 +176,7 @@ metrics:
       memory: 1Gi
 
 pgbouncer:
-  enabled: true
+  enabled: ${postgresql_enabled}
   replicas: 2
   poolSize: "40"
   maxClientConn: "8192"

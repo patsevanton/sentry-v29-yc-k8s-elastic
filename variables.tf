@@ -182,3 +182,121 @@ variable "external_kafka_provisioning_num_partitions" {
   type        = number
   default     = 3
 }
+
+# ---------------------------------------------------------------------------
+# Yandex Managed PostgreSQL
+# ---------------------------------------------------------------------------
+
+variable "managed_pg_enabled" {
+  description = "Create Yandex Managed PostgreSQL cluster for Sentry (disables in-chart PostgreSQL)"
+  type        = bool
+  default     = false
+}
+
+variable "managed_pg_name" {
+  description = "Managed PostgreSQL cluster name"
+  type        = string
+  default     = "sentry-pg-managed"
+}
+
+variable "managed_pg_version" {
+  description = "PostgreSQL version"
+  type        = string
+  default     = "16"
+}
+
+variable "managed_pg_resource_preset_id" {
+  description = "Managed PostgreSQL host resource preset"
+  type        = string
+  default     = "s2.micro"
+}
+
+variable "managed_pg_disk_type_id" {
+  description = "Managed PostgreSQL disk type"
+  type        = string
+  default     = "network-ssd"
+}
+
+variable "managed_pg_disk_size" {
+  description = "Managed PostgreSQL disk size in GiB"
+  type        = number
+  default     = 32
+}
+
+variable "managed_pg_user" {
+  description = "Managed PostgreSQL username for Sentry"
+  type        = string
+  default     = "sentry"
+}
+
+variable "managed_pg_user_password" {
+  description = "Managed PostgreSQL password for Sentry (if empty, Terraform generates random)"
+  type        = string
+  default     = ""
+  sensitive   = true
+}
+
+variable "managed_pg_database" {
+  description = "Managed PostgreSQL database name for Sentry"
+  type        = string
+  default     = "sentry"
+}
+
+variable "managed_pg_conn_limit" {
+  description = "Managed PostgreSQL connection limit for Sentry user"
+  type        = number
+  default     = 200
+}
+
+# ---------------------------------------------------------------------------
+# Yandex Managed Redis
+# ---------------------------------------------------------------------------
+
+variable "managed_redis_enabled" {
+  description = "Create Yandex Managed Redis cluster for Sentry (disables in-chart Redis)"
+  type        = bool
+  default     = false
+}
+
+variable "managed_redis_name" {
+  description = "Managed Redis cluster name"
+  type        = string
+  default     = "sentry-redis-managed"
+}
+
+variable "managed_redis_version" {
+  description = "Redis version"
+  type        = string
+  default     = "7.2"
+}
+
+variable "managed_redis_resource_preset_id" {
+  description = "Managed Redis host resource preset"
+  type        = string
+  default     = "s2.micro"
+}
+
+variable "managed_redis_disk_type_id" {
+  description = "Managed Redis disk type"
+  type        = string
+  default     = "network-ssd"
+}
+
+variable "managed_redis_disk_size" {
+  description = "Managed Redis disk size in GiB"
+  type        = number
+  default     = 16
+}
+
+variable "managed_redis_user" {
+  description = "Managed Redis username for Sentry"
+  type        = string
+  default     = "sentry"
+}
+
+variable "managed_redis_password" {
+  description = "Managed Redis password for Sentry (if empty, Terraform generates random)"
+  type        = string
+  default     = ""
+  sensitive   = true
+}
