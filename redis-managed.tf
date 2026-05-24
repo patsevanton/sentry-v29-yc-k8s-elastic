@@ -4,7 +4,6 @@ resource "random_password" "managed_redis_password" {
 }
 
 resource "yandex_mdb_redis_cluster" "managed" {
-  count       = var.managed_redis_enabled ? 1 : 0
   folder_id   = local.folder_id
   name        = var.managed_redis_name
   description = "Managed Redis for Sentry"
@@ -53,11 +52,11 @@ locals {
     (local.subnet_d_zone) = local.subnet_d_id
   }
 
-  managed_redis_host = var.managed_redis_enabled ? yandex_mdb_redis_cluster.managed[0].host[0].fqdn : ""
+  managed_redis_host = yandex_mdb_redis_cluster.managed.host[0].fqdn
 }
 
 output "managed_redis_cluster_id" {
-  value = var.managed_redis_enabled ? yandex_mdb_redis_cluster.managed[0].id : null
+  value = yandex_mdb_redis_cluster.managed.id
 }
 
 output "managed_redis_host" {

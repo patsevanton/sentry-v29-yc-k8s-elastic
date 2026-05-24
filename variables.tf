@@ -187,12 +187,6 @@ variable "external_kafka_provisioning_num_partitions" {
 # Yandex Managed PostgreSQL
 # ---------------------------------------------------------------------------
 
-variable "managed_pg_enabled" {
-  description = "Create Yandex Managed PostgreSQL cluster for Sentry (disables in-chart PostgreSQL)"
-  type        = bool
-  default     = false
-}
-
 variable "managed_pg_name" {
   description = "Managed PostgreSQL cluster name"
   type        = string
@@ -251,12 +245,6 @@ variable "managed_pg_conn_limit" {
 # ---------------------------------------------------------------------------
 # Yandex Managed Redis
 # ---------------------------------------------------------------------------
-
-variable "managed_redis_enabled" {
-  description = "Create Yandex Managed Redis cluster for Sentry (disables in-chart Redis)"
-  type        = bool
-  default     = false
-}
 
 variable "managed_redis_name" {
   description = "Managed Redis cluster name"

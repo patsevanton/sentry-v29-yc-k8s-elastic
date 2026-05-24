@@ -4,7 +4,6 @@ resource "random_password" "managed_pg_user_password" {
 }
 
 resource "yandex_mdb_postgresql_cluster" "managed" {
-  count       = var.managed_pg_enabled ? 1 : 0
   folder_id   = local.folder_id
   name        = var.managed_pg_name
   description = "Managed PostgreSQL for Sentry"
@@ -38,18 +37,16 @@ resource "yandex_mdb_postgresql_cluster" "managed" {
 }
 
 resource "yandex_mdb_postgresql_user" "sentry" {
-  count      = var.managed_pg_enabled ? 1 : 0
-  cluster_id = yandex_mdb_postgresql_cluster.managed[0].id
+  cluster_id = yandex_mdb_postgresql_cluster.managed.id
   name       = var.managed_pg_user
   password   = local.managed_pg_user_password_effective
   conn_limit = var.managed_pg_conn_limit
 }
 
 resource "yandex_mdb_postgresql_database" "sentry" {
-  count      = var.managed_pg_enabled ? 1 : 0
-  cluster_id = yandex_mdb_postgresql_cluster.managed[0].id
+  cluster_id = yandex_mdb_postgresql_cluster.managed.id
   name       = var.managed_pg_database
-  owner      = yandex_mdb_postgresql_user.sentry[0].name
+  owner      = yandex_mdb_postgresql_user.sentry.name
   lc_collate = "en_US.UTF-8"
   lc_type    = "en_US.UTF-8"
 
@@ -71,11 +68,11 @@ locals {
     (local.subnet_d_zone) = local.subnet_d_id
   }
 
-  managed_pg_host = var.managed_pg_enabled ? yandex_mdb_postgresql_cluster.managed[0].host[0].fqdn : ""
+  managed_pg_host = yandex_mdb_postgresql_cluster.managed.host[0].fqdn
 }
 
 output "managed_pg_cluster_id" {
-  value = var.managed_pg_enabled ? yandex_mdb_postgresql_cluster.managed[0].id : null
+  value = yandex_mdb_postgresql_cluster.managed.id
 }
 
 output "managed_pg_host" {
