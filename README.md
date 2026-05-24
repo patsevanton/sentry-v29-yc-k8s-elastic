@@ -401,22 +401,21 @@ kubectl -n ingress-nginx get svc
 Зайти в Sentry UI и создать 2 проекта: Node и Python. После чего из корня репозитория запустить:
 
 ```bash
-kubectl create namespace demo-sentry
-kubectl apply -f demo/k8s/namespace.yaml
+kubectl apply -f demo/demo-nodejs/namespace.yaml
+kubectl apply -f demo/demo-python/namespace.yaml
 # DSN (по одному Secret на Node и Python):
-kubectl create secret generic sentry-dsn-node -n demo-sentry \
+kubectl create secret generic sentry-dsn-node -n demo-nodejs \
   --from-literal=dsn='http://YOUR_SENTRY_DSN_NODE@sentry.apatsev.org.ru/PROJECT_ID'
-kubectl create secret generic sentry-dsn-python -n demo-sentry \
+kubectl create secret generic sentry-dsn-python -n demo-nodejs \
   --from-literal=dsn='http://YOUR_SENTRY_DSN_PYTHON@sentry.apatsev.org.ru/PROJECT_ID'
 # либо подставить dsn в demo/k8s/secret-sentry-dsn-*.yaml и:
 # kubectl apply -f demo/k8s/secret-sentry-dsn-node.yaml -f demo/k8s/secret-sentry-dsn-python.yaml
 
-kubectl apply -f demo/k8s/deployment-python.yaml
-kubectl apply -f demo/k8s/deployment-node.yaml
-kubectl apply -f demo/k8s/service.yaml
+kubectl apply -f demo/demo-nodejs/deployment-node.yaml
+kubectl apply -f demo/demo-python/deployment-python.yaml
+kubectl apply -f demo/demo-nodejs/service.yaml
+kubectl apply -f demo/demo-python/service.yaml
 ```
-
-Манифесты Secret с плейсхолдерами: [demo/k8s/secret-sentry-dsn-node.yaml](https://github.com/patsevanton/sentry-v29-yc-k8s-elastic/blob/master/demo/k8s/secret-sentry-dsn-node.yaml), [demo/k8s/secret-sentry-dsn-python.yaml](https://github.com/patsevanton/sentry-v29-yc-k8s-elastic/blob/master/demo/k8s/secret-sentry-dsn-python.yaml).
 
 Переменная `DEMO_AUTO_EXCEPTION_INTERVAL_SEC` в манифестах demo (и при локальном запуске) задаёт интервал автоматической отправки исключений в Sentry; `0` отключает. Откройте проект в Sentry и убедитесь, что появились issues и (при включённом performance) транзакции.
 
