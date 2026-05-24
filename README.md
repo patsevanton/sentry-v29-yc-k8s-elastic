@@ -83,10 +83,10 @@ kubectl apply -f k8s/clickhouse/clickhouse-keeper-installation.yaml
 ```
 
 Дождитесь готовности всех 3 подов Keeper:
+Все поды должны быть в статусе Running 1/1
 
 ```bash
 kubectl -n clickhouse get pods -l clickhouse-keeper.altinity.com/chk=clickhouse-keeper
-# Все поды должны быть в статусе Running 1/1
 ```
 
 **0.3. Кластер ClickHouse**
