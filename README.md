@@ -99,7 +99,6 @@ kubectl apply -f k8s/clickhouse/clickhouse-installation.yaml
 
 ```bash
 kubectl -n clickhouse get clickhouseinstallation sentry-clickhouse
-kubectl -n clickhouse get pods,svc
 ```
 
 Убедитесь, что в STATUS отображается `Completed` и что поды Running.
