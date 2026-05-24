@@ -261,7 +261,7 @@ variable "managed_redis_version" {
 variable "managed_redis_resource_preset_id" {
   description = "Managed Redis host resource preset"
   type        = string
-  default     = "s2.micro"
+  default     = "hm3-c2-m8"
 }
 
 variable "managed_redis_disk_type_id" {
