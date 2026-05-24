@@ -211,6 +211,27 @@ filestore:
 
 
 
+### 5. Kafka credentials (Secret для внешнего Kafka)
+
+Так как используем внешнюю Kafka (Yandex Managed Kafka), чарт Sentry ожидает Secret с credentials для SASL-аутентификации. В `values_sentry.yaml` задано `externalKafka.sasl.existingSecret: "kafka-credentials"` — этот Secret должен существовать в namespace `sentry` **до** запуска `helm upgrade --install sentry`, иначе Job `sentry-kafka-provisioning` завершится ошибкой `secret "kafka-credentials" not found`.
+
+Ключи Secret соответствуют секции `externalKafka.sasl.existingSecretKeys` в values:
+- `mechanism` — механизм SASL (например, `SCRAM-SHA-512`)
+- `username` — имя пользователя Kafka
+- `password` — пароль Kafka
+
+Если credentials уже есть в Terraform outputs:
+
+```bash
+kubectl create namespace sentry
+kafka_user=$(terraform output -raw managed_kafka_user)
+kafka_password=$(terraform output -raw managed_kafka_password)
+kubectl -n sentry create secret generic kafka-credentials \
+  --from-literal=mechanism='SCRAM-SHA-512' \
+  --from-literal=username="${kafka_user}" \
+  --from-literal=password="${kafka_password}"
+```
+
 ### 6. Установка Sentry
 
 **Порядок зависимостей.** Чарт поднимает PostgreSQL и Redis в namespace `sentry`, а **ClickHouse работает в k8s через clickhouse-operator** (namespace `clickhouse`, `externalClickhouse` в [values_sentry.yaml.tpl](https://github.com/patsevanton/sentry-v29-yc-k8s-elastic/blob/master/values_sentry.yaml.tpl)). Kafka по умолчанию внешняя (Yandex Managed Kafka); встроенный Kafka включается переменной `sentry_incluster_kafka_enabled`. Сначала выполните **§0** (ClickHouse Operator + Keeper + ClickHouseInstallation), **§2–§3** (Prometheus CRD + VictoriaMetrics), **§4–§5** (KEDA + репозиторий Helm + Kafka credentials), затем команду ниже.
@@ -288,27 +309,6 @@ kill %1
 
 # 5. Метрики видны в VMSingle
 curl -s "http://vmsingle.apatsev.org.ru/api/v1/query?query=sentry_open_issue_events" | python3 -m json.tool
-```
-
-### 5. Kafka credentials (Secret для внешнего Kafka)
-
-Так как используем внешнюю Kafka (Yandex Managed Kafka), чарт Sentry ожидает Secret с credentials для SASL-аутентификации. В `values_sentry.yaml` задано `externalKafka.sasl.existingSecret: "kafka-credentials"` — этот Secret должен существовать в namespace `sentry` **до** запуска `helm upgrade --install sentry`, иначе Job `sentry-kafka-provisioning` завершится ошибкой `secret "kafka-credentials" not found`.
-
-Ключи Secret соответствуют секции `externalKafka.sasl.existingSecretKeys` в values:
-- `mechanism` — механизм SASL (например, `SCRAM-SHA-512`)
-- `username` — имя пользователя Kafka
-- `password` — пароль Kafka
-
-Если credentials уже есть в Terraform outputs:
-
-```bash
-kubectl create namespace sentry
-kafka_user=$(terraform output -raw managed_kafka_user)
-kafka_password=$(terraform output -raw managed_kafka_password)
-kubectl -n sentry create secret generic kafka-credentials \
-  --from-literal=mechanism='SCRAM-SHA-512' \
-  --from-literal=username="${kafka_user}" \
-  --from-literal=password="${kafka_password}"
 ```
 
 ### 7.1. Мониторинг Yandex Managed Kafka в Grafana
