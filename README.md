@@ -408,8 +408,6 @@ kubectl create secret generic sentry-dsn-node -n demo-nodejs \
   --from-literal=dsn='http://YOUR_SENTRY_DSN_NODE@sentry.apatsev.org.ru/PROJECT_ID'
 kubectl create secret generic sentry-dsn-python -n demo-nodejs \
   --from-literal=dsn='http://YOUR_SENTRY_DSN_PYTHON@sentry.apatsev.org.ru/PROJECT_ID'
-# либо подставить dsn в demo/k8s/secret-sentry-dsn-*.yaml и:
-# kubectl apply -f demo/k8s/secret-sentry-dsn-node.yaml -f demo/k8s/secret-sentry-dsn-python.yaml
 
 kubectl apply -f demo/demo-nodejs/deployment-node.yaml
 kubectl apply -f demo/demo-python/deployment-python.yaml
