@@ -196,7 +196,7 @@ variable "managed_pg_name" {
 variable "managed_pg_version" {
   description = "PostgreSQL version"
   type        = string
-  default     = "16"
+  default     = "17"
 }
 
 variable "managed_pg_resource_preset_id" {
@@ -255,7 +255,7 @@ variable "managed_redis_name" {
 variable "managed_redis_version" {
   description = "Redis version"
   type        = string
-  default     = "7.2"
+  default     = "9.1-valkey"
 }
 
 variable "managed_redis_resource_preset_id" {
