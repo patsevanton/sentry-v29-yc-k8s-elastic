@@ -21,13 +21,13 @@ resource "yandex_mdb_kafka_cluster" "managed" {
 
     kafka {
       resources {
-        resource_preset_id = var.managed_kafka_resource_preset_id
-        disk_type_id       = var.managed_kafka_disk_type_id
-        disk_size          = var.managed_kafka_disk_size
+        resource_preset_id = "s2.micro"
+        disk_type_id       = "network-ssd"
+        disk_size          = 32
       }
 
       kafka_config {
-        auto_create_topics_enable = var.managed_kafka_auto_create_topics_enable
+        auto_create_topics_enable = true
         # Держим значение выше максимального max.message.bytes среди топиков
         # в кластере (например snuba-lw-deletions-eap-items=50000000), потому
         # что в multi-node Kafka replica.fetch.max.bytes должен быть >= размера

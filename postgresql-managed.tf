@@ -11,7 +11,7 @@ resource "yandex_mdb_postgresql_cluster" "managed" {
   network_id  = local.network_id
 
   config {
-    version = var.managed_pg_version
+    version = "17"
 
     resources {
       resource_preset_id = var.managed_pg_resource_preset_id

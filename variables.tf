@@ -80,24 +80,6 @@ variable "managed_kafka_assign_public_ip" {
   default     = false
 }
 
-variable "managed_kafka_resource_preset_id" {
-  description = "Managed Kafka host resource preset"
-  type        = string
-  default     = "s2.micro"
-}
-
-variable "managed_kafka_disk_type_id" {
-  description = "Managed Kafka disk type"
-  type        = string
-  default     = "network-ssd"
-}
-
-variable "managed_kafka_disk_size" {
-  description = "Managed Kafka disk size in GiB"
-  type        = number
-  default     = 32
-}
-
 variable "managed_kafka_port" {
   description = "Managed Kafka broker port used by Sentry externalKafka settings"
   type        = number
@@ -129,12 +111,6 @@ variable "managed_kafka_security_protocol" {
   default     = "SASL_PLAINTEXT"
 }
 
-variable "managed_kafka_auto_create_topics_enable" {
-  description = "Enable broker auto topic creation in managed Kafka"
-  type        = bool
-  default     = true
-}
-
 variable "external_kafka_provisioning_enabled" {
   description = "Enable Sentry Helm externalKafka topic provisioning job"
   type        = bool
@@ -161,12 +137,6 @@ variable "managed_pg_name" {
   description = "Managed PostgreSQL cluster name"
   type        = string
   default     = "sentry-pg-managed"
-}
-
-variable "managed_pg_version" {
-  description = "PostgreSQL version"
-  type        = string
-  default     = "17"
 }
 
 variable "managed_pg_resource_preset_id" {
