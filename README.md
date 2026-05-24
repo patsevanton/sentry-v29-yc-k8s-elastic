@@ -188,7 +188,7 @@ kubectl get crd | grep "keda.sh"
 
 ### 4.1. Репозиторий Sentry
 
-Подключите Helm-репозиторий чарта Sentry. Namespace `sentry` можно создать заранее или при установке в **§5** флагом `--create-namespace`.
+Подключите Helm-репозиторий чарта Sentry. Namespace `sentry` можно создать заранее или при установке в **§6** флагом `--create-namespace`.
 
 ```bash
 kubectl create namespace sentry
@@ -213,7 +213,7 @@ filestore:
 
 ### 6. Установка Sentry
 
-**Порядок зависимостей.** Чарт поднимает PostgreSQL и Redis в namespace `sentry`, а **ClickHouse работает в k8s через clickhouse-operator** (namespace `clickhouse`, `externalClickhouse` в [values_sentry.yaml.tpl](https://github.com/patsevanton/sentry-v29-yc-k8s-elastic/blob/master/values_sentry.yaml.tpl)). Kafka по умолчанию внешняя (Yandex Managed Kafka); встроенный Kafka включается переменной `sentry_incluster_kafka_enabled`. Сначала выполните **§0** (ClickHouse Operator + Keeper + ClickHouseInstallation), **§2–§3** (Prometheus CRD + VictoriaMetrics), **§4** (KEDA + репозиторий Helm + Kafka credentials), затем команду ниже.
+**Порядок зависимостей.** Чарт поднимает PostgreSQL и Redis в namespace `sentry`, а **ClickHouse работает в k8s через clickhouse-operator** (namespace `clickhouse`, `externalClickhouse` в [values_sentry.yaml.tpl](https://github.com/patsevanton/sentry-v29-yc-k8s-elastic/blob/master/values_sentry.yaml.tpl)). Kafka по умолчанию внешняя (Yandex Managed Kafka); встроенный Kafka включается переменной `sentry_incluster_kafka_enabled`. Сначала выполните **§0** (ClickHouse Operator + Keeper + ClickHouseInstallation), **§2–§3** (Prometheus CRD + VictoriaMetrics), **§4–§5** (KEDA + репозиторий Helm + Kafka credentials), затем команду ниже.
 
 Установка с `values_sentry.yaml` (генерируется из [values_sentry.yaml.tpl](https://github.com/patsevanton/sentry-v29-yc-k8s-elastic/blob/master/values_sentry.yaml.tpl) через `terraform apply`): в файле заданы параметры ClickHouse из k8s-сервиса.
 
@@ -224,7 +224,7 @@ helm upgrade --install sentry sentry/sentry --version 31.5.0 -n sentry \
 
 **Устанавливается долго:** первый `helm upgrade --install` часто занимает 20–40 минут.
 
-После установки зайдите в Sentry в браузере: **[http://sentry.apatsev.org.ru](http://sentry.apatsev.org.ru)** (DNS и ingress — **§7**; если задали другой хост в Ingress/`values`, используйте его).
+После установки зайдите в Sentry в браузере: **[http://sentry.apatsev.org.ru](http://sentry.apatsev.org.ru)** (DNS и ingress — **§8**; если задали другой хост в Ingress/`values`, используйте его).
 
 **Relay** и **taskbroker** отдельно не настраиваются.
 
@@ -253,7 +253,7 @@ kubectl -n sentry get scaledobject taskworker-ingest
 
 ### 7. Мониторинг Sentry (Prometheus exporter)
 
-После установки Sentry (**§5**) и VictoriaMetrics K8s Stack (**§3**) поднимите [sentry-prometheus-exporter](https://github.com/italux/sentry-prometheus-exporter) ([манифест](https://github.com/patsevanton/sentry-v29-yc-k8s-elastic/blob/master/k8s/sentry-prometheus-exporter.yaml)): метрики на порту **9790**, путь `/metrics/`.
+После установки Sentry (**§6**) и VictoriaMetrics K8s Stack (**§3**) поднимите [sentry-prometheus-exporter](https://github.com/italux/sentry-prometheus-exporter) ([манифест](https://github.com/patsevanton/sentry-v29-yc-k8s-elastic/blob/master/k8s/sentry-prometheus-exporter.yaml)): метрики на порту **9790**, путь `/metrics/`.
 
 > **Токен создаётся только вручную через UI Sentry** — автоматизировать создание API-токена невозможно, т.к. Sentry не предоставляет API для выпуска токенов внутренних интеграций.
 
