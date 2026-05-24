@@ -188,7 +188,7 @@ kubectl get crd | grep "keda.sh"
 
 ### 4.1. Репозиторий Sentry
 
-Подключите Helm-репозиторий чарта Sentry. Namespace `sentry` можно создать заранее или при установке в **§6** флагом `--create-namespace`.
+Подключите Helm-репозиторий чарта Sentry. Namespace `sentry` можно создать заранее или при установке в **§5** флагом `--create-namespace`.
 
 ```bash
 kubectl create namespace sentry
@@ -232,7 +232,7 @@ kubectl -n sentry create secret generic kafka-credentials \
 
 ### 5. Установка Sentry
 
-**Порядок зависимостей.** Чарт поднимает PostgreSQL и Redis в namespace `sentry`, а **ClickHouse работает в k8s через clickhouse-operator** (namespace `clickhouse`, `externalClickhouse` в [values_sentry.yaml.tpl](https://github.com/patsevanton/sentry-v29-yc-k8s-elastic/blob/master/values_sentry.yaml.tpl)). Kafka по умолчанию внешняя (Yandex Managed Kafka); встроенный Kafka включается переменной `sentry_incluster_kafka_enabled`. Сначала выполните **§0** (ClickHouse Operator + Keeper + ClickHouseInstallation), **§3–§4** (Prometheus CRD + VictoriaMetrics), **§5** (KEDA + репозиторий Helm), затем команду ниже.
+**Порядок зависимостей.** Чарт поднимает PostgreSQL и Redis в namespace `sentry`, а **ClickHouse работает в k8s через clickhouse-operator** (namespace `clickhouse`, `externalClickhouse` в [values_sentry.yaml.tpl](https://github.com/patsevanton/sentry-v29-yc-k8s-elastic/blob/master/values_sentry.yaml.tpl)). Kafka по умолчанию внешняя (Yandex Managed Kafka); встроенный Kafka включается переменной `sentry_incluster_kafka_enabled`. Сначала выполните **§0** (ClickHouse Operator + Keeper + ClickHouseInstallation), **§2–§3** (Prometheus CRD + VictoriaMetrics), **§4** (KEDA + репозиторий Helm + Kafka credentials), затем команду ниже.
 
 Установка с `values_sentry.yaml` (генерируется из [values_sentry.yaml.tpl](https://github.com/patsevanton/sentry-v29-yc-k8s-elastic/blob/master/values_sentry.yaml.tpl) через `terraform apply`): в файле заданы параметры ClickHouse из k8s-сервиса.
 
@@ -243,7 +243,7 @@ helm upgrade --install sentry sentry/sentry --version 31.5.0 -n sentry \
 
 **Устанавливается долго:** первый `helm upgrade --install` часто занимает 20–40 минут.
 
-После установки зайдите в Sentry в браузере: **[http://sentry.apatsev.org.ru](http://sentry.apatsev.org.ru)** (DNS и ingress — **§9**; если задали другой хост в Ingress/`values`, используйте его).
+После установки зайдите в Sentry в браузере: **[http://sentry.apatsev.org.ru](http://sentry.apatsev.org.ru)** (DNS и ingress — **§7**; если задали другой хост в Ingress/`values`, используйте его).
 
 **Relay** и **taskbroker** отдельно не настраиваются.
 
@@ -260,7 +260,7 @@ kubectl apply -f k8s/keda-taskworker-ingest.yaml
 ```
 
 - **minReplicaCount:** 1, **maxReplicaCount:** 8
-- **Триггер:** `kafka_group_topic_partition_lag` (группа `taskworker-ingest`, топик `taskworker-ingest`) — запрос к VictoriaMetrics (§4)
+- **Триггер:** `kafka_group_topic_partition_lag` (группа `taskworker-ingest`, топик `taskworker-ingest`) — запрос к VictoriaMetrics (§3)
 - **threshold:** 1000 (порог масштабирования), **activationThreshold:** 100 (порог «пробуждения» из 0→1)
 - **pollingInterval:** 30 сек, **cooldownPeriod:** 600 сек (10 мин)
 
@@ -270,9 +270,9 @@ kubectl apply -f k8s/keda-taskworker-ingest.yaml
 kubectl -n sentry get scaledobject taskworker-ingest
 ```
 
-### 7. Мониторинг Sentry (Prometheus exporter)
+### 6. Мониторинг Sentry (Prometheus exporter)
 
-После установки Sentry (**§6**) и VictoriaMetrics K8s Stack (**§4**) поднимите [sentry-prometheus-exporter](https://github.com/italux/sentry-prometheus-exporter) ([манифест](https://github.com/patsevanton/sentry-v29-yc-k8s-elastic/blob/master/k8s/sentry-prometheus-exporter.yaml)): метрики на порту **9790**, путь `/metrics/`.
+После установки Sentry (**§5**) и VictoriaMetrics K8s Stack (**§3**) поднимите [sentry-prometheus-exporter](https://github.com/italux/sentry-prometheus-exporter) ([манифест](https://github.com/patsevanton/sentry-v29-yc-k8s-elastic/blob/master/k8s/sentry-prometheus-exporter.yaml)): метрики на порту **9790**, путь `/metrics/`.
 
 > **Токен создаётся только вручную через UI Sentry** — автоматизировать создание API-токена невозможно, т.к. Sentry не предоставляет API для выпуска токенов внутренних интеграций.
 
@@ -309,7 +309,7 @@ kill %1
 curl -s "http://vmsingle.apatsev.org.ru/api/v1/query?query=sentry_open_issue_events" | python3 -m json.tool
 ```
 
-### 7.1. Мониторинг Yandex Managed Kafka в Grafana
+### 6.1. Мониторинг Yandex Managed Kafka в Grafana
 
 Для Managed Kafka в Yandex Cloud метрики берутся напрямую из Yandex Monitoring endpoint `https://monitoring.api.cloud.yandex.net/monitoring/v2/prometheusMetrics` c параметрами `folderId` и `service=managed-kafka` (официальный export в формате Prometheus).
 
@@ -339,11 +339,11 @@ kubectl -n vmks get vmstaticscrape yc-managed-kafka
 
 4. Импортируйте дашборд [dashboard/yc-managed-kafka-overview.json](https://github.com/patsevanton/sentry-v29-yc-k8s-elastic/blob/master/dashboard/yc-managed-kafka-overview.json) в Grafana (`Dashboards -> New -> Import`) и выберите datasource Prometheus/VictoriaMetrics.
 
-### 7.2. Мониторинг ClickHouse Operator в Grafana
+### 6.2. Мониторинг ClickHouse Operator в Grafana
 
-После установки clickhouse-operator (**§0.1**) и VictoriaMetrics K8s Stack (**§4**) подключите scrape метрик operator'а.
+После установки clickhouse-operator (**§0.1**) и VictoriaMetrics K8s Stack (**§3**) подключите scrape метрик operator'а.
 
-Operator expose-ит Prometheus-метрики на порту **8888**. Манифест [k8s/vmscrape-clickhouse-operator.yaml](https://github.com/patsevanton/sentry-v29-yc-k8s-elastic/blob/master/k8s/vmscrape-clickhouse-operator.yaml) создаёт `VMServiceScrape` в namespace `vmks` (где работает `VMAgent` из §4).
+Operator expose-ит Prometheus-метрики на порту **8888**. Манифест [k8s/vmscrape-clickhouse-operator.yaml](https://github.com/patsevanton/sentry-v29-yc-k8s-elastic/blob/master/k8s/vmscrape-clickhouse-operator.yaml) создаёт `VMServiceScrape` в namespace `vmks` (где работает `VMAgent` из §3).
 
 ```bash
 kubectl apply -f k8s/vmscrape-clickhouse-operator.yaml
@@ -357,7 +357,7 @@ kubectl -n vmks get vmservicescrape clickhouse-operator
 
 Импортируйте дашборд ClickHouse Operator в Grafana (`Dashboards -> New -> Import`, загрузите JSON-файл, datasource — Prometheus/VictoriaMetrics). JSON-файл дашборда: [Altinity_ClickHouse_Operator_dashboard.json](https://github.com/Altinity/clickhouse-operator/blob/master/grafana-dashboard/Altinity_ClickHouse_Operator_dashboard.json) — показывает состояние оператора: количество CR, reconcile latency, количество managed ClickHouseInstallation.
 
-### 8. Доступ к Sentry
+### 7. Доступ к Sentry
 
 Sentry доступен по адресу **[http://sentry.apatsev.org.ru](http://sentry.apatsev.org.ru)** через [ingress-nginx](https://kubernetes.github.io/ingress-nginx/) (стандартный `Ingress`).
 
@@ -367,7 +367,7 @@ Sentry доступен по адресу **[http://sentry.apatsev.org.ru](http:
 kubectl -n ingress-nginx get svc
 ```
 
-### 9. Демо-клиенты Sentry
+### 8. Демо-клиенты Sentry
 
 Два HTTP-сервиса (Python / FastAPI и Node.js / Express) с одинаковыми маршрутами для проверки self-hosted Sentry: исключения, сообщения, транзакции, breadcrumbs, контекст.
 
@@ -418,7 +418,7 @@ kubectl apply -f demo/k8s/service.yaml
 
 Переменная `DEMO_AUTO_EXCEPTION_INTERVAL_SEC` в манифестах demo (и при локальном запуске) задаёт интервал автоматической отправки исключений в Sentry; `0` отключает. Откройте проект в Sentry и убедитесь, что появились issues и (при включённом performance) транзакции.
 
-### 10. Chaos Mesh (Fault Injection для тестирования устойчивости)
+### 9. Chaos Mesh (Fault Injection для тестирования устойчивости)
 
 [Chaos Mesh](https://chaos-mesh.org/) — платформа для fault injection в Kubernetes, позволяет тестировать устойчивость Sentry к сбоям: убивать поды, задерживать/терять сетевые пакеты, нагружать CPU/内存, сбои дисков и т.д.
 
