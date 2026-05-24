@@ -406,7 +406,7 @@ kubectl apply -f demo/demo-python/namespace.yaml
 # DSN (по одному Secret на Node и Python):
 kubectl create secret generic sentry-dsn-node -n demo-nodejs \
   --from-literal=dsn='http://YOUR_SENTRY_DSN_NODE@sentry.apatsev.org.ru/PROJECT_ID'
-kubectl create secret generic sentry-dsn-python -n demo-nodejs \
+kubectl create secret generic sentry-dsn-python -n demo-python \
   --from-literal=dsn='http://YOUR_SENTRY_DSN_PYTHON@sentry.apatsev.org.ru/PROJECT_ID'
 
 kubectl apply -f demo/demo-nodejs/deployment-node.yaml
