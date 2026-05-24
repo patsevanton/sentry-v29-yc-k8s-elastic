@@ -1,7 +1,5 @@
 # Развёртывание Sentry v31.5.0 в Yandex Cloud на Kubernetes
 
-> **Важно:** для production-режима рекомендуется заменить встроенные PostgreSQL и Redis из Helm-чарта Sentry на **Yandex Managed PostgreSQL** и **Managed Redis (Valkey)**. Встроенные БД подходят только для dev/test окружений. В Terraform нужно создать ресурсы `yandex_mdb_postgresql_cluster` и `yandex_mdb_redis_cluster`, а в `values_sentry.yaml.tpl` указать `externalPostgresql` и `externalRedis` вместо `postgresql.enabled: true` и `redis.enabled: true`.
-
 TODO проверить все ли файлы указаны в readme
 
 ## Цели статьи
