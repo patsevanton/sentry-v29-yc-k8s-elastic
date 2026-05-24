@@ -209,28 +209,9 @@ filestore:
 
 По умолчанию чарт Sentry хранит артефакты на локальной ФС (`/var/lib/sentry/files`) с PVC в режиме **RWO** (ReadWriteOnce). RWO-том доступен только одному поду (обычно `sentry-web`); taskworker-ы при сборке (`assemble`) debug-файлов не находят blob-ы → `FileNotFoundError` / `internal server error` в UI. S3-бэкенд доступен всем подам одновременно и решает эту проблему.
 
-### 4.3. Kafka credentials (Secret для внешнего Kafka)
 
-Так как используем внешнюю Kafka (Yandex Managed Kafka), чарт Sentry ожидает Secret с credentials для SASL-аутентификации. В `values_sentry.yaml` задано `externalKafka.sasl.existingSecret: "kafka-credentials"` — этот Secret должен существовать в namespace `sentry` **до** запуска `helm upgrade --install sentry`, иначе Job `sentry-kafka-provisioning` завершится ошибкой `secret "kafka-credentials" not found`.
 
-Ключи Secret соответствуют секции `externalKafka.sasl.existingSecretKeys` в values:
-- `mechanism` — механизм SASL (например, `SCRAM-SHA-512`)
-- `username` — имя пользователя Kafka
-- `password` — пароль Kafka
-
-Если credentials уже есть в Terraform outputs:
-
-```bash
-kubectl create namespace sentry
-kafka_user=$(terraform output -raw managed_kafka_user)
-kafka_password=$(terraform output -raw managed_kafka_password)
-kubectl -n sentry create secret generic kafka-credentials \
-  --from-literal=mechanism='SCRAM-SHA-512' \
-  --from-literal=username="${kafka_user}" \
-  --from-literal=password="${kafka_password}"
-```
-
-### 5. Установка Sentry
+### 6. Установка Sentry
 
 **Порядок зависимостей.** Чарт поднимает PostgreSQL и Redis в namespace `sentry`, а **ClickHouse работает в k8s через clickhouse-operator** (namespace `clickhouse`, `externalClickhouse` в [values_sentry.yaml.tpl](https://github.com/patsevanton/sentry-v29-yc-k8s-elastic/blob/master/values_sentry.yaml.tpl)). Kafka по умолчанию внешняя (Yandex Managed Kafka); встроенный Kafka включается переменной `sentry_incluster_kafka_enabled`. Сначала выполните **§0** (ClickHouse Operator + Keeper + ClickHouseInstallation), **§2–§3** (Prometheus CRD + VictoriaMetrics), **§4** (KEDA + репозиторий Helm + Kafka credentials), затем команду ниже.
 
@@ -270,7 +251,7 @@ kubectl apply -f k8s/keda-taskworker-ingest.yaml
 kubectl -n sentry get scaledobject taskworker-ingest
 ```
 
-### 6. Мониторинг Sentry (Prometheus exporter)
+### 7. Мониторинг Sentry (Prometheus exporter)
 
 После установки Sentry (**§5**) и VictoriaMetrics K8s Stack (**§3**) поднимите [sentry-prometheus-exporter](https://github.com/italux/sentry-prometheus-exporter) ([манифест](https://github.com/patsevanton/sentry-v29-yc-k8s-elastic/blob/master/k8s/sentry-prometheus-exporter.yaml)): метрики на порту **9790**, путь `/metrics/`.
 
@@ -309,7 +290,28 @@ kill %1
 curl -s "http://vmsingle.apatsev.org.ru/api/v1/query?query=sentry_open_issue_events" | python3 -m json.tool
 ```
 
-### 6.1. Мониторинг Yandex Managed Kafka в Grafana
+### 5. Kafka credentials (Secret для внешнего Kafka)
+
+Так как используем внешнюю Kafka (Yandex Managed Kafka), чарт Sentry ожидает Secret с credentials для SASL-аутентификации. В `values_sentry.yaml` задано `externalKafka.sasl.existingSecret: "kafka-credentials"` — этот Secret должен существовать в namespace `sentry` **до** запуска `helm upgrade --install sentry`, иначе Job `sentry-kafka-provisioning` завершится ошибкой `secret "kafka-credentials" not found`.
+
+Ключи Secret соответствуют секции `externalKafka.sasl.existingSecretKeys` в values:
+- `mechanism` — механизм SASL (например, `SCRAM-SHA-512`)
+- `username` — имя пользователя Kafka
+- `password` — пароль Kafka
+
+Если credentials уже есть в Terraform outputs:
+
+```bash
+kubectl create namespace sentry
+kafka_user=$(terraform output -raw managed_kafka_user)
+kafka_password=$(terraform output -raw managed_kafka_password)
+kubectl -n sentry create secret generic kafka-credentials \
+  --from-literal=mechanism='SCRAM-SHA-512' \
+  --from-literal=username="${kafka_user}" \
+  --from-literal=password="${kafka_password}"
+```
+
+### 7.1. Мониторинг Yandex Managed Kafka в Grafana
 
 Для Managed Kafka в Yandex Cloud метрики берутся напрямую из Yandex Monitoring endpoint `https://monitoring.api.cloud.yandex.net/monitoring/v2/prometheusMetrics` c параметрами `folderId` и `service=managed-kafka` (официальный export в формате Prometheus).
 
@@ -339,7 +341,7 @@ kubectl -n vmks get vmstaticscrape yc-managed-kafka
 
 4. Импортируйте дашборд [dashboard/yc-managed-kafka-overview.json](https://github.com/patsevanton/sentry-v29-yc-k8s-elastic/blob/master/dashboard/yc-managed-kafka-overview.json) в Grafana (`Dashboards -> New -> Import`) и выберите datasource Prometheus/VictoriaMetrics.
 
-### 6.2. Мониторинг ClickHouse Operator в Grafana
+### 7.2. Мониторинг ClickHouse Operator в Grafana
 
 После установки clickhouse-operator (**§0.1**) и VictoriaMetrics K8s Stack (**§3**) подключите scrape метрик operator'а.
 
@@ -357,7 +359,7 @@ kubectl -n vmks get vmservicescrape clickhouse-operator
 
 Импортируйте дашборд ClickHouse Operator в Grafana (`Dashboards -> New -> Import`, загрузите JSON-файл, datasource — Prometheus/VictoriaMetrics). JSON-файл дашборда: [Altinity_ClickHouse_Operator_dashboard.json](https://github.com/Altinity/clickhouse-operator/blob/master/grafana-dashboard/Altinity_ClickHouse_Operator_dashboard.json) — показывает состояние оператора: количество CR, reconcile latency, количество managed ClickHouseInstallation.
 
-### 7. Доступ к Sentry
+### 8. Доступ к Sentry
 
 Sentry доступен по адресу **[http://sentry.apatsev.org.ru](http://sentry.apatsev.org.ru)** через [ingress-nginx](https://kubernetes.github.io/ingress-nginx/) (стандартный `Ingress`).
 
@@ -367,7 +369,7 @@ Sentry доступен по адресу **[http://sentry.apatsev.org.ru](http:
 kubectl -n ingress-nginx get svc
 ```
 
-### 8. Демо-клиенты Sentry
+### 9. Демо-клиенты Sentry
 
 Два HTTP-сервиса (Python / FastAPI и Node.js / Express) с одинаковыми маршрутами для проверки self-hosted Sentry: исключения, сообщения, транзакции, breadcrumbs, контекст.
 
@@ -418,7 +420,7 @@ kubectl apply -f demo/k8s/service.yaml
 
 Переменная `DEMO_AUTO_EXCEPTION_INTERVAL_SEC` в манифестах demo (и при локальном запуске) задаёт интервал автоматической отправки исключений в Sentry; `0` отключает. Откройте проект в Sentry и убедитесь, что появились issues и (при включённом performance) транзакции.
 
-### 9. Chaos Mesh (Fault Injection для тестирования устойчивости)
+### 10. Chaos Mesh (Fault Injection для тестирования устойчивости)
 
 [Chaos Mesh](https://chaos-mesh.org/) — платформа для fault injection в Kubernetes, позволяет тестировать устойчивость Sentry к сбоям: убивать поды, задерживать/терять сетевые пакеты, нагружать CPU/内存, сбои дисков и т.д.
 
