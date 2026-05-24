@@ -270,23 +270,6 @@ kubectl apply -f k8s/keda-taskworker-ingest.yaml
 kubectl -n sentry get scaledobject taskworker-ingest
 ```
 
-### 6. Проверка подов и логов
-
-В конце установки Sentry убедитесь, что все Job завершились (статус `Completed`). Пока Job ещё запущены, поды инициализации могут быть в статусе `Running`, а Helm может ждать готовности.
-
-```bash
-kubectl -n sentry get jobs
-kubectl -n sentry get pods
-```
-
-Когда все нужные Job в `COMPLETIONS 1/1`, проверьте логи:
-
-```bash
-kubectl -n sentry logs deployment/sentry-snuba-api --tail=20
-kubectl -n sentry logs sentry-taskbroker-ingest-0 --tail=20
-kubectl -n sentry logs deployment/sentry-web --tail=20
-```
-
 ### 7. Мониторинг Sentry (Prometheus exporter)
 
 После установки Sentry (**§6**) и VictoriaMetrics K8s Stack (**§4**) поднимите [sentry-prometheus-exporter](https://github.com/italux/sentry-prometheus-exporter) ([манифест](https://github.com/patsevanton/sentry-v29-yc-k8s-elastic/blob/master/k8s/sentry-prometheus-exporter.yaml)): метрики на порту **9790**, путь `/metrics/`.
