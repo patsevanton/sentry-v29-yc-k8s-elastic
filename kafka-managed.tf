@@ -5,15 +5,15 @@ resource "random_password" "managed_kafka_user_password" {
 
 resource "yandex_mdb_kafka_cluster" "managed" {
   folder_id   = local.folder_id
-  name        = var.managed_kafka_name
+  name        = "sentry-kafka-managed"
   description = "Managed Kafka for Sentry"
   environment = "PRODUCTION"
   network_id  = local.network_id
   subnet_ids  = [local.subnet_a_id, local.subnet_b_id, local.subnet_d_id]
 
   config {
-    version          = var.managed_kafka_version
-    brokers_count    = var.managed_kafka_brokers_count
+    version          = "4.0"
+    brokers_count    = 1
     zones            = [local.subnet_a_zone, local.subnet_b_zone, local.subnet_d_zone]
     assign_public_ip = var.managed_kafka_assign_public_ip
     # unmanaged_topics = true

@@ -1,6 +1,6 @@
 resource "local_file" "write_sentry_config" {
   content         = local.sentry_config
-  filename        = var.sentry_values_output_path
+  filename        = "values_sentry.yaml"
   file_permission = "0644"
 }
 
@@ -88,7 +88,7 @@ locals {
     external_kafka     = local.external_kafka_effective
 
     external_clickhouse                  = local.external_clickhouse_effective
-    sentry_hooks_active_deadline_seconds = var.sentry_hooks_active_deadline_seconds
+    sentry_hooks_active_deadline_seconds = 7200
   })
 
   kafka_credentials_config = templatefile("${path.module}/k8s/kafka-credentials.yaml.tpl", {

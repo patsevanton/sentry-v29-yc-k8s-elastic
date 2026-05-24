@@ -68,40 +68,10 @@ variable "subnet_d_zone" {
   default     = "ru-central1-d"
 }
 
-variable "sentry_hooks_active_deadline_seconds" {
-  description = "Helm hooks activeDeadlineSeconds for long-running jobs (db-init/snuba-migrate)"
-  type        = number
-  default     = 7200
-}
-
-variable "sentry_values_output_path" {
-  description = "Path to generated values_sentry.yaml file used by Helm"
-  type        = string
-  default     = "values_sentry.yaml"
-}
-
 variable "sentry_incluster_kafka_enabled" {
   description = "Use in-chart Kafka instead of external managed Kafka"
   type        = bool
   default     = false
-}
-
-variable "managed_kafka_name" {
-  description = "Managed Kafka cluster name"
-  type        = string
-  default     = "sentry-kafka-managed"
-}
-
-variable "managed_kafka_version" {
-  description = "Managed Kafka version (KRaft generation)"
-  type        = string
-  default     = "4.0"
-}
-
-variable "managed_kafka_brokers_count" {
-  description = "Number of brokers per zone in managed Kafka"
-  type        = number
-  default     = 1
 }
 
 variable "managed_kafka_assign_public_ip" {
