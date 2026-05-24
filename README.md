@@ -230,8 +230,6 @@ kubectl -n sentry create secret generic kafka-credentials \
   --from-literal=password="${kafka_password}"
 ```
 
-Если credentials задаются вручную, замените значения на реальные. При использовании встроенного Kafka (`kafka.enabled: true`) этот Secret не нужен.
-
 ### 5. Установка Sentry
 
 **Порядок зависимостей.** Чарт поднимает PostgreSQL и Redis в namespace `sentry`, а **ClickHouse работает в k8s через clickhouse-operator** (namespace `clickhouse`, `externalClickhouse` в [values_sentry.yaml.tpl](https://github.com/patsevanton/sentry-v29-yc-k8s-elastic/blob/master/values_sentry.yaml.tpl)). Kafka по умолчанию внешняя (Yandex Managed Kafka); встроенный Kafka включается переменной `sentry_incluster_kafka_enabled`. Сначала выполните **§0** (ClickHouse Operator + Keeper + ClickHouseInstallation), **§3–§4** (Prometheus CRD + VictoriaMetrics), **§5** (KEDA + репозиторий Helm), затем команду ниже.
