@@ -11,7 +11,7 @@ resource "yandex_mdb_redis_cluster" "managed" {
   network_id  = local.network_id
 
   config {
-    version  = var.managed_redis_version
+    version  = "9.1-valkey"
     password = local.managed_redis_password_effective
 
     backup_window_start {
@@ -21,9 +21,9 @@ resource "yandex_mdb_redis_cluster" "managed" {
   }
 
   resources {
-    resource_preset_id = var.managed_redis_resource_preset_id
-    disk_type_id       = var.managed_redis_disk_type_id
-    disk_size          = var.managed_redis_disk_size
+    resource_preset_id = "hm3-c2-m8"
+    disk_type_id       = "network-ssd"
+    disk_size          = 16
   }
 
   dynamic "host" {
@@ -53,25 +53,4 @@ locals {
   }
 
   managed_redis_host = yandex_mdb_redis_cluster.managed.host[0].fqdn
-}
-
-output "managed_redis_cluster_id" {
-  value = yandex_mdb_redis_cluster.managed.id
-}
-
-output "managed_redis_host" {
-  value = local.managed_redis_host
-}
-
-output "managed_redis_user" {
-  value = var.managed_redis_user
-}
-
-output "managed_redis_password" {
-  value     = local.managed_redis_password_effective
-  sensitive = true
-}
-
-output "managed_redis_port" {
-  value = 6379
 }

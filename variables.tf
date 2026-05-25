@@ -192,30 +192,6 @@ variable "managed_redis_name" {
   default     = "sentry-redis-managed"
 }
 
-variable "managed_redis_version" {
-  description = "Redis version"
-  type        = string
-  default     = "9.1-valkey"
-}
-
-variable "managed_redis_resource_preset_id" {
-  description = "Managed Redis host resource preset"
-  type        = string
-  default     = "hm3-c2-m8"
-}
-
-variable "managed_redis_disk_type_id" {
-  description = "Managed Redis disk type"
-  type        = string
-  default     = "network-ssd"
-}
-
-variable "managed_redis_disk_size" {
-  description = "Managed Redis disk size in GiB"
-  type        = number
-  default     = 16
-}
-
 variable "managed_redis_user" {
   description = "Managed Redis username for Sentry"
   type        = string
