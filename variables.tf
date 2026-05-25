@@ -105,57 +105,15 @@ variable "managed_kafka_sasl_mechanism" {
   default     = "SCRAM-SHA-512"
 }
 
-variable "managed_kafka_security_protocol" {
-  description = "Kafka security protocol for Sentry externalKafka"
-  type        = string
-  default     = "SASL_PLAINTEXT"
-}
-
 variable "external_kafka_provisioning_enabled" {
   description = "Enable Sentry Helm externalKafka topic provisioning job"
   type        = bool
   default     = true
 }
 
-variable "external_kafka_provisioning_replication_factor" {
-  description = "Replication factor for Sentry externalKafka provisioning"
-  type        = number
-  default     = 3
-}
-
-variable "external_kafka_provisioning_num_partitions" {
-  description = "Default partitions for Sentry externalKafka provisioning"
-  type        = number
-  default     = 3
-}
-
 # ---------------------------------------------------------------------------
 # Yandex Managed PostgreSQL
 # ---------------------------------------------------------------------------
-
-variable "managed_pg_name" {
-  description = "Managed PostgreSQL cluster name"
-  type        = string
-  default     = "sentry-pg-managed"
-}
-
-variable "managed_pg_resource_preset_id" {
-  description = "Managed PostgreSQL host resource preset"
-  type        = string
-  default     = "s2.micro"
-}
-
-variable "managed_pg_disk_type_id" {
-  description = "Managed PostgreSQL disk type"
-  type        = string
-  default     = "network-ssd"
-}
-
-variable "managed_pg_disk_size" {
-  description = "Managed PostgreSQL disk size in GiB"
-  type        = number
-  default     = 32
-}
 
 variable "managed_pg_user" {
   description = "Managed PostgreSQL username for Sentry"
@@ -174,12 +132,6 @@ variable "managed_pg_database" {
   description = "Managed PostgreSQL database name for Sentry"
   type        = string
   default     = "sentry"
-}
-
-variable "managed_pg_conn_limit" {
-  description = "Managed PostgreSQL connection limit for Sentry user"
-  type        = number
-  default     = 200
 }
 
 # ---------------------------------------------------------------------------

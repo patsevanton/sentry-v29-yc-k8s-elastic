@@ -5,7 +5,7 @@ resource "random_password" "managed_pg_user_password" {
 
 resource "yandex_mdb_postgresql_cluster" "managed" {
   folder_id   = local.folder_id
-  name        = var.managed_pg_name
+  name        = "sentry-pg-managed"
   description = "Managed PostgreSQL for Sentry"
   environment = "PRODUCTION"
   network_id  = local.network_id
@@ -14,9 +14,9 @@ resource "yandex_mdb_postgresql_cluster" "managed" {
     version = "17"
 
     resources {
-      resource_preset_id = var.managed_pg_resource_preset_id
-      disk_type_id       = var.managed_pg_disk_type_id
-      disk_size          = var.managed_pg_disk_size
+      resource_preset_id = "s2.micro"
+      disk_type_id       = "network-ssd"
+      disk_size          = 32
     }
 
     pooler_config {
@@ -40,7 +40,7 @@ resource "yandex_mdb_postgresql_user" "sentry" {
   cluster_id = yandex_mdb_postgresql_cluster.managed.id
   name       = var.managed_pg_user
   password   = local.managed_pg_user_password_effective
-  conn_limit = var.managed_pg_conn_limit
+  conn_limit = 200
 }
 
 resource "yandex_mdb_postgresql_database" "sentry" {

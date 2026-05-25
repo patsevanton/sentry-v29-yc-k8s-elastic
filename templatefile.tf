@@ -37,12 +37,12 @@ locals {
       password  = local.managed_kafka_user_password_effective
     }
     security = {
-      protocol = var.managed_kafka_security_protocol
+      protocol = "SASL_PLAINTEXT"
     }
     provisioning = {
       enabled           = var.external_kafka_provisioning_enabled
-      replicationFactor = var.external_kafka_provisioning_replication_factor
-      numPartitions     = var.external_kafka_provisioning_num_partitions
+      replicationFactor = 3
+      numPartitions     = 3
     }
   }
 
