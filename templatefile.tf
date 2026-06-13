@@ -66,7 +66,7 @@ locals {
     }
 
     postgresql_enabled = false
-    redis_enabled      = false
+    redis_enabled      = true
 
     external_redis_enabled = false
     # external_redis = {
@@ -84,21 +84,13 @@ locals {
       ssl      = false
     }
 
-    external_postgresql_enabled = false
-    # external_postgresql = {
-    #   host     = local.managed_pg_host
-    #   port     = 6432
-    #   username = var.managed_pg_user
-    #   password = local.managed_pg_user_password_effective
-    #   database = var.managed_pg_database
-    #   sslmode  = "require"
-    # }
+    external_postgresql_enabled = true
     external_postgresql = {
-      host     = ""
+      host     = local.managed_pg_host
       port     = 6432
-      username = ""
-      password = ""
-      database = ""
+      username = var.managed_pg_user
+      password = local.managed_pg_user_password_effective
+      database = var.managed_pg_database
       sslmode  = "require"
     }
     kafka_enabled      = var.sentry_incluster_kafka_enabled
@@ -115,10 +107,10 @@ locals {
   #   password    = local.managed_kafka_user_password_effective
   # })
 
-  # managed_pg_credentials_config = templatefile("${path.module}/k8s/managed-pg-credentials.yaml.tpl", {
-  #   secret_name = "managed-pg-credentials"
-  #   password    = local.managed_pg_user_password_effective
-  # })
+  managed_pg_credentials_config = templatefile("${path.module}/k8s/managed-pg-credentials.yaml.tpl", {
+    secret_name = "managed-pg-credentials"
+    password    = local.managed_pg_user_password_effective
+  })
 
   # managed_redis_credentials_config = templatefile("${path.module}/k8s/managed-redis-credentials.yaml.tpl", {
   #   secret_name = "managed-redis-credentials"
@@ -132,11 +124,11 @@ locals {
 #   file_permission = "0600"
 # }
 
-# resource "local_file" "write_managed_pg_credentials" {
-#   content         = local.managed_pg_credentials_config
-#   filename        = "${path.module}/k8s/managed-pg-credentials.yaml"
-#   file_permission = "0600"
-# }
+resource "local_file" "write_managed_pg_credentials" {
+  content         = local.managed_pg_credentials_config
+  filename        = "${path.module}/k8s/managed-pg-credentials.yaml"
+  file_permission = "0600"
+}
 
 # resource "local_file" "write_managed_redis_credentials" {
 #   content         = local.managed_redis_credentials_config

@@ -216,9 +216,16 @@ kubectl -n sentry create secret generic kafka-credentials \
   --from-literal=password="${kafka_password}"
 ```
 
+### 5.1. PostgreSQL credentials (Secret для Managed PostgreSQL)
+
+```bash
+kubectl create namespace sentry
+kubectl apply -f k8s/managed-pg-credentials.yaml
+```
+
 ### 6. Установка Sentry
 
-**Порядок зависимостей.** Чарт поднимает PostgreSQL и Redis в namespace `sentry`, а **ClickHouse работает в k8s через clickhouse-operator** (namespace `clickhouse`, `externalClickhouse` в [values_sentry.yaml.tpl](https://github.com/patsevanton/sentry-v29-yc-k8s-elastic/blob/master/values_sentry.yaml.tpl)). Kafka по умолчанию внешняя (Yandex Managed Kafka); встроенный Kafka включается переменной `sentry_incluster_kafka_enabled`. Сначала выполните **§0** (ClickHouse Operator + Keeper + ClickHouseInstallation), **§2–§3** (Prometheus CRD + VictoriaMetrics), **§4–§5** (KEDA + репозиторий Helm + Kafka credentials), затем команду ниже.
+**Порядок зависимостей.** Чарт поднимает PostgreSQL и Redis в namespace `sentry`, а **ClickHouse работает в k8s через clickhouse-operator** (namespace `clickhouse`, `externalClickhouse` в [values_sentry.yaml.tpl](https://github.com/patsevanton/sentry-v29-yc-k8s-elastic/blob/master/values_sentry.yaml.tpl)). Kafka по умолчанию внешняя (Yandex Managed Kafka); встроенный Kafka включается переменной `sentry_incluster_kafka_enabled`. Сначала выполните **§0** (ClickHouse Operator + Keeper + ClickHouseInstallation), **§2–§3** (Prometheus CRD + VictoriaMetrics), **§4–§5** (KEDA + репозиторий Helm + Kafka credentials), **§5.1** (PostgreSQL credentials), затем команду ниже.
 
 Установка с `values_sentry.yaml` (генерируется из [values_sentry.yaml.tpl](https://github.com/patsevanton/sentry-v29-yc-k8s-elastic/blob/master/values_sentry.yaml.tpl) через `terraform apply`): в файле заданы параметры ClickHouse из k8s-сервиса.
 

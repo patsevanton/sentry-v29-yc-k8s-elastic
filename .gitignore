@@ -50,3 +50,4 @@ k8s/secret-yc-monitoring-api-key.yaml
 k8s/kafka-credentials.yaml
 k8s/managed-pg-credentials.yaml
 k8s/managed-redis-credentials.yaml
+values_merged.yaml
