@@ -15,7 +15,7 @@
 | Elasticsearch 9.x | ECK Operator | `backup/elasticsearch.yaml` (не используется) | — |
 | Object Storage (S3) | Yandex Object Storage | Terraform (*.tf) | — (внешний) |
 | Autoscaling | KEDA v2.19.0 | Helm `kedacore/keda` | `keda` |
-| Monitoring | VictoriaMetrics K8s Stack v0.79.1 | `vmks-values.yaml`, `k8s/` | `vmks` |
+| Monitoring | VictoriaMetrics K8s Stack v0.90.1 | `vmks-values.yaml.tftpl`, `k8s/` | `vmks` |
 | Ingress / DNS | Terraform managed | `ip-dns.tf`, Terraform outputs | — |
 | Infra (VPC, K8S) | Terraform | `*.tf` в корне | — |
 
@@ -40,7 +40,8 @@
 | `values_sentry.yaml.tpl` | Шаблон Helm values для Sentry | При изменении конфигурации Sentry, БД, Kafka, ClickHouse, S3 |
 | `templatefile.tf` | Генерация `values_sentry.yaml` из шаблона | При добавлении новых переменных в шаблон |
 | `values_sentry.yaml` | Сгенерированный Helm values | **НЕ редактировать вручную** — только через Terraform |
-| `vmks-values.yaml` | Values для VictoriaMetrics K8s Stack | При изменении мониторинга |
+| `vmks-values.yaml.tftpl` | Шаблон Helm values для VictoriaMetrics K8s Stack (генерируется через Terraform) | При изменении мониторинга |
+| `vmks-values.yaml` | Сгенерированный Helm values для VictoriaMetrics | **НЕ редактировать вручную** — только через Terraform |
 | `ip-dns.tf` | DNS-записи и IP ingress | При изменении сетевой доступности |
 | `*.tf` (остальные) | Terraform-ресурсы (VPC, K8S, MDB, S3) | При изменении инфраструктуры |
 | `k8s/` | Kubernetes-манифесты (мониторинг, DNS, exporters) | При изменении объектов вне Helm |
@@ -59,7 +60,7 @@
 - `kubectl apply -f k8s/secret-yc-monitoring-api-key.yaml` — создать K8S Secret с bearer-токеном мониторинга
 - `kubectl apply -f k8s/vmstaticscrape-yc-managed-kafka.yaml` — применить VMStaticScrape для Kafka
 - `helm upgrade --install sentry sentry/sentry --version 31.5.0 -n sentry -f values_sentry.yaml --timeout=3600s --create-namespace` — установка/обновление Sentry
-- `helm upgrade --install vmks vm/victoria-metrics-k8s-stack --version 0.79.1 -n vmks -f vmks-values.yaml --wait --timeout=15m` — установка VictoriaMetrics
+- `helm upgrade --install vmks vm/victoria-metrics-k8s-stack --version 0.90.1 -n vmks -f vmks-values.yaml --wait --timeout=15m` — установка VictoriaMetrics
 - `helm upgrade --install keda kedacore/keda --version 2.19.0 -n keda --wait --timeout=10m` — установка KEDA
 - `kubectl -n sentry get pods` — проверка подов Sentry
 - `kubectl -n sentry get jobs` — проверка Job'ов Sentry

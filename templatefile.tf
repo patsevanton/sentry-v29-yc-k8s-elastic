@@ -51,9 +51,10 @@ locals {
   sentry_config = templatefile("${path.module}/values_sentry.yaml.tpl", {
     sentry_admin_password         = local.sentry_admin_password
     user_email                    = "admin@sentry.local"
-    system_url                    = "http://sentry.apatsev.org.ru"
+    ingress_public_ip             = local.ingress_public_ip
+    system_url                    = "http://sentry.${local.ingress_public_ip}.sslip.io"
     ingress_enabled               = true
-    ingress_hostname              = "sentry.apatsev.org.ru"
+    ingress_hostname              = "sentry.${local.ingress_public_ip}.sslip.io"
     ingress_class_name            = "nginx"
     kafka_credentials_secret_name = local.kafka_credentials_secret_name
 
@@ -93,8 +94,8 @@ locals {
       database = var.managed_pg_database
       sslmode  = "require"
     }
-    kafka_enabled      = var.sentry_incluster_kafka_enabled
-    external_kafka     = local.external_kafka_effective
+    kafka_enabled  = var.sentry_incluster_kafka_enabled
+    external_kafka = local.external_kafka_effective
 
     external_clickhouse                  = local.external_clickhouse_effective
     sentry_hooks_active_deadline_seconds = 7200

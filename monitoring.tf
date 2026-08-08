@@ -44,6 +44,18 @@ output "monitoring_api_key" {
 }
 
 locals {
+  vmks_values = templatefile("${path.module}/vmks-values.yaml.tftpl", {
+    ingress_public_ip = local.ingress_public_ip
+  })
+}
+
+resource "local_file" "write_vmks_values" {
+  content         = local.vmks_values
+  filename        = "${path.module}/vmks-values.yaml"
+  file_permission = "0644"
+}
+
+locals {
   vmstaticscrape_kafka_config = templatefile("${path.module}/k8s/vmstaticscrape-yc-managed-kafka.yaml.tpl", {
     folder_id = local.folder_id
   })

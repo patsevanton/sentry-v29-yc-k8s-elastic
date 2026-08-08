@@ -143,11 +143,13 @@ kubectl get crd | grep monitoring.coreos.com
 ```bash
 kubectl create namespace vmks
 helm upgrade --install vmks oci://ghcr.io/victoriametrics/helm-charts/victoria-metrics-k8s-stack \
-  --version 0.79.1 \
+  --version 0.90.1 \
   -n vmks \
   -f vmks-values.yaml \
   --wait --timeout=15m
 ```
+
+> `vmks-values.yaml` генерируется Terraform из шаблона `vmks-values.yaml.tftpl` (IP подставляется автоматически). Перед запуском `helm` выполните `terraform apply` — файл появится в корне репозитория.
 
 **Пароль Grafana.**
 
@@ -157,7 +159,13 @@ kubectl -n vmks get secret vmks-grafana -o jsonpath='{.data.admin-password}' | b
 
 Логин по умолчанию — `admin` (его можно прочитать из ключа `admin-user` того же Secret).
 
-Веб-интерфейс Grafana доступен по адресу **[http://grafana.apatsev.org.ru](http://grafana.apatsev.org.ru)**.
+Веб-интерфейс Grafana доступен по адресу, сформированному через sslip.io из публичного IP балансировщика ingress-nginx (получите IP командой `terraform output -raw ingress_public_ip`):
+
+```bash
+echo "http://grafana.$(terraform output -raw ingress_public_ip).sslip.io"
+```
+
+> **sslip.io** — бесплатный wildcard-DNS: `<anything>.<IP>.sslip.io` всегда резолвится в `<IP>`. Не требует делегирования доменной зоны.
 
 ### 4. KEDA (автоскейлинг по Kafka lag)
 
@@ -239,7 +247,13 @@ helm upgrade --install sentry sentry/sentry --version 31.5.0 -n sentry \
 
 **Устанавливается долго:** первый `helm upgrade --install` часто занимает 20–40 минут.
 
-После установки зайдите в Sentry в браузере: **[http://sentry.apatsev.org.ru](http://sentry.apatsev.org.ru)** (DNS и ingress — **§8**; если задали другой хост в Ingress/`values`, используйте его).
+После установки зайдите в Sentry в браузере по адресу, сформированному через sslip.io из публичного IP балансировщика ingress-nginx (получите IP командой `terraform output -raw ingress_public_ip`):
+
+```bash
+echo "http://sentry.$(terraform output -raw ingress_public_ip).sslip.io"
+```
+
+> **sslip.io** — бесплатный wildcard-DNS: `<anything>.<IP>.sslip.io` всегда резолвится в `<IP>`. Не требует делегирования доменной зоны.
 
 **Relay** и **taskbroker** отдельно не настраиваются.
 
@@ -302,7 +316,8 @@ curl -s --max-time 90 http://localhost:9790/metrics/ | grep -E 'sentry_open_issu
 kill %1
 
 # 5. Метрики видны в VMSingle
-curl -s "http://vmsingle.apatsev.org.ru/api/v1/query?query=sentry_open_issue_events" | python3 -m json.tool
+LB_IP=$(terraform output -raw ingress_public_ip)
+curl -s "http://vmsingle.${LB_IP}.sslip.io/api/v1/query?query=sentry_open_issue_events" | python3 -m json.tool
 ```
 
 ### 7.1. Мониторинг Yandex Managed Kafka в Grafana
@@ -355,9 +370,16 @@ kubectl -n vmks get vmservicescrape clickhouse-operator
 
 ### 8. Доступ к Sentry
 
-Sentry доступен по адресу **[http://sentry.apatsev.org.ru](http://sentry.apatsev.org.ru)** через [ingress-nginx](https://kubernetes.github.io/ingress-nginx/) (стандартный `Ingress`).
+Sentry доступен через [ingress-nginx](https://kubernetes.github.io/ingress-nginx/) (стандартный `Ingress`) по адресу, сформированному через sslip.io из публичного IP балансировщика. Получите IP и сформируйте URL:
 
-Убедитесь, что DNS-запись `sentry.apatsev.org.ru` указывает на внешний IP сервиса ingress-nginx (обычно `LoadBalancer` в namespace `ingress-nginx`):
+```bash
+LB_IP=$(terraform output -raw ingress_public_ip)
+echo "http://sentry.${LB_IP}.sslip.io"
+```
+
+> **sslip.io** — бесплатный wildcard-DNS: `<anything>.<IP>.sslip.io` всегда резолвится в `<IP>`. Собственная DNS-зона не нужна: имя `sentry.<IP>.sslip.io` автоматически резолвится в IP балансировщика ingress-nginx.
+
+Убедитесь, что `LoadBalancer` ingress-nginx получил внешний IP, совпадающий с `terraform output -raw ingress_public_ip`:
 
 ```bash
 kubectl -n ingress-nginx get svc
@@ -398,10 +420,12 @@ kubectl -n ingress-nginx get svc
 kubectl apply -f demo/demo-nodejs/namespace.yaml
 kubectl apply -f demo/demo-python/namespace.yaml
 # DSN (по одному Secret на Node и Python):
+# SENTRY_HOST формируется через sslip.io из публичного IP ingress-nginx:
+SENTRY_HOST="sentry.$(terraform output -raw ingress_public_ip).sslip.io"
 kubectl create secret generic sentry-dsn-node -n demo-nodejs \
-  --from-literal=dsn='http://YOUR_SENTRY_DSN_NODE@sentry.apatsev.org.ru/PROJECT_ID'
+  --from-literal=dsn="http://YOUR_SENTRY_DSN_NODE@${SENTRY_HOST}/PROJECT_ID"
 kubectl create secret generic sentry-dsn-python -n demo-python \
-  --from-literal=dsn='http://YOUR_SENTRY_DSN_PYTHON@sentry.apatsev.org.ru/PROJECT_ID'
+  --from-literal=dsn="http://YOUR_SENTRY_DSN_PYTHON@${SENTRY_HOST}/PROJECT_ID"
 
 kubectl apply -f demo/demo-nodejs/deployment-node.yaml
 kubectl apply -f demo/demo-python/deployment-python.yaml

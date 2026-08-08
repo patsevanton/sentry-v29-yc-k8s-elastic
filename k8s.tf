@@ -221,3 +221,18 @@ output "ingress_public_ip" {
   description = "External ingress-nginx IP"
   value       = local.ingress_public_ip
 }
+
+output "sentry_url" {
+  description = "URL Sentry (сформирован через sslip.io из публичного IP балансировщика ingress-nginx)"
+  value       = "http://sentry.${local.ingress_public_ip}.sslip.io"
+}
+
+output "grafana_url" {
+  description = "URL Grafana (сформирован через sslip.io из публичного IP балансировщика ingress-nginx)"
+  value       = "http://grafana.${local.ingress_public_ip}.sslip.io"
+}
+
+output "vmsingle_url" {
+  description = "URL VMSingle (сформирован через sslip.io из публичного IP балансировщика ingress-nginx)"
+  value       = "http://vmsingle.${local.ingress_public_ip}.sslip.io"
+}
