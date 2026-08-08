@@ -50,6 +50,8 @@ ClickHouse для Sentry/Snuba развёрнут в Kubernetes через [Alti
 
 Operator устанавливается вручную. Helm-values задаются в файле [clickhouse-operator-values.yaml](https://github.com/patsevanton/sentry-v29-yc-k8s-elastic/blob/master/clickhouse-operator-values.yaml) (operator смотрит только namespace `clickhouse`).
 
+
+# Обновить до https://github.com/Altinity/clickhouse-operator/releases/tag/release-0.27.2
 ```bash
 helm repo add clickhouse-operator https://helm.altinity.com
 helm repo update
@@ -441,6 +443,7 @@ kubectl apply -f demo/demo-python/service.yaml
 
 **Установка:**
 
+# Обновить до https://github.com/chaos-mesh/chaos-mesh/releases/tag/v2.8.3
 ```bash
 helm repo add chaos-mesh https://charts.chaos-mesh.org
 helm repo update

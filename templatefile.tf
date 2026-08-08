@@ -7,8 +7,7 @@ resource "local_file" "write_sentry_config" {
 locals {
   sentry_admin_password = "admin"
 
-  # managed_kafka_user_password_effective = var.managed_kafka_user_password != "" ? var.managed_kafka_user_password : random_password.managed_kafka_user_password.result
-  managed_kafka_user_password_effective = var.managed_kafka_user_password
+  managed_kafka_user_password_effective = var.managed_kafka_user_password != "" ? var.managed_kafka_user_password : random_password.managed_kafka_user_password.result
 
   external_clickhouse_effective = {
     host                   = "clickhouse-sentry-clickhouse.clickhouse.svc.cluster.local"
@@ -25,8 +24,7 @@ locals {
 
   kafka_credentials_secret_name = "kafka-credentials"
 
-  # managed_kafka_broker_hosts      = sort([for h in yandex_mdb_kafka_cluster.managed.host : h.name])
-  managed_kafka_broker_hosts      = []
+  managed_kafka_broker_hosts      = sort([for h in yandex_mdb_kafka_cluster.managed.host : h.name])
   managed_kafka_bootstrap_servers = join(",", [for host in local.managed_kafka_broker_hosts : "${host}:${var.managed_kafka_port}"])
   external_kafka_effective = {
     cluster = [for host in local.managed_kafka_broker_hosts : {
@@ -101,12 +99,12 @@ locals {
     sentry_hooks_active_deadline_seconds = 7200
   })
 
-  # kafka_credentials_config = templatefile("${path.module}/k8s/kafka-credentials.yaml.tpl", {
-  #   secret_name = local.kafka_credentials_secret_name
-  #   mechanism   = var.managed_kafka_sasl_mechanism
-  #   username    = var.managed_kafka_user
-  #   password    = local.managed_kafka_user_password_effective
-  # })
+  kafka_credentials_config = templatefile("${path.module}/k8s/kafka-credentials.yaml.tpl", {
+    secret_name = local.kafka_credentials_secret_name
+    mechanism   = var.managed_kafka_sasl_mechanism
+    username    = var.managed_kafka_user
+    password    = local.managed_kafka_user_password_effective
+  })
 
   managed_pg_credentials_config = templatefile("${path.module}/k8s/managed-pg-credentials.yaml.tpl", {
     secret_name = "managed-pg-credentials"
@@ -119,11 +117,11 @@ locals {
   # })
 }
 
-# resource "local_file" "write_kafka_credentials" {
-#   content         = local.kafka_credentials_config
-#   filename        = "${path.module}/k8s/kafka-credentials.yaml"
-#   file_permission = "0600"
-# }
+resource "local_file" "write_kafka_credentials" {
+  content         = local.kafka_credentials_config
+  filename        = "${path.module}/k8s/kafka-credentials.yaml"
+  file_permission = "0600"
+}
 
 resource "local_file" "write_managed_pg_credentials" {
   content         = local.managed_pg_credentials_config
