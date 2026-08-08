@@ -1,10 +1,10 @@
-# Развёртывание Sentry v31.5.0 в Yandex Cloud на Kubernetes
+# Развёртывание Sentry v33.1.0 в Yandex Cloud на Kubernetes
 
 TODO проверить все ли файлы указаны в readme
 
 ## Цели статьи
 
-Статья описывает процесс развёртывания Sentry v31.5.0 в Yandex Cloud на кластере Kubernetes. Будет развёрнуто:
+Статья описывает процесс развёртывания Sentry v33.1.0 в Yandex Cloud на кластере Kubernetes. Будет развёрнуто:
 
 - Инфраструктура через Terraform (K8S, Kafka, PostgreSQL, Object Storage, VPC).
 - ClickHouse через [Altinity clickhouse-operator](https://github.com/Altinity/clickhouse-operator) в Kubernetes (кластер 1 shard × 3 replicas + ClickHouse Keeper).
@@ -176,7 +176,7 @@ helm repo add kedacore https://kedacore.github.io/charts
 helm repo update
 kubectl create namespace keda
 helm upgrade --install keda kedacore/keda \
-  --version 2.19.0 \
+  --version 2.20.2 \
   -n keda \
   --wait --timeout=10m
 ```
@@ -241,7 +241,7 @@ kubectl apply -f k8s/managed-pg-credentials.yaml
 kubectl create namespace sentry
 helm repo add sentry https://sentry-kubernetes.github.io/charts
 helm repo update
-helm upgrade --install sentry sentry/sentry --version 31.5.0 -n sentry \
+helm upgrade --install sentry sentry/sentry --version 33.1.0 -n sentry \
   -f values_sentry.yaml --timeout=7200s --create-namespace
 ```
 
