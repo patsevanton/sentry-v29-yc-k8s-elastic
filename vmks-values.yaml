@@ -12,7 +12,7 @@ grafana:
     annotations:
       nginx.ingress.kubernetes.io/ssl-redirect: "false"
     hosts:
-      - grafana.apatsev.org.ru
+      - grafana.111.88.241.92.sslip.io
 
 kube-state-metrics:
   resources:
@@ -49,4 +49,4 @@ vmsingle:
     annotations:
       nginx.ingress.kubernetes.io/ssl-redirect: "false"
     hosts:
-      - vmsingle.apatsev.org.ru
+      - vmsingle.111.88.241.92.sslip.io
