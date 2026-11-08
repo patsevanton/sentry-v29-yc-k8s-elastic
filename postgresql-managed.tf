@@ -58,13 +58,11 @@ locals {
 
   managed_pg_zones = [
     local.subnet_a_zone,
-    local.subnet_b_zone,
     local.subnet_d_zone,
   ]
 
   managed_pg_zone_subnet_ids = {
     (local.subnet_a_zone) = local.subnet_a_id
-    (local.subnet_b_zone) = local.subnet_b_id
     (local.subnet_d_zone) = local.subnet_d_id
   }
 
