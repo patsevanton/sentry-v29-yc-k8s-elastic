@@ -9,12 +9,12 @@ resource "yandex_mdb_kafka_cluster" "managed" {
   description = "Managed Kafka for Sentry"
   environment = "PRODUCTION"
   network_id  = local.network_id
-  subnet_ids  = [local.subnet_a_id, local.subnet_b_id, local.subnet_d_id]
+  subnet_ids  = [local.subnet_d_id]
 
   config {
     version          = "4.0"
-    brokers_count    = 1
-    zones            = [local.subnet_a_zone, local.subnet_b_zone, local.subnet_d_zone]
+    brokers_count    = 3
+    zones            = [local.subnet_d_zone]
     assign_public_ip = var.managed_kafka_assign_public_ip
     # unmanaged_topics = true
     schema_registry  = false

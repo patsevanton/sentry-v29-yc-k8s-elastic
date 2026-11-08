@@ -30,14 +30,6 @@ resource "yandex_vpc_subnet" "sentry-a" {
   route_table_id = yandex_vpc_route_table.sentry_rt.id
 }
 
-resource "yandex_vpc_subnet" "sentry-b" {
-  folder_id      = local.folder_id
-  v4_cidr_blocks = ["10.0.2.0/24"]
-  zone           = "ru-central1-b"
-  network_id     = yandex_vpc_network.sentry.id
-  route_table_id = yandex_vpc_route_table.sentry_rt.id
-}
-
 resource "yandex_vpc_subnet" "sentry-d" {
   folder_id      = local.folder_id
   v4_cidr_blocks = ["10.0.3.0/24"]
